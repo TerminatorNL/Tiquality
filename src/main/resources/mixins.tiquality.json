@@ -1,0 +1,16 @@
+{
+  "package": "cf.terminator.tiquality.mixin",
+  "refmap": "mixins.tiquality.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.6.0",
+  "plugin": "cf.terminator.tiquality.mixinhelper.MixinConfigPlugin",
+  "mixins": [
+    "MixinAnvilChunkLoader",
+    "MixinChunk",
+    "MixinTileEntity",
+    "MixinTrackingUtilSpongeWorkaround",
+    "MixinWorldForge",
+    "MixinWorldServerCommon",
+    "MixinWorldServerForge"
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "tiquality",
+    "name": "Tiquality",
+    "description": "Evenly distribute tick time amongst player, its time we all tick equally!",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://minecraft.curseforge.com/projects/tiquality",
+    "updateUrl": "",
+    "authorList": ["Terminator_NL"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
