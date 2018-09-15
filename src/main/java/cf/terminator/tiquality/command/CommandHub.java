@@ -1,6 +1,5 @@
 package cf.terminator.tiquality.command;
 
-import cf.terminator.tiquality.sponge.TiqualitySpongeHandler;
 import net.minecraft.command.CommandHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.server.permission.DefaultPermissionLevel;
@@ -20,15 +19,12 @@ public class CommandHub {
     public static RegisterType registerType = RegisterType.NONE;
 
     public static final String[] ALIASES = {"tiquality","tq"};
-    public static final String PERMISSION_NODE = "tiquality.use";
-    public static final String PERMISSION_NODE_ADMIN = "tiquality.admin";
     public static final String DESCRIPTION = "Allows use of Tiquality commands.";
     public static final String DESCRIPTION_ADMIN = "Allows use of Tiquality admin commands.";
-    public static final TabCompletionElement TAB_COMPLETION_OPTIONS = TabCompletionElement.generateRoot();
 
     /**
-     * Executed after Sponge had the time to register.
-     * We let Sponge give a crack at it first, and take over if there's no sponge detected
+     * Sponge is not detected, so we register commands using Forge.
+     * This makes sure we do not accidentally load Sponge classes, which aren't present.
      */
     public void initForge(){
         if(registerType == RegisterType.SPONGEFORGE){
@@ -37,24 +33,31 @@ public class CommandHub {
             throw new IllegalStateException("Must not register commands twice!");
         }
         registerType = RegisterType.FORGE_ONLY;
-        cf.terminator.tiquality.Tiquality.LOGGER.info("Sponge is not detected. Going forge!");
+        cf.terminator.tiquality.Tiquality.LOGGER.info("Registering command using Forge!");
 
-        PermissionAPI.registerNode(PERMISSION_NODE, DefaultPermissionLevel.ALL, DESCRIPTION);
-        PermissionAPI.registerNode(PERMISSION_NODE_ADMIN, DefaultPermissionLevel.OP, DESCRIPTION_ADMIN);
+        PermissionAPI.registerNode(PermissionHolder.Permission.USE.getNode(), DefaultPermissionLevel.ALL, DESCRIPTION);
+        PermissionAPI.registerNode(PermissionHolder.Permission.ADMIN.getNode(), DefaultPermissionLevel.OP, DESCRIPTION_ADMIN);
         CommandHandler ch = (CommandHandler) FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager();
-        ch.registerCommand(TiqualityCommand.INSTANCE);
+        ch.registerCommand(new ForgeCommand());
     }
 
     /**
-     * Executed before the forge command has the time to register.
-     * Indicates that the command is registered inside Sponge.
+     * Registers the command for Sponge
      */
     public void initSponge(){
         if(registerType != RegisterType.NONE){
             throw new IllegalStateException("Must not register commands twice!");
         }
         registerType = RegisterType.SPONGEFORGE;
-        cf.terminator.tiquality.Tiquality.LOGGER.info("Sponge is detected. Going Sponge!");
-        new TiqualitySpongeHandler().init();
+        cf.terminator.tiquality.Tiquality.LOGGER.info("Registering command for Sponge!");
+        new SpongeCommand().init();
+    }
+
+    /**
+     * Indicate that the server has shut down, allows
+     * for re-registering of commands at later start-ups
+     */
+    public void reset(){
+        registerType = RegisterType.NONE;
     }
 }

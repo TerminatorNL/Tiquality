@@ -19,12 +19,12 @@ public class MixinAnvilChunkLoader {
 
     @Inject(method = "writeChunkToNBT", at=@At("RETURN"), locals = LocalCapture.CAPTURE_FAILEXCEPTION)
     private void lagGoggles_onSaveChunk(Chunk chunk, World world, NBTTagCompound tag, CallbackInfo ci) {
-        ((TiqualityChunk) chunk).lagGoggles_writeToNBT(tag);
+        ((TiqualityChunk) chunk).tiquality_writeToNBT(tag);
     }
 
     @Inject(method = "readChunkFromNBT", at=@At("RETURN"), locals = LocalCapture.CAPTURE_FAILEXCEPTION)
     private void lagGoggles_onLoad(World worldIn, NBTTagCompound tag, CallbackInfoReturnable<Chunk> cir, int i, int j, Chunk chunk, NBTTagList nbttaglist, int k, ExtendedBlockStorage aextendedblockstorage[], boolean flag) {
-        ((TiqualityChunk) chunk).lagGoggles_loadNBT(worldIn, tag);
+        ((TiqualityChunk) chunk).tiquality_loadNBT(worldIn, tag);
     }
 
 

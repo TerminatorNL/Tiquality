@@ -16,7 +16,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String s) {
-        Logger LOGGER = LogManager.getLogger("TiqualityCommand");
+        Logger LOGGER = LogManager.getLogger("Tiquality");
         try {
             Class.forName("org.spongepowered.mod.SpongeCoremod", false, getClass().getClassLoader());
             LOGGER.info("Sponge is present!");
@@ -27,7 +27,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             try{
                 Class.forName("org.spongepowered.asm.launch.MixinTweaker", false, getClass().getClassLoader());
             } catch (ClassNotFoundException ignored_2) {
-                LOGGER.info("Oh no! It looks like you also do not have Mixin installed. Please use the FORGE version of TiqualityCommand.");
+                LOGGER.info("Oh no! It looks like you also do not have Mixin installed. Please use the FORGE version of ForgeCommand.");
                 FMLCommonHandler.instance().exitJava(1, true);
             }
         }

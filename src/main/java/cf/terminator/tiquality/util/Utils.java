@@ -1,5 +1,8 @@
 package cf.terminator.tiquality.util;
 
+import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
+
 import java.util.Map;
 
 public class Utils {
@@ -24,5 +27,9 @@ public class Utils {
             }
         }
         return key;
+    }
+
+    public static Vec3d getLookVec(Entity entity, int distance){
+        return entity.getPositionEyes(1F).add(entity.getLookVec().scale(distance));
     }
 }

@@ -7,8 +7,11 @@
   "mixins": [
     "MixinAnvilChunkLoader",
     "MixinChunk",
+    "MixinChunkProviderClient",
+    "MixinMinecraftServer",
     "MixinTileEntity",
     "MixinTrackingUtilSpongeWorkaround",
+    "MixinWorldClient",
     "MixinWorldForge",
     "MixinWorldServerCommon",
     "MixinWorldServerForge"

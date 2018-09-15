@@ -1,17 +1,21 @@
 package cf.terminator.tiquality.store;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.api.event.TiqualityEvent;
+import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
+import java.util.HashSet;
 import java.util.Random;
 
 @SuppressWarnings("WeakerAccess")
@@ -21,25 +25,79 @@ public class PlayerTracker {
 
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
     protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
+    protected HashSet<TiqualityChunk> ASSOCIATED_CHUNKS = new HashSet<>();
+    protected TickLogger tickLogger = new TickLogger();
+
+    /**
+     * Internal use only. Used to determine when to unload.
+     */
+    private int unloadCooldown = 20;
+
+    /**
+     * Only changes between ticks
+     */
+    private boolean isProfiling = false;
 
     /**
      * Creates a new playertracker using the supplied GameProfile.
+     * DO NOT USE THIS METHOD YOURSELF. See: cf.terminator.tiquality.store.TrackerHub
+     *
      * @param profile the GameProfile of the owner.
      */
-    public PlayerTracker(@Nonnull GameProfile profile) {
+    PlayerTracker(@Nonnull GameProfile profile) {
         this.profile = profile;
     }
 
+
     /**
-     * Resets every tick with a granted number of tick time set by TiqualityCommand
-     * Is initialized with time for a full tick. (Loading blocks mid-tick, or something like that)
+     * Gets the TickLogger.
+     * @return the TickLogger
      */
-    public void setNextTickTime(long granted_ns){
-        tick_time_remaining_ns = granted_ns;
+    public TickLogger getTickLogger(){
+        return tickLogger;
     }
 
     /**
-     * Checks if the owner of a block is a fake owner.
+     * Enables or disables the profiler.
+     * This method will block if it's not ran on the main thread.
+     *
+     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
+     * this will cause a deadlock!
+     *
+     * Example: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
+     *
+     *
+     * @param shouldProfile if the profiler should be enabled
+     */
+    public synchronized void setProfileEnabled(boolean shouldProfile){
+        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
+            @Override
+            public void run() {
+                if(PlayerTracker.this.isProfiling != shouldProfile) {
+                    PlayerTracker.this.isProfiling = shouldProfile;
+                    if(shouldProfile == false){
+                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(PlayerTracker.this, getTickLogger()));
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Resets every tick with a granted number of tick time set by Tiquality
+     * Is initialized with time for a full tick. (Loading blocks mid-tick, or something like that)
+     * @param granted_ns the amount of time set for the coming tick in nanoseconds
+     */
+    public synchronized void setNextTickTime(long granted_ns){
+        tick_time_remaining_ns = granted_ns;
+        tickLogger.addTick();
+        if(unloadCooldown > 0){
+            --unloadCooldown;
+        }
+    }
+
+    /**
+     * Checks if the owner is a fake owner.
      * Trackers belonging to fake owners are not removed and kept in memory.
      * This method is meant to be overridden.
      *
@@ -101,7 +159,7 @@ public class PlayerTracker {
      * Decreases the remaining tick time for a player.
      * @param time in nanoseconds
      */
-    public void consume(long time){
+    public synchronized void consume(long time){
         tick_time_remaining_ns -= time;
     }
 
@@ -122,41 +180,60 @@ public class PlayerTracker {
      */
     public boolean updateOld(){
         while(untickedTickables.size() > 0 && tick_time_remaining_ns >= 0) {
-            long start = System.nanoTime();
-            untickedTickables.take().doUpdateTick();
-            consume(System.nanoTime() - start);
+            if(isProfiling) {
+                TiqualitySimpleTickable tickable = untickedTickables.take();
+                long start = System.nanoTime();
+                tickable.doUpdateTick();
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+                consume(elapsed);
+            }else{
+                long start = System.nanoTime();
+                untickedTickables.take().doUpdateTick();
+                consume(System.nanoTime() - start);
+            }
         }
         return tick_time_remaining_ns >= 0;
     }
 
     /**
      * Decides whether or not to tick, based on
-     * the entities the player has already ticked.
-     * @param tickable the tickable
+     * the time the player has already consumed.
+     * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
      */
-    public void tickTileEntity(ITickable tickable){
-        if (updateOld() == false){
-            /* If we run out of time, we add the entity to the list if its not already there.*/
-            if (untickedTickables.containsRef((TiqualitySimpleTickable) tickable) == false) {
-                untickedTickables.addToQueue((TiqualitySimpleTickable) tickable);
-
-                //TileEntity e = (TileEntity) tickable;
-                //ServerSideEvents.showBlocked(e.getWorld(), e.getPos());
+    public void tickTileEntity(TiqualitySimpleTickable tickable){
+        if (updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(tickable.getLocation().getBlock()) == false){
+            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
+            if (untickedTickables.containsRef(tickable) == false) {
+                untickedTickables.addToQueue(tickable);
             }
         }else{
-            /* We still have time, lets do this reloadFromFile!*/
-            long start = System.nanoTime();
-            tickable.update();
-            consume(System.nanoTime() - start);
+            /* Either We still have time, or the tile entity is on the forced-tick list. We update the tile entity.*/
+            if(isProfiling) {
+                long start = System.nanoTime();
+                tickable.doUpdateTick();
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+                consume(elapsed);
+            }else{
+                long start = System.nanoTime();
+                tickable.doUpdateTick();
+                consume(System.nanoTime() - start);
+            }
         }
     }
 
     /**
      * Performs block tick if it can, if not, it will queue it for later.
+     * @param block the block
+     * @param world the world
+     * @param pos the block position
+     * @param state the block's state
+     * @param rand a Random
      */
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false){
-            /* If we run out of time, we add the entity to the list if its not already there.*/
+        if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
+            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
             BlockUpdateHolder holder = new BlockUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -164,19 +241,32 @@ public class PlayerTracker {
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
-            /* We still have time, lets do this reloadFromFile!*/
-            long start = System.nanoTime();
-            block.updateTick(world, pos, state, rand);
-            consume(System.nanoTime() - start);
+            /* Either We still have time, or the block is on the forced-tick list. We update the block*/
+            if(isProfiling) {
+                long start = System.nanoTime();
+                block.updateTick(world, pos, state, rand);
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+                consume(elapsed);
+            }else{
+                long start = System.nanoTime();
+                block.updateTick(world, pos, state, rand);
+                consume(System.nanoTime() - start);
+            }
         }
     }
 
     /**
      * Performs block tick if it can, if not, it will queue it for later.
+     * @param block the block
+     * @param world the world
+     * @param pos the block position
+     * @param state the block's state
+     * @param rand a Random
      */
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false){
-            /* If we run out of time, we add the entity to the list if its not already there. */
+        if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
+            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
             BlockRandomUpdateHolder holder = new BlockRandomUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -186,10 +276,18 @@ public class PlayerTracker {
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
-            /* We still have time, lets do this reloadFromFile!*/
-            long start = System.nanoTime();
-            block.randomTick(world, pos, state, rand);
-            consume(System.nanoTime() - start);
+            /* Either We still have time, or the block is on the forced-tick list. We update the block*/
+            if(isProfiling) {
+                long start = System.nanoTime();
+                block.randomTick(world, pos, state, rand);
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+                consume(elapsed);
+            }else{
+                long start = System.nanoTime();
+                block.randomTick(world, pos, state, rand);
+                consume(System.nanoTime() - start);
+            }
         }
     }
 
@@ -204,10 +302,48 @@ public class PlayerTracker {
     }
 
     /**
-     * @return true if the PlayerTracker needs more time to complete all of it's work.
+     * Associates chunks with this PlayerTracker.
+     * The player tracker will only be garbage collected when all associated chunks are unloaded.
+     * @param chunk the chunk.
+     */
+    public synchronized void associateChunk(TiqualityChunk chunk){
+        unloadCooldown = 40;
+        ASSOCIATED_CHUNKS.add(chunk);
+    }
+
+    /**
+     * Removes associated chunks with this PlayerTracker.
+     * The player tracker will only be garbage collected when all associated chunks are unloaded.
+     * @param chunk the chunk.
+     */
+    public synchronized void disAssociateChunk(TiqualityChunk chunk){
+        ASSOCIATED_CHUNKS.remove(chunk);
+    }
+
+    /**
+     * Checks if this PlayerTracker has chunks associated with it,
+     * removes references to unloaded chunks,
+     * @return true if this PlayerTracker has a loaded chunk, false otherwise
+     */
+    public boolean isLoaded(){
+        if(unloadCooldown > 0){
+            return true;
+        }
+        HashSet<TiqualityChunk> loadedChunks = new HashSet<>();
+        for(TiqualityChunk chunk : ASSOCIATED_CHUNKS){
+            if(chunk.isChunkLoaded() == true){
+                loadedChunks.add(chunk);
+            }
+        }
+        ASSOCIATED_CHUNKS.retainAll(loadedChunks);
+        return ASSOCIATED_CHUNKS.size() > 0;
+    }
+
+    /**
+     * @return true if the PlayerTracker has completed all of it's work.
      */
     public boolean isDone(){
-        return untickedTickables.size() > 0;
+        return untickedTickables.size() == 0;
     }
 
     /**
@@ -215,7 +351,7 @@ public class PlayerTracker {
      * @return description
      */
     public String toString(){
-        return "PlayerTracker:{Owner: '" + getOwner().getName() + "', nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + "}";
+        return "PlayerTracker:{Owner: '" + getOwner().getName() + "', nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
     @Override

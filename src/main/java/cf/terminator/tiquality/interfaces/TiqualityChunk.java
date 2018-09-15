@@ -7,13 +7,13 @@ import net.minecraft.world.World;
 
 public interface TiqualityChunk extends Comparable<TiqualityChunk> {
 
-    void lagGoggles_writeToNBT(NBTTagCompound tag);
+    void tiquality_writeToNBT(NBTTagCompound tag);
 
-    void lagGoggles_loadNBT(World world, NBTTagCompound tag);
+    void tiquality_loadNBT(World world, NBTTagCompound tag);
 
-    void lagGoggles_setTrackedPosition(BlockPos pos, PlayerTracker tracker);
+    void tiquality_setTrackedPosition(BlockPos pos, PlayerTracker tracker);
 
-    void lagGoggles_removeTracker(BlockPos pos);
+    void tiquality_removeTracker(BlockPos pos);
 
     PlayerTracker lagGoggles_findTrackerByBlockPos(BlockPos pos);
 

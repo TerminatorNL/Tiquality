@@ -1,20 +1,22 @@
 package cf.terminator.tiquality.monitor;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.store.PlayerTracker;
 import cf.terminator.tiquality.store.TrackerHub;
 import cf.terminator.tiquality.util.Constants;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.Map;
 import java.util.UUID;
 
 import static cf.terminator.tiquality.TiqualityConfig.TIME_BETWEEN_TICKS_IN_NS;
-import static cf.terminator.tiquality.store.TrackerHub.UNSAFE_SERVER_THREAD_ONLY_TRACKER;
 
 public class TickMaster {
 
@@ -25,10 +27,18 @@ public class TickMaster {
     private long TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
 
     private TickMaster() {
-        this.server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if(FMLCommonHandler.instance().getSide() == Side.SERVER) {
+            /* We're on a server. */
+            Tiquality.LOGGER.info("We're on a dedicated server.");
+            server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        }else{
+            /* We're on the client. */
+            Tiquality.LOGGER.info("We're on a client.");
+            server = FMLClientHandler.instance().getServer();
+        }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public void onServerTick(TickEvent.ServerTickEvent e){
         GameProfile[] cache = server.getOnlinePlayerProfiles();
         if(e.phase == TickEvent.Phase.START) {
@@ -38,7 +48,7 @@ public class TickMaster {
 
             /* First, we asses the amount of active PlayerTrackers. */
             double totalWeight = 0;
-            for(Map.Entry<UUID, PlayerTracker> entry : UNSAFE_SERVER_THREAD_ONLY_TRACKER.entrySet()){
+            for(Map.Entry<UUID, PlayerTracker> entry : TrackerHub.getEntrySet()){
                 PlayerTracker tracker = entry.getValue();
                 if(tracker.isConsumer() == false){
                     continue;
@@ -52,12 +62,15 @@ public class TickMaster {
             */
             double totalweight = Math.max(1, totalWeight);
 
-            for(Map.Entry<UUID, PlayerTracker> entry : UNSAFE_SERVER_THREAD_ONLY_TRACKER.entrySet()){
+            for(Map.Entry<UUID, PlayerTracker> entry : TrackerHub.getEntrySet()){
                 PlayerTracker tracker = entry.getValue();
                 if(tracker.isConsumer() == false){
                     tracker.setNextTickTime(0);
                 }else{
-                    tracker.setNextTickTime(Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight)));
+                    long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
+
+                    //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
+                    tracker.setNextTickTime(time);
                 }
             }
         }else if(e.phase == TickEvent.Phase.END){

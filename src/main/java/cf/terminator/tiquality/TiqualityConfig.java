@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public class TiqualityConfig {
 
     @Config.Comment({
-            "TiqualityCommand pre-allocates the max tick time someone can use.",
+            "Tiquality pre-allocates the max tick time someone can use.",
             "This includes offline players (Loaded chunks with an offline player's base, for example)",
             "With this in mind, what multiplier should we use to assign tick time to them?",
             "",
@@ -30,14 +30,9 @@ public class TiqualityConfig {
     public static double OFFLINE_PLAYER_TICK_TIME_MULTIPLIER = 0.5;
 
     @Config.Comment({
-            "How much tick time should be assigned to world objects defined in the AUTO_WORLD_ASSIGNED_OBJECTS variable?"
-    })
-    @Config.RangeDouble(min = 0, max = 1)
-    public static double WORLD_PLAYER_TICK_TIME_MULTIPLIER = 0.1;
-
-    @Config.Comment({
             "Some blocks are automatically generated in the world, but do require ticking in order to funtion properly.",
-            "Define the blocks you wish to keep tick using the WORLD_PLAYER when the block has not been assigned an owner yet.",
+            "Define the blocks you wish to keep tick when the block has not been assigned an owner yet.",
+            "Keep in mind, if there is an owner set on this block, the block can be throttled. See: TICKFORCING",
     })
     public static String[] AUTO_WORLD_ASSIGNED_OBJECTS = new String[]{
             "minecraft:mob_spawner",
@@ -67,6 +62,15 @@ public class TiqualityConfig {
     };
 
     @Config.Comment({
+            "Some blocks, you simple don't want to be throttled, ever. For example: piston extensions.",
+            "Tiquality will still attempt to tick them per player, but if the player runs out of tick time, it will still tick these blocks.",
+            "Items in this list are also appended to AUTO_WORLD_ASSIGNED_OBJECTS through code, there is no need to define blocks twice."
+    })
+    public static String[] TICKFORCING = new String[]{
+            "minecraft:piston_extension"
+    };
+
+    @Config.Comment({
             "Between ticks, the server must do some internal processing.",
             "Increase this value if you see \"can't keep up!\" errors.",
             "Try to keep this value as low as possible for performance."
@@ -77,15 +81,15 @@ public class TiqualityConfig {
     public static class QuickConfig{
 
         public static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();
+        public static HashSet<Block> TICKFORCING_OBJECTS_FAST = new HashSet<>();
 
         public static void saveToFile(){
             ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
         }
 
         public static void reloadFromFile() {
-            Tiquality.LOGGER.info("SCANNING BLOCKS...");
-
-            /* I know this is not a proper way to do this, if you know of a better way to reload the config
+            /*
+             * I know this is not a proper way to do this, if you know of a better way to reload the config
              * FROM DISK, I'd gladly move to your solution.
              */
             try {
@@ -100,6 +104,8 @@ public class TiqualityConfig {
         }
 
         public static void update(){
+            Tiquality.LOGGER.info("SCANNING BLOCKS...");
+            Tiquality.LOGGER.info("Unownable blocks:");
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.clear();
 
             for (String input : AUTO_WORLD_ASSIGNED_OBJECTS) {
@@ -125,6 +131,34 @@ public class TiqualityConfig {
             for(Block b : AUTO_WORLD_ASSIGNED_OBJECTS_FAST){
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
             }
+
+            Tiquality.LOGGER.info("Force ticked blocks:");
+            TICKFORCING_OBJECTS_FAST.clear();
+
+            for (String input : TICKFORCING) {
+                if(input.startsWith("REGEX=")){
+                    TICKFORCING_OBJECTS_FAST.addAll(findBlocks(input.substring(6,input.length())));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+
+                    Block block = Block.REGISTRY.getObject(location);
+
+                    if (block == Blocks.AIR) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("AUTO_WORLD_ASSIGNED_OBJECTS: " + block);
+                        Tiquality.LOGGER.warn("This block has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TICKFORCING_OBJECTS_FAST.add(block);
+                }
+            }
+            for(Block b : TICKFORCING_OBJECTS_FAST){
+                Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
+            }
+            AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(TICKFORCING_OBJECTS_FAST);
         }
 
         private static ArrayList<Block> findBlocks(String regex){
@@ -132,11 +166,11 @@ public class TiqualityConfig {
             for(ResourceLocation resource : Block.REGISTRY.getKeys()){
                 if(Pattern.compile(regex).matcher(resource.toString()).find()){
                     list.add(Block.REGISTRY.getObject(resource));
-                    Tiquality.LOGGER.info("r '" + regex + "' applied for: " + resource.toString());
+                    Tiquality.LOGGER.info("regex '" + regex + "' applied for: " + resource.toString());
                 }
             }
             if(list.size() == 0){
-                Tiquality.LOGGER.warn("r '" + regex + "' had no matches!");
+                Tiquality.LOGGER.warn("regex '" + regex + "' had no matches!");
             }
             return list;
         }

@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.mixinhelper.Hub;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -17,6 +18,7 @@ public class MixinWorldForge {
 
     @Redirect(method="immediateBlockTick", at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
     private void onBlockTick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
+        Tiquality.LOGGER.info("immediateBlockTick");
         Hub.onBlockTick(block, worldIn, pos, state, rand);
     }
 

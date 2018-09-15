@@ -1,6 +1,7 @@
 package cf.terminator.tiquality.mixinhelper;
 
-import cf.terminator.tiquality.interfaces.TiqualityWorldServer;
+import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.store.PlayerTracker;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -16,7 +17,7 @@ import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASS
 public class Hub {
 
     public static void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        PlayerTracker tracker = ((TiqualityWorldServer) world).getPlayerTracker(pos);
+        PlayerTracker tracker = ((TiqualityWorld) world).getPlayerTracker(pos);
         if(tracker != null) {
             tracker.doBlockTick(block,world, pos, state, rand);
         }else{
@@ -27,7 +28,7 @@ public class Hub {
     }
 
     public static void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        PlayerTracker tracker = ((TiqualityWorldServer) world).getPlayerTracker(pos);
+        PlayerTracker tracker = ((TiqualityWorld) world).getPlayerTracker(pos);
         if(tracker != null) {
             tracker.doRandomBlockTick(block,world, pos, state, rand);
         }else{
@@ -39,9 +40,9 @@ public class Hub {
 
     public static void onTileEntityTick(ITickable tickable){
         TileEntity entity = (TileEntity) tickable;
-        PlayerTracker tracker = ((TiqualityWorldServer)entity.getWorld()).getPlayerTracker(entity.getPos());
+        PlayerTracker tracker = ((TiqualityWorld)entity.getWorld()).getPlayerTracker(entity.getPos());
         if(tracker != null) {
-            tracker.tickTileEntity(tickable);
+            tracker.tickTileEntity((TiqualitySimpleTickable) tickable);
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(entity.getBlockType())){
                 tickable.update();

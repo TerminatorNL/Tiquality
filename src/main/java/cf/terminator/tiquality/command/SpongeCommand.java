@@ -1,21 +1,12 @@
-package cf.terminator.tiquality.sponge;
+package cf.terminator.tiquality.command;
 
-import cf.terminator.tiquality.command.CommandHub;
-import cf.terminator.tiquality.command.TiqualityCommand;
+import cf.terminator.tiquality.Tiquality;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandCallable;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
-import org.spongepowered.api.command.args.ArgumentParseException;
-import org.spongepowered.api.command.args.CommandArgs;
-import org.spongepowered.api.command.args.CommandContext;
-import org.spongepowered.api.command.args.CommandElement;
-import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -24,23 +15,11 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-@SuppressWarnings("NullableProblems")
-public class TiqualitySpongeHandler extends CommandElement implements CommandCallable, CommandExecutor {
-
-    private final MinecraftServer server;
-    
-    public TiqualitySpongeHandler() {
-        super(null);
-        server = FMLCommonHandler.instance().getMinecraftServerInstance();
-    }
+@SuppressWarnings({"WeakerAccess", "NullableProblems"})
+public class SpongeCommand implements CommandCallable {
 
     public void init() {
-        CommandSpec spongecommand = CommandSpec.builder()
-                .description(Text.of(CommandHub.DESCRIPTION))
-                .permission(CommandHub.PERMISSION_NODE)
-                .executor(this)
-                .build();
-        Sponge.getCommandManager().register(cf.terminator.tiquality.Tiquality.INSTANCE, spongecommand, CommandHub.ALIASES);
+        Sponge.getCommandManager().register(Tiquality.INSTANCE, this, CommandHub.ALIASES);
     }
 
     /**
@@ -56,9 +35,8 @@ public class TiqualitySpongeHandler extends CommandElement implements CommandCal
      */
     @Override
     public CommandResult process(CommandSource source, String arguments) throws CommandException {
-        TiqualityCommand.INSTANCE.checkPermission(server, (ICommandSender) source);
         try {
-            TiqualityCommand.INSTANCE.execute(server, (ICommandSender) source, arguments.split(" "));
+            CommandExecutor.execute((ICommandSender) source, arguments.split(" "), new SpongePermissionHolder(source));
             return CommandResult.success();
         }catch (net.minecraft.command.CommandException e){
             throw new CommandException(Text.of(e.getMessage()), e);
@@ -80,7 +58,13 @@ public class TiqualitySpongeHandler extends CommandElement implements CommandCal
      */
     @Override
     public List<String> getSuggestions(CommandSource source, String arguments, @Nullable Location<World> targetPosition) throws CommandException {
-        return CommandHub.TAB_COMPLETION_OPTIONS.getTabCompletions(arguments.split(" "));
+        PermissionHolder holder = new SpongePermissionHolder(source);
+        try{
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            return CommandExecutor.getSuggestions(arguments.split(" "), holder);
+        } catch (net.minecraft.command.CommandException e) {
+            throw new CommandException(Text.of(e.getMessage()), e);
+        }
     }
 
     /**
@@ -96,7 +80,7 @@ public class TiqualitySpongeHandler extends CommandElement implements CommandCal
      */
     @Override
     public boolean testPermission(CommandSource source) {
-        return TiqualityCommand.INSTANCE.checkPermission(server, (ICommandSender) source);
+        return new SpongePermissionHolder(source).hasPermission(PermissionHolder.Permission.USE);
     }
 
     /**
@@ -129,38 +113,7 @@ public class TiqualitySpongeHandler extends CommandElement implements CommandCal
      */
     @Override
     public Optional<Text> getHelp(CommandSource source) {
-        //TODO: IMPLEMENT
-        return Optional.of(Text.of("TODO: ..."));
-    }
-
-    /**
-     * Attempt to extract a value for this element from the given arguments.
-     * This method is expected to have no side-effects for the source, meaning
-     * that executing it will not change the state of the {@link CommandSource}
-     * in any way.
-     *
-     * @param source The source to parse for
-     * @param args   the arguments
-     * @return The extracted value
-     * @throws ArgumentParseException if unable to extract a value
-     */
-    @Nullable
-    @Override
-    protected Object parseValue(CommandSource source, CommandArgs args) throws ArgumentParseException {
-        throw new ArgumentParseException(Text.of("Not implemented!"),"Lazyness",0);
-    }
-
-    /**
-     * Fetch completions for command arguments.
-     *
-     * @param src     The source requesting tab completions
-     * @param args    The arguments currently provided
-     * @param context The context to store state in
-     * @return Any relevant completions
-     */
-    @Override
-    public List<String> complete(CommandSource src, CommandArgs args, CommandContext context) {
-        return CommandHub.TAB_COMPLETION_OPTIONS.getTabCompletions(String.join(" ", args.getAll()).split(" "));
+        return Optional.of(getUsage(source));
     }
 
     /**
@@ -176,26 +129,6 @@ public class TiqualitySpongeHandler extends CommandElement implements CommandCal
      */
     @Override
     public Text getUsage(CommandSource source) {
-        return Text.of(TiqualityCommand.INSTANCE.getUsage((ICommandSender) source));
-    }
-
-    /**
-     * Callback for the execution of a command.
-     *
-     * @param src  The commander who is executing this command
-     * @param args The parsed command arguments for this command
-     * @return the result of executing this command
-     * @throws CommandException If a user-facing error occurs while
-     *                          executing this command
-     */
-    @Override
-    public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-
-
-        String actualArgs = "SPONGEARGS";
-
-
-
-        return this.process(src, actualArgs);
+        return Text.of(CommandExecutor.getUsage(new SpongePermissionHolder(source)));
     }
 }

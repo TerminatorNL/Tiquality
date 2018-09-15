@@ -11,8 +11,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
-import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Logger;
 
 @SuppressWarnings("WeakerAccess")
@@ -48,30 +48,33 @@ public class Tiquality {
     public void preinit(FMLPreInitializationEvent e){
         INSTANCE = this;
         LOGGER = e.getModLog();
-        if(e.getSide() == Side.SERVER) {
+        //if(e.getSide() == Side.SERVER) {
             MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
             MinecraftForge.EVENT_BUS.register(SCHEDULER);
             MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
-            MinecraftForge.EVENT_BUS.register(TickMaster.INSTANCE);
 
             TiqualityConfig.QuickConfig.reloadFromFile();
             TiqualityConfig.QuickConfig.update();
 
             /* Used to monitor TPS while testing. */
             //TPSBroadCaster.start();
-        }
+        //}
     }
 
 
     @EventHandler
     public void onPreServerStart(FMLServerAboutToStartEvent e){
-        if(e.getSide() == Side.SERVER) {
-            if (Loader.isModLoaded("sponge")) {
-                COMMAND_HUB.initSponge();
-            } else {
-                COMMAND_HUB.initForge();
-            }
+        if (Loader.isModLoaded("sponge")) {
+            COMMAND_HUB.initSponge();
+        } else {
+            COMMAND_HUB.initForge();
         }
+        MinecraftForge.EVENT_BUS.register(TickMaster.INSTANCE);
+    }
+
+    @EventHandler
+    public void onStop(FMLServerStoppedEvent e){
+        COMMAND_HUB.reset();
     }
 
     public static void log_sync(String str){

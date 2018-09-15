@@ -2,7 +2,7 @@ package cf.terminator.tiquality.store;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
-import cf.terminator.tiquality.interfaces.TiqualityWorldServer;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
@@ -27,14 +27,35 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
     }
 
     /**
-     * Method to actually run the reloadFromFile on the tickable.
+     * Method to actually run the update on the tickable.
      */
     @Override
     public void doUpdateTick() {
-        TiqualityChunk chunk = ((TiqualityWorldServer) world).getChunkFast(pos);
+        TiqualityChunk chunk = ((TiqualityWorld) world).getChunkFast(pos);
         if(chunk != null && chunk.isChunkLoaded()) {
             block.randomTick(world, pos, state, rand);
         }
+    }
+
+    /**
+     * Method to get the position of the object
+     */
+    @Override
+    public BlockPos getPos() {
+        return pos;
+    }
+
+    /**
+     * Method to get the world of the object
+     */
+    @Override
+    public World getWorld() {
+        return world;
+    }
+
+    @Override
+    public TickLogger.Location getLocation() {
+        return new TickLogger.Location(world, pos);
     }
 
     @Override

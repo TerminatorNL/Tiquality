@@ -5,9 +5,9 @@ public class BlockBreakMonitor {
     /*
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onTileBreak(BlockEvent.BreakEvent e){
-        TiqualityChunk chunk = ((TiqualityWorldServer) e.getWorld()).getChunkFast(e.getPos());
+        TiqualityChunk chunk = ((TiqualityWorld) e.getWorld()).getChunkFast(e.getPos());
         if(chunk != null){
-            chunk.lagGoggles_removeTracker(e.getPos());
+            chunk.tiquality_removeTracker(e.getPos());
         }
     }
 

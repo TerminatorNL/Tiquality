@@ -28,6 +28,7 @@ public class ChunkStorage {
     /**
      * Sets the stored owner associated with the BlockPos.
      * @param pos the block pos
+     * @param owner_id the owner ID
      */
     public void set(BlockPos pos, byte owner_id){
         int y_layer =  pos.getY() >> 4;
@@ -53,9 +54,9 @@ public class ChunkStorage {
         Iterator<NBTBase> iterator = sections.iterator();
         while(iterator.hasNext()){
             NBTTagCompound tag = (NBTTagCompound) iterator.next();
-            if(tag.hasKey("TiqualityCommand")){
+            if(tag.hasKey("ForgeCommand")){
                 byte y_level = tag.getByte("Y");
-                byte[] storage = tag.getByteArray("TiqualityCommand");
+                byte[] storage = tag.getByteArray("ForgeCommand");
                 data[y_level] = new Element(storage);
             }
         }
@@ -69,7 +70,7 @@ public class ChunkStorage {
                     continue;
                 }
                 NBTTagCompound injectable = sections.getCompoundTagAt(i);
-                injectable.setByteArray("TiqualityCommand",e.storage);
+                injectable.setByteArray("ForgeCommand",e.storage);
                 sections.set(i, injectable);
             }
         }

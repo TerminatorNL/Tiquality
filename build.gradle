@@ -20,16 +20,17 @@ apply plugin: 'org.spongepowered.mixin'
 repositories {
     maven {
         name = "sponge"
-        url = "http://repo.spongepowered.org/maven/"
+        url = "https://repo.spongepowered.org/maven/"
     }
 }
+
 
 boolean isSponge = hasProperty("isSponge")
 boolean isClient = hasProperty("isClient")
 String buildType = (isSponge ? "THIN" : "FAT")
 println("Compiling: " + buildType)
 
-version = "1.12.2-ALPHA-0.1"
+version = "1.12.2-ALPHA-0.2"
 group = "cf.terminator" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "Tiquality-" + buildType
 
@@ -43,12 +44,6 @@ compileJava {
     options.compilerArgs << "-XDignore.symbol.file"
 }
 
-repositories {
-    maven {
-        name = "sponge"
-        url = "http://repo.spongepowered.org/maven/"
-    }
-}
 
 minecraft {
     version = "1.12.2-14.23.4.2756"
@@ -72,7 +67,7 @@ configurations {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361'
+    provided 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361'
     if(isSponge) {
         compile 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
     }else{
@@ -89,7 +84,7 @@ processResources {
 
     // replace stuff
     from(sourceSets.main.resources.srcDirs) {
-        //include 'mcmod.info'
+        include 'mcmod.info'
         include 'mixins.tiquality.json'
         expand 'version':project.version, 'mcversion':project.minecraft.version
     }
@@ -114,12 +109,6 @@ jar {
             return it
         }else{
             FileTree tmp = zipTree(it)
-            for(File s : tmp.files) {
-                if (s.toString().endsWith(".html")){
-                    System.out.println("File " + s + " removed")
-                    tmp.files.remove(s)
-                }
-            }
             return tmp
         }
 
@@ -135,7 +124,7 @@ jar {
     )
 }
 
-/* Convienience script to quickly install LagGoggles in an obfuscated environment. */
+/* Convienience script to quickly install Tiquality in an obfuscated environment. */
 task finalize << {
     if(isClient) {
         delete fileTree('run_client/mods') {

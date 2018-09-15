@@ -29,6 +29,11 @@ public class Scheduler {
      *
      * This method will BLOCK until the action is performed.
      *
+     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
+     * this will cause a deadlock!
+     *
+     * Hazardous thread: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
+     *
      * @param runnable action to perform
      */
     public void scheduleWait(final Runnable runnable){

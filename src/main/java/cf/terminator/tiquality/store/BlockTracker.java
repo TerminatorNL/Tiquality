@@ -1,7 +1,7 @@
 package cf.terminator.tiquality.store;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.interfaces.TiqualityWorldServer;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.util.ForgeData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -18,9 +18,9 @@ public class BlockTracker {
      * @param uuid The owner's UUID
      */
     public static void setOwner(World world, BlockPos pos, UUID uuid){
-        TiqualityChunk chunk = ((TiqualityWorldServer) world).getChunkFast(pos);
+        TiqualityChunk chunk = ((TiqualityWorld) world).getChunkFast(pos);
         if(chunk != null) {
-            chunk.lagGoggles_setTrackedPosition(pos, TrackerHub.getPlayerTrackerSafeByProfile(ForgeData.getGameProfileByUUID(uuid)));
+            chunk.tiquality_setTrackedPosition(pos, TrackerHub.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
         }
     }
 
@@ -33,7 +33,7 @@ public class BlockTracker {
      * @return the PlayerTracker
      */
     public static @Nullable PlayerTracker getTracker(World world, BlockPos pos){
-        return ((TiqualityWorldServer) world).getPlayerTracker(pos);
+        return ((TiqualityWorld) world).getPlayerTracker(pos);
     }
 
 }

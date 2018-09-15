@@ -1,7 +1,9 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.store.*;
+import cf.terminator.tiquality.store.ChunkStorage;
+import cf.terminator.tiquality.store.PlayerTracker;
+import cf.terminator.tiquality.store.TrackerHub;
 import cf.terminator.tiquality.util.ForgeData;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -15,6 +17,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,8 +39,8 @@ public abstract class MixinChunk implements TiqualityChunk {
      *
      * There are 3 reserved values:
      *           0: No owner
-     *          -1: No owner, but is always ticked by the server (Mob spawners, etc)
-     *          -2: Reserved for potentional future usecase
+     *          -1: Reserved for potentional future use-case
+     *          -2: Reserved for potentional future use-case
      * @return the owner value
      */
     private byte getFirstFreeIndex(){
@@ -50,7 +55,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     private byte getProfileIDforChunk(GameProfile profile){
-        PlayerTracker tracker = TrackerHub.getPlayerTrackerSafeByProfile(profile);
+        PlayerTracker tracker = TrackerHub.getOrCreatePlayerTrackerByProfile(profile);
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             owner_id = getFirstFreeIndex();
@@ -62,7 +67,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     /**
      * Removes unused block owners.
      */
-    private void lagGoggles_refresh(){
+    private void tiquality_refresh(){
         Set<Byte> ownersToKeep = new TreeSet<>();
         for(byte[] data : STORAGE.getAll()){
             for(byte b : data){
@@ -79,18 +84,18 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void lagGoggles_setTrackedPosition(BlockPos pos, @Nonnull PlayerTracker tracker){
+    public void tiquality_setTrackedPosition(BlockPos pos, @Nonnull PlayerTracker tracker){
         STORAGE.set(pos, getProfileIDforChunk(tracker.getOwner()));
     }
 
     @Override
-    public void lagGoggles_removeTracker(BlockPos pos){
+    public void tiquality_removeTracker(BlockPos pos){
         STORAGE.set(pos, (byte) 0);
     }
 
     @Override
-    public void lagGoggles_writeToNBT(NBTTagCompound tag) {
-        lagGoggles_refresh();
+    public void tiquality_writeToNBT(NBTTagCompound tag) {
+        tiquality_refresh();
         NBTTagList list = tag.getTagList("Sections", 10);
         STORAGE.injectNBTAfter(list);
         tag.setTag("Sections", list);
@@ -104,21 +109,21 @@ public abstract class MixinChunk implements TiqualityChunk {
             ownerList.appendTag(owner);
         }
         if(ownerList.tagCount() > 0) {
-            tag.setTag("TiqualityCommand", ownerList);
+            tag.setTag("ForgeCommand", ownerList);
         }
     }
 
     @Override
-    public void lagGoggles_loadNBT(World world, NBTTagCompound tag) {
+    public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
-        Iterator<NBTBase> list = tag.getTagList("TiqualityCommand",10).iterator();
+        Iterator<NBTBase> list = tag.getTagList("ForgeCommand",10).iterator();
         while(list.hasNext()){
             NBTTagCompound owner = (NBTTagCompound) list.next();
             UUID uuid = new UUID(owner.getLong("uuidMost"),owner.getLong("uuidLeast"));
 
             trackerLookup.forcePut(owner.getByte("id"),
-                    TrackerHub.getPlayerTrackerSafeByProfile(ForgeData.getGameProfileByUUID(uuid)));
+                    TrackerHub.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
 
         }
     }
@@ -140,6 +145,20 @@ public abstract class MixinChunk implements TiqualityChunk {
 
         int xComp = Integer.compare(thisPos.x, otherPos.x);
         return xComp != 0 ? xComp : Integer.compare(thisPos.z, otherPos.z);
+    }
+
+    @Inject(method = "onLoad", at=@At("HEAD"))
+    private void onLoad(CallbackInfo ci){
+        for(PlayerTracker tracker : trackerLookup.values()){
+            tracker.associateChunk(this);
+        }
+    }
+
+    @Inject(method = "onUnload", at=@At("HEAD"))
+    private void onUnLoad(CallbackInfo ci){
+        for(PlayerTracker tracker : trackerLookup.values()){
+            tracker.disAssociateChunk(this);
+        }
     }
 
 }

@@ -17,7 +17,14 @@ public class SynchronizedAction {
      *
      * If you don't need a return value, this isn't for you.
      *
+     *
+     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
+     * this will cause a deadlock!
+     *
+     * Example: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
+     *
      * @param action the action
+     * @param <V> the type to return
      * @return The result stored in the DynamicVar type 'result'
      */
     public static <V> V run(Action<V> action){
