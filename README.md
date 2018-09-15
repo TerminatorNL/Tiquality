@@ -41,16 +41,13 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * Alias for /tiquality
    * tiquality.use
    
- * /tq info
-   * Prints info about the block you're standing on and the block your feet are inside (Liquids).<br>Prints the owner of the block(s)<br>Prints the current status if a block is on the whitelist or not.
+ * /tq info [point]
+   * Prints info about the block you're standing on and the block your feet are inside (Liquids).<br>Prints the owner of the block(s)<br>Prints the current status if a block is on the whitelist or not.<br>If used with the 'point' flag, you can aim at blocks and sneak for quick info on who claimed a block.
    * tiquality.use
   
  * /tq claim
    * Claims a block for a player without actually having to re-place it. (Things found in nature, existing bases... etc)
    * tiquality.use
-```diff
-- CLAIMING IS NOT IMPLEMENTED YET!
-```
  
  * /tq add <feet|below>
    * Adds a block to the whitelist, making blocks of that type tick without owners.
