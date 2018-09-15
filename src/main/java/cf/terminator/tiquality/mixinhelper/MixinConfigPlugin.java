@@ -13,10 +13,17 @@ import java.util.Set;
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     private boolean spongePresent = false;
+    private boolean hasClientClasses = true;
 
     @Override
     public void onLoad(String s) {
         Logger LOGGER = LogManager.getLogger("Tiquality");
+        if(getClass().getClassLoader().getResource("net/minecraft/client/main/Main.class") == null){
+            hasClientClasses = false;
+            LOGGER.info("Loading server classes");
+        }else{
+            LOGGER.info("Loading client classes");
+        }
         try {
             Class.forName("org.spongepowered.mod.SpongeCoremod", false, getClass().getClassLoader());
             LOGGER.info("Sponge is present!");
@@ -49,6 +56,13 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
         }else{
             switch (mixin){
                 case "cf.terminator.tiquality.mixin.MixinTrackingUtilSpongeWorkaround":
+                    return false;
+            }
+        }
+        if(hasClientClasses == false){
+            switch (mixin){
+                case "cf.terminator.tiquality.mixin.MixinChunkProviderClient":
+                case "cf.terminator.tiquality.mixin.MixinWorldClient":
                     return false;
             }
         }
