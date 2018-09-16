@@ -108,6 +108,7 @@ public class TickLogger implements IMessage {
 
         /**
          * Gets the block at this location, slightly faster.
+         * @param server a cached MinecraftServer reference
          * @return block
          */
         public Block getBlock(MinecraftServer server){
@@ -116,7 +117,6 @@ public class TickLogger implements IMessage {
 
         /**
          * Gets the block at this location, slightly slower.
-         *
          * @return block
          */
         public Block getBlock(){
