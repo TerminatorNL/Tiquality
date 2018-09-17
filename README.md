@@ -1,9 +1,15 @@
-# Tiquality
+# [Tiquality](https://minecraft.curseforge.com/projects/tiquality)
 Tiquality is the successor of the seemingly popular mod: LagGoggles.
 
-At this moment, Tiquality is a serverside only mod.
+At this moment, Tiquality is a serverside only mod, but supports clients too (Lan hosted).
 
 The core functionality is limiting a player's tick time in the world to evenly distribute time.
+
+## Download
+You can download the latest release [here](https://minecraft.curseforge.com/projects/tiquality/files)
+
+## Modpack authors
+Yes, you have my permission! Please add this to your modpack! :thumbsup:
 
 ## What this is, and what it is intended for
 An update throttler, that aims to provide a fair Minecraft experience at 20 TPS for users who do not cause a heavy load on the server, whilst players who build carelessly only get 10 TPS (depending on their impact).
@@ -48,6 +54,14 @@ When the next tick comes around, all trackers get a granted amount of tracking t
  * /tq claim
    * Claims a block for a player without actually having to re-place it. (Things found in nature, existing bases... etc)
    * tiquality.use
+   
+ * /tq profile &lt;seconds&gt;
+   * Runs a very basic profiler on blocks that you own. A better alternative is in the works.
+   * tiquality.use
+  
+ * /tq profile &lt;seconds&gt; &lt;uuid or playername&gt;
+   * Runs a very basic profiler on the targeted UUID or playername. A better alternative is in the works.
+   * tiquality.admin
  
  * /tq add <feet|below>
    * Adds a block to the whitelist, making blocks of that type tick without owners.
