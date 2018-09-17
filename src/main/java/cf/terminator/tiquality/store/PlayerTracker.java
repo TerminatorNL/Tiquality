@@ -7,6 +7,7 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
+import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -15,6 +16,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -51,10 +53,10 @@ public class PlayerTracker {
 
     /**
      * Gets the TickLogger.
-     * @return the TickLogger
+     * @return a copy of the TickLogger
      */
     public TickLogger getTickLogger(){
-        return tickLogger;
+        return tickLogger.copy();
     }
 
     /**
@@ -77,7 +79,34 @@ public class PlayerTracker {
                     PlayerTracker.this.isProfiling = shouldProfile;
                     if(shouldProfile == false){
                         MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(PlayerTracker.this, getTickLogger()));
+                    }else{
+                        tickLogger.reset();
                     }
+                }
+            }
+        });
+    }
+
+    /**
+     * Stops the profiler, and gets it's TickLogger.
+     * This method will block if it's not ran on the main thread.
+     *
+     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
+     * this will cause a deadlock!
+     *
+     * Example: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
+     *
+     * @return The TickLogger, or null if the profiler was never running to begin with.
+     *
+     */
+    public synchronized @Nullable TickLogger stopProfiler(){
+        return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
+            @Override
+            public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
+                if(PlayerTracker.this.isProfiling == true) {
+                    PlayerTracker.this.isProfiling = false;
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(PlayerTracker.this, getTickLogger()));
+                    variable.set(getTickLogger());
                 }
             }
         });
@@ -88,9 +117,11 @@ public class PlayerTracker {
      * Is initialized with time for a full tick. (Loading blocks mid-tick, or something like that)
      * @param granted_ns the amount of time set for the coming tick in nanoseconds
      */
-    public synchronized void setNextTickTime(long granted_ns){
+    public void setNextTickTime(long granted_ns){
         tick_time_remaining_ns = granted_ns;
-        tickLogger.addTick();
+        if(isProfiling) {
+            tickLogger.addTick(granted_ns);
+        }
         if(unloadCooldown > 0){
             --unloadCooldown;
         }
@@ -159,7 +190,7 @@ public class PlayerTracker {
      * Decreases the remaining tick time for a player.
      * @param time in nanoseconds
      */
-    public synchronized void consume(long time){
+    public void consume(long time){
         tick_time_remaining_ns -= time;
     }
 
@@ -297,7 +328,15 @@ public class PlayerTracker {
      */
     public void grantTick(){
         if(untickedTickables.size() > 0) {
-            untickedTickables.take().doUpdateTick();
+            if(isProfiling) {
+                TiqualitySimpleTickable tickable = untickedTickables.take();
+                long start = System.nanoTime();
+                tickable.doUpdateTick();
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+            }else{
+                untickedTickables.take().doUpdateTick();
+            }
         }
     }
 
@@ -306,7 +345,7 @@ public class PlayerTracker {
      * The player tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
-    public synchronized void associateChunk(TiqualityChunk chunk){
+    public void associateChunk(TiqualityChunk chunk){
         unloadCooldown = 40;
         ASSOCIATED_CHUNKS.add(chunk);
     }
@@ -316,7 +355,7 @@ public class PlayerTracker {
      * The player tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
-    public synchronized void disAssociateChunk(TiqualityChunk chunk){
+    public void disAssociateChunk(TiqualityChunk chunk){
         ASSOCIATED_CHUNKS.remove(chunk);
     }
 

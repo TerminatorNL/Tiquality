@@ -48,11 +48,11 @@ public class InfoMonitor {
         if(player.hasDisconnected()){
             return;
         }
-        player.sendStatusMessage(new TextComponentString("Info tool stopped."), true);
+        Utils.sendStatusBarMessage(player,new TextComponentString("Info tool stopped."));
     }
 
     private void sendTime(){
-        player.sendStatusMessage(new TextComponentString("Info tool started, aim at a block and sneak. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"), true);
+        Utils.sendStatusBarMessage(player,new TextComponentString("Info tool started, aim at a block and sneak. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
     }
 
     @SubscribeEvent
@@ -76,7 +76,7 @@ public class InfoMonitor {
         }
         RayTraceResult result = player.world.rayTraceBlocks(player.getPositionEyes(1F), Utils.getLookVec(player,25));
         if(result == null){
-            player.sendStatusMessage(new TextComponentString("No block found.") , true);
+            Utils.sendStatusBarMessage(player,new TextComponentString("No block found."));
             return;
         }
         endTime = System.currentTimeMillis() + timeout;
@@ -90,13 +90,13 @@ public class InfoMonitor {
             GameProfile owner = tracker.getOwner();
             String name = owner.getName() == null ? owner.getId().toString() : owner.getName();
             if(player.getName().equals(owner.getName())){
-                player.sendStatusMessage(new TextComponentString(type + TextFormatting.GREEN + " Claimed by you.") , true);
+                Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.GREEN + " Claimed by you."));
             }else{
-                player.sendStatusMessage(new TextComponentString(type + TextFormatting.RED + " Claimed by: " + name) , true);
+                Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.RED + " Claimed by: " + name));
             }
             return;
         }
 
-        player.sendStatusMessage(new TextComponentString(type + TextFormatting.AQUA + " Unclaimed.") , true);
+        Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.AQUA + " Unclaimed."));
     }
 }

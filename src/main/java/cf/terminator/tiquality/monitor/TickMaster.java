@@ -16,15 +16,13 @@ import net.minecraftforge.fml.relauncher.Side;
 import java.util.Map;
 import java.util.UUID;
 
-import static cf.terminator.tiquality.TiqualityConfig.TIME_BETWEEN_TICKS_IN_NS;
-
 public class TickMaster {
 
     public static final TickMaster INSTANCE = new TickMaster();
 
     private final MinecraftServer server;
     private long startTime = 0L;
-    private long TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
+    public static long TICK_DURATION = Constants.NS_IN_TICK_LONG; /* Is updated when reloading config. */
 
     private TickMaster() {
         if(FMLCommonHandler.instance().getSide() == Side.SERVER) {

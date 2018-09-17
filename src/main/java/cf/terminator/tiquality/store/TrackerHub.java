@@ -49,7 +49,7 @@ public class TrackerHub {
         ArrayList<UUID> inactiveTrackers = new ArrayList<>();
         for(Map.Entry<UUID, PlayerTracker> entry : TRACKER_LIST.entrySet()){
             PlayerTracker tracker = entry.getValue();
-            if(tracker.isLoaded() == false && tracker.isFakeOwner() == false){
+            if(tracker.isDone() && tracker.isLoaded() == false && tracker.isFakeOwner() == false){
                 inactiveTrackers.add(entry.getKey());
             }
         }

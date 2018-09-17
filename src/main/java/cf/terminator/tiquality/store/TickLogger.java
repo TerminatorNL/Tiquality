@@ -1,10 +1,12 @@
 package cf.terminator.tiquality.store;
 
+import cf.terminator.tiquality.util.Copyable;
 import cf.terminator.tiquality.util.SendableTreeMap;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.Block;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -13,12 +15,21 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
 
-public class TickLogger implements IMessage {
+public class TickLogger implements IMessage, Copyable<TickLogger> {
 
-    private final SendableTreeMap<Location, Metrics> data = new SendableTreeMap<>();
+    private final SendableTreeMap<Location, Metrics> data;
     private int ticks = 0;
+    private long grantedNanos = 0L;
 
-    public TickLogger(){}
+    public TickLogger(){
+        data = new SendableTreeMap<>();
+    }
+
+    public TickLogger(TickLogger logger) {
+        this.ticks = logger.ticks;
+        this.grantedNanos = logger.grantedNanos;
+        this.data = logger.data.copy();
+    }
 
     /**
      * Logs tick time and calls.
@@ -31,15 +42,39 @@ public class TickLogger implements IMessage {
             metrics = new Metrics();
             data.put(location, metrics);
         }
-        ++metrics.calls;
-        metrics.nanoseconds =+ nanos;
+        metrics.recordTime(nanos);
+    }
+
+    /**
+     * Gets a snapshot of the collected data, ready for processing.
+     * @return a copy of the ticklogger.
+     */
+    public TickLogger copy(){
+        return new TickLogger(this);
     }
 
     /**
      * Notifies this TickLogger that a complete tick has ran.
      */
-    public void addTick(){
+    public void addTick(long grantedNanos){
         ++ticks;
+        this.grantedNanos += grantedNanos;
+    }
+
+    /**
+     * Gets the total amount of ticks this TickLogger has ran.
+     * @return the amount of ticks
+     */
+    public int getTicks(){
+        return ticks;
+    }
+
+    /**
+     * Gets the total amount of granted nanoseconds this TickLogger has received.
+     * @return the amount of nanoseconds this TickLogger has received.
+     */
+    public long getGrantedNanos(){
+        return grantedNanos;
     }
 
     /**
@@ -55,6 +90,7 @@ public class TickLogger implements IMessage {
      */
     public void reset(){
         data.clear();
+        grantedNanos = 0L;
         ticks = 0;
     }
 
@@ -70,7 +106,7 @@ public class TickLogger implements IMessage {
         data.fromBytes(buf);
     }
 
-    public static class Metrics implements IMessage {
+    public static class Metrics implements IMessage, Comparable<Metrics>,Copyable<Metrics> {
 
         private long nanoseconds = 0L;
         private int calls = 0;
@@ -88,9 +124,39 @@ public class TickLogger implements IMessage {
             buf.writeLong(nanoseconds);
             buf.writeInt(calls);
         }
+
+        public int getCalls(){
+            return calls;
+        }
+
+        public void recordTime(long ns){
+            nanoseconds = nanoseconds + ns;
+            calls++;
+        }
+
+        public long getNanoseconds(){
+            return nanoseconds;
+        }
+
+        public long averageNanosPerCall(){
+            return nanoseconds/calls;
+        }
+
+        @Override
+        public int compareTo(@Nonnull Metrics o) {
+            return Long.compare(this.averageNanosPerCall(), o.averageNanosPerCall());
+        }
+
+        @Override
+        public Metrics copy() {
+            Metrics clone = new Metrics();
+            clone.nanoseconds = this.nanoseconds;
+            clone.calls = this.calls;
+            return clone;
+        }
     }
 
-    public static class Location implements Comparable<Location>, IMessage{
+    public static class Location implements Comparable<Location>, IMessage, Copyable<Location> {
 
         private int world;
         private int x;
@@ -157,6 +223,24 @@ public class TickLogger implements IMessage {
             buf.writeInt(x);
             buf.writeInt(y);
             buf.writeInt(z);
+        }
+
+        @Override
+        public String toString(){
+            return TextFormatting.DARK_GRAY + "D" + TextFormatting.WHITE + world +
+                    TextFormatting.DARK_GRAY + " X" + TextFormatting.WHITE + x +
+                    TextFormatting.DARK_GRAY + " Y" + TextFormatting.WHITE + y +
+                    TextFormatting.DARK_GRAY + " Z" + TextFormatting.WHITE + z;
+        }
+
+        @Override
+        public Location copy() {
+            Location clone = new Location();
+            clone.world = this.world;
+            clone.x = this.x;
+            clone.y = this.y;
+            clone.z = this.z;
+            return clone;
         }
     }
 }

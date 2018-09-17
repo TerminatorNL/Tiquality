@@ -1,5 +1,7 @@
 package cf.terminator.tiquality;
 
+import cf.terminator.tiquality.monitor.TickMaster;
+import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
@@ -104,6 +106,7 @@ public class TiqualityConfig {
         }
 
         public static void update(){
+            TickMaster.TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
             Tiquality.LOGGER.info("SCANNING BLOCKS...");
             Tiquality.LOGGER.info("Unownable blocks:");
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.clear();

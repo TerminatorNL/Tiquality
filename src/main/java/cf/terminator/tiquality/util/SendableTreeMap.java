@@ -10,7 +10,7 @@ import java.util.TreeMap;
 /**
  * Provides a HashMap map that's able to be transmitted using Forge's IMessage
  */
-public class SendableTreeMap<K extends IMessage,V extends IMessage> extends TreeMap<K,V> implements IMessage{
+public class SendableTreeMap<K extends IMessage & Copyable<K>,V extends IMessage & Copyable<V>> extends TreeMap<K,V> implements IMessage, Copyable{
 
     public SendableTreeMap(){
         super();
@@ -34,6 +34,14 @@ public class SendableTreeMap<K extends IMessage,V extends IMessage> extends Tree
             }
         }
         return new ClassTypeHolder(keyClass, valueClass);
+    }
+
+    public SendableTreeMap<K,V> copy(){
+        SendableTreeMap<K,V> clone = new SendableTreeMap<>();
+        for(Map.Entry<K, V> s : super.entrySet()){
+            clone.put(s.getKey().copy(), s.getValue().copy());
+        }
+        return clone;
     }
 
     @Override

@@ -60,11 +60,11 @@ public class ClaimMonitor {
         if(player.hasDisconnected()){
             return;
         }
-        player.sendStatusMessage(new TextComponentString("Claiming tool stopped."), true);
+        Utils.sendStatusBarMessage(player,new TextComponentString("Claiming tool stopped."));
     }
 
     private void sendTime(){
-        player.sendStatusMessage(new TextComponentString("Claiming tool started, aim at a block and sneak to claim it. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"), true);
+        Utils.sendStatusBarMessage(player,new TextComponentString("Claiming tool started, aim at a block and sneak to claim it. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
     }
 
     @SubscribeEvent
@@ -88,7 +88,7 @@ public class ClaimMonitor {
         }
         RayTraceResult result = player.world.rayTraceBlocks(player.getPositionEyes(1F), Utils.getLookVec(player,25));
         if(result == null){
-            player.sendStatusMessage(new TextComponentString("No block found.") , true);
+            Utils.sendStatusBarMessage(player,new TextComponentString("No block found."));
             return;
         }
         endTime = System.currentTimeMillis() + timeout;
@@ -105,9 +105,9 @@ public class ClaimMonitor {
             GameProfile owner = tracker.getOwner();
             String name = owner.getName() == null ? owner.getId().toString() : owner.getName();
             if(player.getName().equals(owner.getName())){
-                player.sendStatusMessage(new TextComponentString(TextFormatting.GREEN + "Claimed by you.") , true);
+                Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.GREEN + "Claimed by you."));
             }else{
-                player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Claimed by: " + name) , true);
+                Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.RED + "Claimed by: " + name));
             }
             return;
         }
@@ -120,6 +120,6 @@ public class ClaimMonitor {
         String text = Block.REGISTRY.getNameForObject(block).toString();
         String dots = new String(new char[step]).replace("\0", ".");
 
-        player.sendStatusMessage(new TextComponentString(COLORSCALE[step] + text + dots) , true);
+        Utils.sendStatusBarMessage(player,new TextComponentString(COLORSCALE[step] + text + dots));
     }
 }

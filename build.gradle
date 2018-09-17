@@ -25,12 +25,12 @@ repositories {
 }
 
 
-boolean isSponge = hasProperty("isSponge")
+boolean isThin = hasProperty("isThin")
 boolean isClient = hasProperty("isClient")
-String buildType = (isSponge ? "THIN" : "FAT")
+String buildType = (isThin ? "THIN" : "FAT")
 println("Compiling: " + buildType)
 
-version = "1.12.2-ALPHA-0.2"
+version = "1.12.2-ALPHA-0.3"
 group = "cf.terminator" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "Tiquality-" + buildType
 
@@ -48,7 +48,7 @@ compileJava {
 minecraft {
     version = "1.12.2-14.23.4.2756"
     runDir = "run"
-    
+
     // the mappings can be changed at any time, and must be in the following format.
     // snapshot_YYYYMMDD   snapshot are built nightly.
     // stable_#            stables are built at the discretion of the MCP team.
@@ -68,7 +68,7 @@ configurations {
 
 dependencies {
     provided 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361'
-    if(isSponge) {
+    if(isThin) {
         compile 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
     }else{
         embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {

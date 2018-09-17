@@ -1,8 +1,11 @@
 package cf.terminator.tiquality.util;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
@@ -31,5 +34,13 @@ public class Utils {
 
     public static Vec3d getLookVec(Entity entity, int distance){
         return entity.getPositionEyes(1F).add(entity.getLookVec().scale(distance));
+    }
+
+    private static final HashMap<EntityPlayer, ITextComponent> LAST_MESSAGES = new HashMap<>();
+    public static void sendStatusBarMessage(EntityPlayer player, ITextComponent text){
+        if(LAST_MESSAGES.containsKey(player) == false || LAST_MESSAGES.get(player).equals(text) == false){
+            LAST_MESSAGES.put(player, text);
+            player.sendStatusMessage(text, true);
+        }
     }
 }
