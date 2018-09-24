@@ -1,39 +1,25 @@
 package cf.terminator.tiquality.monitor;
 
-import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.store.PlayerTracker;
 import cf.terminator.tiquality.store.TrackerHub;
 import cf.terminator.tiquality.util.Constants;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.client.FMLClientHandler;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.Map;
 import java.util.UUID;
 
 public class TickMaster {
 
-    public static final TickMaster INSTANCE = new TickMaster();
-
     private final MinecraftServer server;
     private long startTime = 0L;
     public static long TICK_DURATION = Constants.NS_IN_TICK_LONG; /* Is updated when reloading config. */
 
-    private TickMaster() {
-        if(FMLCommonHandler.instance().getSide() == Side.SERVER) {
-            /* We're on a server. */
-            Tiquality.LOGGER.info("We're on a dedicated server.");
-            server = FMLCommonHandler.instance().getMinecraftServerInstance();
-        }else{
-            /* We're on the client. */
-            Tiquality.LOGGER.info("We're on a client.");
-            server = FMLClientHandler.instance().getServer();
-        }
+    public TickMaster(MinecraftServer server) {
+        this.server = server;
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)

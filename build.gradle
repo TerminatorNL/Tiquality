@@ -2,7 +2,7 @@ buildscript {
     repositories {
         jcenter()
         maven {
-            url = "http://files.minecraftforge.net/maven"
+            url = "https://files.minecraftforge.net/maven"
         }
         maven {
             name = 'sponge'
@@ -25,14 +25,15 @@ repositories {
 }
 
 
-boolean isThin = hasProperty("isThin")
+boolean isFat = hasProperty("isFat")
 boolean isClient = hasProperty("isClient")
-String buildType = (isThin ? "THIN" : "FAT")
-println("Compiling: " + buildType)
+boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
+String buildType = (isFat ? "FAT" : "THIN")
 
-version = "1.12.2-ALPHA-0.3"
+version = "1.12.2-ALPHA-0.4"
 group = "cf.terminator" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "Tiquality-" + buildType
+archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
+println("Compiling: " + archivesBaseName + "-" + version)
 
 sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 compileJava {
@@ -64,16 +65,24 @@ minecraft {
 configurations {
     embed
     compile.extendsFrom(embed)
+    compileOnly.transitive = false
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.guava:guava:21.0'
+        force 'com.google.code.gson:gson:2.8.0'
+    }
 }
 
 dependencies {
-    provided 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361'
-    if(isThin) {
-        compile 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
-    }else{
+    compileOnly 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361:dev'
+    if(isFat) {
         embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
             exclude module: 'launchwrapper'
         }
+    }else{
+        compile 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
     }
 }
 
@@ -97,24 +106,19 @@ processResources {
 
 }
 
-sourceSets {
-    main {
-        refMap = "mixins.tiquality.refmap.json"
-    }
-}
+sourceSets.main.refMap = "mixins.tiquality.refmap.json"
 
 jar {
-    from configurations.embed.collect {
-        if(it.isDirectory()){
-            return it
-        }else{
-            FileTree tmp = zipTree(it)
-            return tmp
-        }
-
+    from (configurations.embed.collect { it.isDirectory() ? it : zipTree(it) }){
+        /* Embedded mixin */
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+        rename 'LICENSE.txt', 'LICENSE-mixin.txt'
     }
-    rename 'LICENSE.txt', 'LICENSE-mixin.txt'
-    from ('LICENSE.md')
+
+    from ('LICENSE')
     manifest.attributes(
             'FMLCorePluginContainsFMLMod': 'true',
             'MixinConfigs': 'mixins.tiquality.json',
@@ -125,7 +129,8 @@ jar {
 }
 
 /* Convienience script to quickly install Tiquality in an obfuscated environment. */
-task finalize << {
+
+build.doLast {
     if(isClient) {
         delete fileTree('run_client/mods') {
             include 'Tiquality*'
@@ -146,5 +151,3 @@ task finalize << {
         println("Replaced Tiquality in 'run_server/mods'")
     }
 }
-
-build.finalizedBy(finalize)

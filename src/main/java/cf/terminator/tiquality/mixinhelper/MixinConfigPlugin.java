@@ -12,16 +12,19 @@ import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
+    public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
     private boolean spongePresent = false;
     private boolean hasClientClasses = true;
 
     @Override
-    public void onLoad(String s) {
+    public void onLoad(String ignored) {
+        MIXIN_CONFIG_PLUGIN_WAS_LOADED = true;
         Logger LOGGER = LogManager.getLogger("Tiquality");
         if(getClass().getClassLoader().getResource("net/minecraft/client/main/Main.class") == null){
             hasClientClasses = false;
             LOGGER.info("Loading server classes");
         }else{
+            hasClientClasses = true;
             LOGGER.info("Loading client classes");
         }
         try {
@@ -34,7 +37,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             try{
                 Class.forName("org.spongepowered.asm.launch.MixinTweaker", false, getClass().getClassLoader());
             } catch (ClassNotFoundException ignored_2) {
-                LOGGER.info("Oh no! It looks like you also do not have Mixin installed. Please use the FORGE version of ForgeCommand.");
+                LOGGER.info("Oh no! It looks like you also do not have Mixin installed. Please use the FAT version of Tiquality.");
                 FMLCommonHandler.instance().exitJava(1, true);
             }
         }

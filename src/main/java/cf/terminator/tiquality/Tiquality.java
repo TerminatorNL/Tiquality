@@ -6,6 +6,7 @@ import cf.terminator.tiquality.monitor.TPSMonitor;
 import cf.terminator.tiquality.monitor.TickMaster;
 import cf.terminator.tiquality.util.Scheduler;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -14,6 +15,8 @@ import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.Logger;
+
+import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.MIXIN_CONFIG_PLUGIN_WAS_LOADED;
 
 @SuppressWarnings("WeakerAccess")
 @Mod(modid = Tiquality.MODID, name = Tiquality.NAME, version = Tiquality.VERSION, acceptableRemoteVersions = "*")
@@ -48,17 +51,33 @@ public class Tiquality {
     public void preinit(FMLPreInitializationEvent e){
         INSTANCE = this;
         LOGGER = e.getModLog();
-        //if(e.getSide() == Side.SERVER) {
-            MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
-            MinecraftForge.EVENT_BUS.register(SCHEDULER);
-            MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
 
-            TiqualityConfig.QuickConfig.reloadFromFile();
-            TiqualityConfig.QuickConfig.update();
+        if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
+            LOGGER.fatal("The MixinConfigPlugin has not been activated. (cf.terminator.tiquality.mixinhelper.MixinConfigPlugin)");
+            LOGGER.fatal("To prevent you from wasting your time, the process has ended.");
+            LOGGER.fatal("-> Is mixin in the classpath, and initialized? It should have printed some messages by now.");
 
-            /* Used to monitor TPS while testing. */
-            //TPSBroadCaster.start();
-        //}
+            try{
+                Class.forName("org.spongepowered.asm.launch.MixinTweaker", false, getClass().getClassLoader());
+                LOGGER.fatal("It looks like you actually have Mixin in the classpath... Please report this to Terminator_NL.");
+            } catch (ClassNotFoundException ignored_2) {
+                LOGGER.fatal("It looks like you do not have Mixin installed. Please use the FAT version of Tiquality.");
+            }
+            FMLCommonHandler.instance().exitJava(1, true);
+        }
+
+        MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
+        MinecraftForge.EVENT_BUS.register(SCHEDULER);
+        MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
+
+        TiqualityConfig.QuickConfig.reloadFromFile();
+        TiqualityConfig.QuickConfig.update();
+
+        /* Used to monitor TPS while testing. */
+        //TPSBroadCaster.start();
+
+
+
     }
 
 
@@ -69,7 +88,7 @@ public class Tiquality {
         } else {
             COMMAND_HUB.initForge();
         }
-        MinecraftForge.EVENT_BUS.register(TickMaster.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(new TickMaster(e.getServer()));
     }
 
     @EventHandler

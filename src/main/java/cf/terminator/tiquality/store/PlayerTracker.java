@@ -27,7 +27,7 @@ public class PlayerTracker {
 
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
     protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
-    protected HashSet<TiqualityChunk> ASSOCIATED_CHUNKS = new HashSet<>();
+    protected final HashSet<TiqualityChunk> ASSOCIATED_CHUNKS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
 
     /**
@@ -347,7 +347,9 @@ public class PlayerTracker {
      */
     public void associateChunk(TiqualityChunk chunk){
         unloadCooldown = 40;
-        ASSOCIATED_CHUNKS.add(chunk);
+        synchronized (ASSOCIATED_CHUNKS) {
+            ASSOCIATED_CHUNKS.add(chunk);
+        }
     }
 
     /**
@@ -356,7 +358,9 @@ public class PlayerTracker {
      * @param chunk the chunk.
      */
     public void disAssociateChunk(TiqualityChunk chunk){
-        ASSOCIATED_CHUNKS.remove(chunk);
+        synchronized (ASSOCIATED_CHUNKS) {
+            ASSOCIATED_CHUNKS.remove(chunk);
+        }
     }
 
     /**
@@ -369,13 +373,15 @@ public class PlayerTracker {
             return true;
         }
         HashSet<TiqualityChunk> loadedChunks = new HashSet<>();
-        for(TiqualityChunk chunk : ASSOCIATED_CHUNKS){
-            if(chunk.isChunkLoaded() == true){
-                loadedChunks.add(chunk);
+        synchronized (ASSOCIATED_CHUNKS) {
+            for (TiqualityChunk chunk : ASSOCIATED_CHUNKS) {
+                if (chunk.isChunkLoaded() == true) {
+                    loadedChunks.add(chunk);
+                }
             }
+            ASSOCIATED_CHUNKS.retainAll(loadedChunks);
+            return ASSOCIATED_CHUNKS.size() > 0;
         }
-        ASSOCIATED_CHUNKS.retainAll(loadedChunks);
-        return ASSOCIATED_CHUNKS.size() > 0;
     }
 
     /**

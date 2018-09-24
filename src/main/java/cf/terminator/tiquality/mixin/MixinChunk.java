@@ -85,7 +85,10 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void tiquality_setTrackedPosition(BlockPos pos, @Nonnull PlayerTracker tracker){
-        STORAGE.set(pos, getProfileIDforChunk(tracker.getOwner()));
+        byte id = getProfileIDforChunk(tracker.getOwner());
+        STORAGE.set(pos, id);
+        tracker.associateChunk(this);
+        trackerLookup.forcePut(id, tracker);
     }
 
     @Override
@@ -109,7 +112,7 @@ public abstract class MixinChunk implements TiqualityChunk {
             ownerList.appendTag(owner);
         }
         if(ownerList.tagCount() > 0) {
-            tag.setTag("ForgeCommand", ownerList);
+            tag.setTag("Tiquality", ownerList);
         }
     }
 
@@ -117,7 +120,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
-        Iterator<NBTBase> list = tag.getTagList("ForgeCommand",10).iterator();
+        Iterator<NBTBase> list = tag.getTagList("Tiquality",10).iterator();
         while(list.hasNext()){
             NBTTagCompound owner = (NBTTagCompound) list.next();
             UUID uuid = new UUID(owner.getLong("uuidMost"),owner.getLong("uuidLeast"));
