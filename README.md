@@ -1,5 +1,7 @@
-# [Tiquality](https://minecraft.curseforge.com/projects/tiquality)
-Tiquality is the successor of the seemingly popular mod: LagGoggles.
+[![Release](https://jitpack.io/v/TerminatorNL/Tiquality.svg)](https://jitpack.io/#TerminatorNL/Tiquality)
+
+# Tiquality
+[Tiquality](https://minecraft.curseforge.com/projects/tiquality) is the successor of the seemingly popular mod: LagGoggles.
 
 At this moment, Tiquality is a serverside only mod, but supports clients too (Lan hosted).
 
