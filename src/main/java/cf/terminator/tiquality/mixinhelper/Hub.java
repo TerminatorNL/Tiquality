@@ -1,10 +1,13 @@
 package cf.terminator.tiquality.mixinhelper;
 
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.store.ForcedTracker;
 import cf.terminator.tiquality.store.PlayerTracker;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
@@ -22,7 +25,7 @@ public class Hub {
             tracker.doBlockTick(block,world, pos, state, rand);
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
-                block.updateTick(world, pos, state, rand);
+                ForcedTracker.INSTANCE.doBlockTick(block, world, pos, state, rand);
             }
         }
     }
@@ -33,7 +36,7 @@ public class Hub {
             tracker.doRandomBlockTick(block,world, pos, state, rand);
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
-                block.randomTick(world, pos, state, rand);
+                ForcedTracker.INSTANCE.doRandomBlockTick(block, world, pos, state, rand);
             }
         }
     }
@@ -45,8 +48,18 @@ public class Hub {
             tracker.tickTileEntity((TiqualitySimpleTickable) tickable);
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(entity.getBlockType())){
-                tickable.update();
+                ForcedTracker.INSTANCE.tickTileEntity((TiqualitySimpleTickable) tickable);
             }
+        }
+    }
+
+    public static void onEntityTick(Entity e){
+        TiqualityEntity entity = (TiqualityEntity) e;
+        PlayerTracker tracker = entity.getPlayerTracker();
+        if(tracker != null) {
+            tracker.tickEntity(entity);
+        }else{
+            ForcedTracker.INSTANCE.tickEntity(entity);
         }
     }
 }

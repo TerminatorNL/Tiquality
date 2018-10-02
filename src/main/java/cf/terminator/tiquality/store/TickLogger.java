@@ -1,9 +1,11 @@
 package cf.terminator.tiquality.store;
 
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.util.Copyable;
 import cf.terminator.tiquality.util.SendableTreeMap;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextFormatting;
@@ -14,6 +16,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 public class TickLogger implements IMessage, Copyable<TickLogger> {
 
@@ -162,6 +165,8 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
         private int x;
         private int y;
         private int z;
+        private Type type;
+        private UUID entityUUID;
 
         public Location(){}
 
@@ -170,6 +175,13 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
             this.x = pos.getX();
             this.y = pos.getY();
             this.z = pos.getZ();
+            this.type = Type.BLOCK;
+        }
+
+        public Location(TiqualityEntity entity) {
+            this.world = entity.getWorld().provider.getDimension();
+            this.entityUUID = entity.getPersistentID();
+            this.type = Type.ENTITY;
         }
 
         /**
@@ -178,6 +190,9 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
          * @return block
          */
         public Block getBlock(MinecraftServer server){
+            if(type != Type.BLOCK){
+                throw new IllegalStateException("Tried to access block position on entity location");
+            }
             return server.getWorld(world).getBlockState(new BlockPos(x,y,z)).getBlock();
         }
 
@@ -186,7 +201,34 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
          * @return block
          */
         public Block getBlock(){
-            return FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(world).getBlockState(new BlockPos(x,y,z)).getBlock();
+            return getBlock(FMLCommonHandler.instance().getMinecraftServerInstance());
+        }
+
+        /**
+         * Gets the location type
+         * @return the type.
+         */
+        public Type getType(){
+            return type;
+        }
+
+        /**
+         * Gets the entity, slightly faster
+         * @return the entity
+         */
+        public Entity getEntity(MinecraftServer server){
+            if(type != Type.ENTITY){
+                throw new IllegalStateException("Tried to access entity on block location");
+            }
+            return server.getEntityFromUuid(entityUUID);
+        }
+
+        /**
+         * Gets the entity, slightly slower
+         * @return the entity
+         */
+        public Entity getEntity(){
+            return getEntity(FMLCommonHandler.instance().getMinecraftServerInstance());
         }
 
         @Override
@@ -195,34 +237,66 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
                 return false;
             }
             Location other = ((Location) o);
-            return  other.world == this.world &&
-                    other.x == this.x &&
-                    other.y == this.y &&
-                    other.z == this.z;
+            if(this.type != other.type){
+                return false;
+            }
+            if(this.type == Type.BLOCK) {
+                return other.world == this.world &&
+                        other.x == this.x &&
+                        other.y == this.y &&
+                        other.z == this.z;
+            }else{
+                return this.entityUUID.equals(other.entityUUID);
+            }
         }
 
         @Override
         public int compareTo(@Nonnull Location o) {
-            return (world < o.world) ? -1 : ((world == o.world) ?
-                    (x < o.x) ? -1 : ((x == o.x) ?
-                            (y < o.y) ? -1 : ((y == o.y) ?
-                                    Integer.compare(z, o.z) : 1) : 1): 1);
+            int typeComp = this.type.compareTo(o.type);
+            if(typeComp != 0){
+                return typeComp;
+            }
+            if(type == Type.BLOCK) {
+                return (world < o.world) ? -1 : ((world == o.world) ?
+                        (x < o.x) ? -1 : ((x == o.x) ?
+                                (y < o.y) ? -1 : ((y == o.y) ?
+                                        Integer.compare(z, o.z) : 1) : 1) : 1);
+            }else{
+                return entityUUID.compareTo(o.entityUUID);
+            }
         }
 
         @Override
         public void fromBytes(ByteBuf buf) {
-            world = buf.readInt();
-            x = buf.readInt();
-            y = buf.readInt();
-            z = buf.readInt();
+            type = Type.values()[buf.readInt()];
+            switch(type) {
+                case BLOCK:
+                    world = buf.readInt();
+                    x = buf.readInt();
+                    y = buf.readInt();
+                    z = buf.readInt();
+                    break;
+                case ENTITY:
+                    entityUUID = new UUID(buf.readLong(), buf.readLong());
+                    break;
+            }
         }
 
         @Override
         public void toBytes(ByteBuf buf) {
-            buf.writeInt(world);
-            buf.writeInt(x);
-            buf.writeInt(y);
-            buf.writeInt(z);
+            buf.writeInt(type.ordinal());
+            switch (type){
+                case BLOCK:
+                    buf.writeInt(world);
+                    buf.writeInt(x);
+                    buf.writeInt(y);
+                    buf.writeInt(z);
+                    break;
+                case ENTITY:
+                    buf.writeLong(entityUUID.getMostSignificantBits());
+                    buf.writeLong(entityUUID.getLeastSignificantBits());
+                    break;
+            }
         }
 
         @Override
@@ -236,11 +310,24 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
         @Override
         public Location copy() {
             Location clone = new Location();
-            clone.world = this.world;
-            clone.x = this.x;
-            clone.y = this.y;
-            clone.z = this.z;
+            clone.type = this.type;
+            switch (type){
+                case BLOCK:
+                    clone.world = this.world;
+                    clone.x = this.x;
+                    clone.y = this.y;
+                    clone.z = this.z;
+                    break;
+                case ENTITY:
+                    clone.entityUUID = new UUID(this.entityUUID.getMostSignificantBits(), this.entityUUID.getLeastSignificantBits());
+                    break;
+            }
             return clone;
+        }
+
+        public enum Type{
+            BLOCK,
+            ENTITY
         }
     }
 }

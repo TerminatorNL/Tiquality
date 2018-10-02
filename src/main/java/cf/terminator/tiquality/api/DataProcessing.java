@@ -4,6 +4,7 @@ import cf.terminator.tiquality.store.TickLogger;
 import cf.terminator.tiquality.util.Entry3;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
@@ -38,7 +39,34 @@ public class DataProcessing {
                 MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
                 ArrayList<Entry3<Block, TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>();
                 for(Map.Entry<TickLogger.Location, TickLogger.Metrics> s : data){
-                    list.add(new Entry3<>(s.getKey().getBlock(server), s.getKey(), s.getValue()));
+                    if (s.getKey().getType() == TickLogger.Location.Type.BLOCK){
+                        list.add(new Entry3<>(s.getKey().getBlock(server), s.getKey(), s.getValue()));
+                    }
+                }
+                variable.set(list);
+            }
+        });
+    }
+
+
+    /**
+     * Finds the associated entities belonging to block positions in a safe way.
+     *
+     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
+     * this will cause a deadlock!
+     *
+     * @return an ArrayList containing additional info
+     */
+    public static ArrayList<Entry3<Entity, TickLogger.Location, TickLogger.Metrics>> findEntities(Collection<Map.Entry<TickLogger.Location, TickLogger.Metrics>> data){
+        return SynchronizedAction.run(new SynchronizedAction.Action<ArrayList<Entry3<Entity, TickLogger.Location, TickLogger.Metrics>>>() {
+            @Override
+            public void run(SynchronizedAction.DynamicVar<ArrayList<Entry3<Entity, TickLogger.Location, TickLogger.Metrics>>> variable) {
+                MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+                ArrayList<Entry3<Entity, TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>();
+                for(Map.Entry<TickLogger.Location, TickLogger.Metrics> s : data){
+                    if (s.getKey().getType() == TickLogger.Location.Type.ENTITY){
+                        list.add(new Entry3<>(s.getKey().getEntity(server), s.getKey(), s.getValue()));
+                    }
                 }
                 variable.set(list);
             }

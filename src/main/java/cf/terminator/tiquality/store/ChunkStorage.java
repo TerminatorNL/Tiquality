@@ -54,9 +54,9 @@ public class ChunkStorage {
         Iterator<NBTBase> iterator = sections.iterator();
         while(iterator.hasNext()){
             NBTTagCompound tag = (NBTTagCompound) iterator.next();
-            if(tag.hasKey("ForgeCommand")){
+            if(tag.hasKey("Tiquality")){
                 byte y_level = tag.getByte("Y");
-                byte[] storage = tag.getByteArray("ForgeCommand");
+                byte[] storage = tag.getByteArray("Tiquality");
                 data[y_level] = new Element(storage);
             }
         }
@@ -70,7 +70,7 @@ public class ChunkStorage {
                     continue;
                 }
                 NBTTagCompound injectable = sections.getCompoundTagAt(i);
-                injectable.setByteArray("ForgeCommand",e.storage);
+                injectable.setByteArray("Tiquality",e.storage);
                 sections.set(i, injectable);
             }
         }

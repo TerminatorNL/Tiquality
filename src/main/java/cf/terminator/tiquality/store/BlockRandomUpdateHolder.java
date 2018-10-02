@@ -58,6 +58,16 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
         return new TickLogger.Location(world, pos);
     }
 
+    /**
+     * Gets the type of this Tickable
+     *
+     * @return the type
+     */
+    @Override
+    public TickType getType() {
+        return TickType.BLOCK_RANDOM;
+    }
+
     @Override
     public boolean equals(Object o) {
         if(o == null || o instanceof BlockRandomUpdateHolder == false){

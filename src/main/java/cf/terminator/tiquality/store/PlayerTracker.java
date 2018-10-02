@@ -4,6 +4,7 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
@@ -38,7 +39,7 @@ public class PlayerTracker {
     /**
      * Only changes between ticks
      */
-    private boolean isProfiling = false;
+    protected boolean isProfiling = false;
 
     /**
      * Creates a new playertracker using the supplied GameProfile.
@@ -249,6 +250,34 @@ public class PlayerTracker {
             }else{
                 long start = System.nanoTime();
                 tickable.doUpdateTick();
+                consume(System.nanoTime() - start);
+            }
+        }
+    }
+
+
+    /**
+     * Decides whether or not to tick, based on
+     * the time the player has already consumed.
+     * @param entity the Entity to tick
+     */
+    public void tickEntity(TiqualityEntity entity){
+        if (updateOld() == false){
+            /* This PlayerTracker ran out of time, we queue the entity update for another tick.*/
+            if (untickedTickables.containsRef(entity) == false) {
+                untickedTickables.addToQueue(entity);
+            }
+        }else{
+            /* Either We still have time, or the tile entity is on the forced-tick list. We update the entity.*/
+            if(isProfiling) {
+                long start = System.nanoTime();
+                entity.doUpdateTick();
+                long elapsed = System.nanoTime() - start;
+                tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
+                consume(elapsed);
+            }else{
+                long start = System.nanoTime();
+                entity.doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }

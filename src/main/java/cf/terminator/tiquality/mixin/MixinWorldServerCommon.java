@@ -29,8 +29,7 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nullable
-    TiqualityChunk getChunkFast(BlockPos pos){
+    public @Nullable TiqualityChunk getChunkFast(BlockPos pos){
         return (TiqualityChunk) ((ChunkProviderServer)chunkProvider).id2ChunkMap.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
     }
 

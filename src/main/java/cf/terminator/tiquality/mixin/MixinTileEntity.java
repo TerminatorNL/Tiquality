@@ -43,4 +43,14 @@ public class MixinTileEntity implements TiqualitySimpleTickable {
     public TickLogger.Location getLocation() {
         return new TickLogger.Location(this.world, this.pos);
     }
+
+    /**
+     * Gets the type of this Tickable
+     *
+     * @return the type
+     */
+    @Override
+    public TickType getType() {
+        return TickType.TILE_ENTITY;
+    }
 }

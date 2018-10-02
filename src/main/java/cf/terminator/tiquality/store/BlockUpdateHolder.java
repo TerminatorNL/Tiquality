@@ -58,6 +58,16 @@ public class BlockUpdateHolder implements TiqualitySimpleTickable {
         return new TickLogger.Location(world, pos);
     }
 
+    /**
+     * Gets the type of this Tickable
+     *
+     * @return the type
+     */
+    @Override
+    public TickType getType() {
+        return TickType.BLOCK;
+    }
+
     @Override
     public boolean equals(Object o) {
         if(o == null || o instanceof BlockUpdateHolder == false){

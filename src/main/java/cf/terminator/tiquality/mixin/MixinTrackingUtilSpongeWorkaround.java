@@ -3,6 +3,7 @@ package cf.terminator.tiquality.mixin;
 import cf.terminator.tiquality.mixinhelper.Hub;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -16,9 +17,9 @@ import java.util.Random;
 /**
  * I need a better alternative than hooking into to the TrackingUtil class.
  * Profiler results on the TrackingUtil class will be completely wrong, because
- * sponge will not track the actual block it thinks to tick, but instead will
+ * sponge will not track the actual tickable it thinks to tick, but instead will
  * tick the associated PlayerTracker, which in turn can tick multiple unrelated blocks
- *
+ * or entities and may or may not include the intended tickable
  */
 @Mixin(value = TrackingUtil.class, priority = 999)
 public class MixinTrackingUtilSpongeWorkaround {
@@ -36,5 +37,10 @@ public class MixinTrackingUtilSpongeWorkaround {
     @Redirect(method = "tickTileEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ITickable;update()V"))
     private static void onTileTick(ITickable tickable){
         Hub.onTileEntityTick(tickable);
+    }
+
+    @Redirect(method = "tickEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onUpdate()V"))
+    private static void onTileTick(Entity entity){
+        Hub.onEntityTick(entity);
     }
 }

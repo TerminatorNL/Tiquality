@@ -30,4 +30,17 @@ public interface TiqualitySimpleTickable {
      * @return the location
      */
     TickLogger.Location getLocation();
+
+    /**
+     * Gets the type of this Tickable
+     * @return the type
+     */
+    TickType getType();
+
+    enum TickType{
+        BLOCK,
+        BLOCK_RANDOM,
+        TILE_ENTITY,
+        ENTITY
+    }
 }

@@ -302,6 +302,15 @@ public class CommandExecutor {
             }else if(args[0].equalsIgnoreCase("profile")){
                 addIfStartsWith(list, start, "5");
             }
+        }else if (args.length == 3){
+            String start = args[2];
+            if(args[0].equalsIgnoreCase("profile")) {
+                if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+                    for(Map.Entry<UUID, PlayerTracker> e : TrackerHub.getEntrySet()){
+                        addIfStartsWith(list, start, e.getValue().getOwner().getName());
+                    }
+                }
+            }
         }
         return list;
     }

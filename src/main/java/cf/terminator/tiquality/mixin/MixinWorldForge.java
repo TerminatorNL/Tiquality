@@ -3,6 +3,7 @@ package cf.terminator.tiquality.mixin;
 import cf.terminator.tiquality.mixinhelper.Hub;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -25,4 +26,8 @@ public class MixinWorldForge {
         Hub.onTileEntityTick(tile);
     }
 
+    @Redirect(method = "updateEntities", require = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onUpdate()V"))
+    private void onUpdateEntities(Entity entity){
+        Hub.onEntityTick(entity);
+    }
 }

@@ -14,7 +14,9 @@ public class TrackerHub {
      * All access to it's variables is synchronized.
      */
     private static final TreeMap<UUID, PlayerTracker> TRACKER_LIST = new TreeMap<>();
-
+    static {
+        TRACKER_LIST.put(ForcedTracker.INSTANCE.getOwner().getId(), ForcedTracker.INSTANCE);
+    }
     /**
      * Gets an unmodifiable set of entries.
      * @return the set
@@ -60,14 +62,18 @@ public class TrackerHub {
 
     /**
      * Gets the tracker for a player, if no one exists yet, it will create one. Never returns null.
-     * @param profile the profile to bind this tracker to
+     * @param profile the profile to bind this tracker to the profile MUST contain an UUID!
      * @return the associated PlayerTracker
      */
     public static synchronized @NotNull PlayerTracker getOrCreatePlayerTrackerByProfile(@NotNull final GameProfile profile){
-        final PlayerTracker tracker = TRACKER_LIST.get(profile.getId());
+        UUID id = profile.getId();
+        if(id == null){
+            throw new IllegalArgumentException("GameProfile must have an UUID");
+        }
+        final PlayerTracker tracker = TRACKER_LIST.get(id);
         if (tracker == null){
             final PlayerTracker newTracker = new PlayerTracker(profile);
-            TRACKER_LIST.put(profile.getId(), newTracker);
+            TRACKER_LIST.put(id, newTracker);
             return newTracker;
         }else {
             return tracker;
