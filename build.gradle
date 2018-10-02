@@ -68,13 +68,6 @@ configurations {
     compileOnly.transitive = false
 }
 
-configurations.all {
-    resolutionStrategy {
-        force 'com.google.guava:guava:21.0'
-        force 'com.google.code.gson:gson:2.8.0'
-    }
-}
-
 dependencies {
     compileOnly 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361:dev'
     if(isFat) {
@@ -82,7 +75,11 @@ dependencies {
             exclude module: 'launchwrapper'
         }
     }else{
-        compile 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
+        compile ('org.spongepowered:mixin:0.7.11-SNAPSHOT'){
+            ['gson','guava','commons-io'].each {
+                exclude module: it
+            }
+        }
     }
 }
 
