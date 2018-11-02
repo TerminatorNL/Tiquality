@@ -1,6 +1,8 @@
 package cf.terminator.tiquality.monitor;
 
-import cf.terminator.tiquality.store.BlockTracker;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.util.ForgeData;
 import net.minecraftforge.common.util.BlockSnapshot;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -18,7 +20,7 @@ public class BlockPlaceMonitor {
     public void onBlockPlaceEvent(BlockEvent.PlaceEvent e){
         UUID uuid = e.getPlayer().getGameProfile().getId();
         if(uuid != null) {
-            BlockTracker.setOwner(e.getWorld(), e.getPos(), uuid);
+            ((TiqualityWorld) e.getWorld()).setTracker(e.getPos(), TrackerManager.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
         }
     }
 
@@ -27,7 +29,7 @@ public class BlockPlaceMonitor {
         UUID uuid = e.getPlayer().getGameProfile().getId();
         if(uuid != null) {
             for (BlockSnapshot snapshot : e.getReplacedBlockSnapshots()) {
-                BlockTracker.setOwner(snapshot.getWorld(), snapshot.getPos(), uuid);
+                ((TiqualityWorld) e.getWorld()).setTracker(snapshot.getPos(), TrackerManager.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
             }
         }
     }

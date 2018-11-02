@@ -1,4 +1,4 @@
-package cf.terminator.tiquality.store;
+package cf.terminator.tiquality.tracking;
 
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -67,6 +67,9 @@ public class ChunkStorage {
             Element e = data[i];
             if(e != null){
                 if(e.hasData() == false){
+                    continue;
+                }
+                if(i >= sections.tagCount()){
                     continue;
                 }
                 NBTTagCompound injectable = sections.getCompoundTagAt(i);

@@ -1,15 +1,21 @@
 package cf.terminator.tiquality;
 
+import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.command.CommandHub;
+import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.monitor.BlockPlaceMonitor;
 import cf.terminator.tiquality.monitor.TPSMonitor;
 import cf.terminator.tiquality.monitor.TickMaster;
+import cf.terminator.tiquality.tracking.EntitySpawnEventHandler;
+import cf.terminator.tiquality.tracking.ForcedTracker;
+import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.util.Scheduler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
@@ -30,12 +36,11 @@ public class Tiquality {
     public static final String[] AUTHORS = {"Terminator_NL"};
 
     /**
-     * Sponge container.
+     * Is also the sponge container.
      */
     public static Tiquality INSTANCE;
 
     public static Logger LOGGER;
-
 
     /*
      * Added for readability and convenience
@@ -59,9 +64,13 @@ public class Tiquality {
 
             try{
                 Class.forName("org.spongepowered.asm.launch.MixinTweaker", false, getClass().getClassLoader());
-                LOGGER.fatal("It looks like you actually have Mixin in the classpath... Please report this to Terminator_NL.");
+                LOGGER.fatal("It looks like you actually have Mixin in the classpath... If you're in a development environment, don't forget to add this argument: ");
+                LOGGER.fatal("");
+                LOGGER.fatal("--tweakClass org.spongepowered.asm.launch.MixinTweaker");
+                LOGGER.fatal("");
+                LOGGER.fatal("If you are sure you have done the above correctly, please report this to Terminator_NL.");
             } catch (ClassNotFoundException ignored_2) {
-                LOGGER.fatal("It looks like you do not have Mixin installed. Please use the FAT version of Tiquality.");
+                LOGGER.fatal("It looks like you do not have Mixin installed. Please use either: the FAT version of Tiquality, Sponge or something else that ships Mixin.");
             }
             FMLCommonHandler.instance().exitJava(1, true);
         }
@@ -70,16 +79,18 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
 
-        TiqualityConfig.QuickConfig.reloadFromFile();
-        TiqualityConfig.QuickConfig.update();
+        Tracking.registerCustomTracker(new PlayerTracker(null));
+        Tracking.registerCustomTracker(ForcedTracker.INSTANCE);
 
         /* Used to monitor TPS while testing. */
         //TPSBroadCaster.start();
 
-
-
     }
 
+    @EventHandler
+    public void onPost(FMLInitializationEvent e){
+        ExternalHooker.init();
+    }
 
     @EventHandler
     public void onPreServerStart(FMLServerAboutToStartEvent e){
@@ -89,6 +100,8 @@ public class Tiquality {
             COMMAND_HUB.initForge();
         }
         MinecraftForge.EVENT_BUS.register(new TickMaster(e.getServer()));
+        MinecraftForge.EVENT_BUS.register(EntitySpawnEventHandler.INSTANCE);
+        TiqualityConfig.QuickConfig.reloadFromFile();
     }
 
     @EventHandler

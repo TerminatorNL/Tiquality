@@ -103,6 +103,7 @@ public class TiqualityConfig {
                 e.printStackTrace();
             }
             saveToFile();
+            update();
         }
 
         public static void update(){
@@ -113,7 +114,7 @@ public class TiqualityConfig {
 
             for (String input : AUTO_WORLD_ASSIGNED_OBJECTS) {
                 if(input.startsWith("REGEX=")){
-                    AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(findBlocks(input.substring(6,input.length())));
+                    AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
                 }else {
                     String[] split = input.split(":");
                     ResourceLocation location = new ResourceLocation(split[0], split[1]);
@@ -140,7 +141,7 @@ public class TiqualityConfig {
 
             for (String input : TICKFORCING) {
                 if(input.startsWith("REGEX=")){
-                    TICKFORCING_OBJECTS_FAST.addAll(findBlocks(input.substring(6,input.length())));
+                    TICKFORCING_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
                 }else {
                     String[] split = input.split(":");
                     ResourceLocation location = new ResourceLocation(split[0], split[1]);

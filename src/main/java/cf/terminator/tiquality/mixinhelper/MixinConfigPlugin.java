@@ -13,8 +13,8 @@ import java.util.Set;
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
-    private boolean spongePresent = false;
-    private boolean hasClientClasses = true;
+    public static boolean spongePresent = false;
+    public static boolean hasClientClasses = true;
 
     @Override
     public void onLoad(String ignored) {

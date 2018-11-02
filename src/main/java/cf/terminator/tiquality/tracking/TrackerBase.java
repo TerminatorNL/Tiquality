@@ -1,35 +1,135 @@
-package cf.terminator.tiquality.store;
+package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
+import cf.terminator.tiquality.util.PersistentData;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
-@SuppressWarnings("WeakerAccess")
-public class PlayerTracker {
+public abstract class TrackerBase {
 
-    private final GameProfile profile;
+    /**
+     * There's a theoretical maximum of 1.8446744e+19 different Trackers per server. This should suffice.
+     */
+    private static long NEXT_TRACKER_ID;
+    static {
+        if(PersistentData.NEXT_FREE_TRACKER_ID.isSet() == false){
+            PersistentData.NEXT_FREE_TRACKER_ID.setLong(Long.MIN_VALUE);
+        }
+        NEXT_TRACKER_ID = PersistentData.NEXT_FREE_TRACKER_ID.getLong();
+    }
 
+    /**
+     * Holds a list of all registered trackers
+     * See: cf.terminator.tiquality.api.Tracking#registerCustomTracker(java.lang.Class)
+     */
+    public static HashMap<String, Class<? extends TrackerBase>> REGISTERED_TRACKER_TYPES = new HashMap<>();
+
+    private long uniqueId;
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
     protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
     protected final HashSet<TiqualityChunk> ASSOCIATED_CHUNKS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
+
+    public long getUniqueId(){
+        return uniqueId;
+    }
+
+    public static long generateUniqueTrackerID(){
+        synchronized (PersistentData.NEXT_FREE_TRACKER_ID) {
+            long granted = NEXT_TRACKER_ID++;
+            PersistentData.NEXT_FREE_TRACKER_ID.setLong(NEXT_TRACKER_ID);
+            return granted;
+        }
+    }
+
+    /**
+     * Instantiates a new tracker using an NBT compound tag.
+     * If the tracker already exists, a reference to the pre-existing tracker is used.
+     * @param tagCompound The NBT tag compound
+     * @return the tracker
+     */
+    @Nullable
+    public static TrackerBase getTracker(TiqualityChunk chunk, NBTTagCompound tagCompound){
+        String type = tagCompound.getString("type");
+        if(type.equals("")){
+            return null;
+        }
+        Class<? extends TrackerBase> clazz = REGISTERED_TRACKER_TYPES.get(type);
+        if(clazz == null){
+            /*
+                Either a mod author completely forgot to call cf.terminator.tiquality.api.Tracking.registerCustomTracker(),
+                or a mod providing a tracker has been removed since last load.
+             */
+            return null;
+        }
+        TrackerBase newTracker;
+        try {
+            newTracker =  clazz.getDeclaredConstructor(TiqualityChunk.class, NBTTagCompound.class).newInstance(chunk, tagCompound.getCompoundTag("data"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        newTracker.uniqueId = tagCompound.getLong("id");
+        return TrackerManager.preventCopies(newTracker);
+    }
+
+    public static NBTTagCompound getTrackerTag(TrackerBase tracker){
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setString("type", tracker.getIdentifier());
+        tag.setLong("id", tracker.getUniqueId());
+        tag.setTag("data", tracker.getNBT());
+        return tag;
+    }
+
+    /**
+     * Tiquality only saves trackers to disk if they return true here.
+     * @return true if your tracker should be saved to disk.
+     */
+    public boolean shouldSaveToDisk(){
+        return true;
+    }
+
+    /**
+     * A default constructor for Tracker elements.
+     */
+    public TrackerBase(){
+        uniqueId = generateUniqueTrackerID();
+    }
+
+    /**
+     * Used to initialize a new Tracker with saved data, if this constructor isn't overridden, I complain.
+     * @param tag the NBTTagCompound. (generated using the getNBT method on the last save)
+     */
+    public TrackerBase(NBTTagCompound tag){
+        super();
+        throw new TiqualityException.ReadTheDocsException("You MUST define a constructor using an NBTTagCompound as argument!");
+    }
+
+    /**
+     * Gets the NBT data from this object, is called when the tracker is saved to disk.
+     */
+    public abstract NBTTagCompound getNBT();
 
     /**
      * Internal use only. Used to determine when to unload.
@@ -40,17 +140,6 @@ public class PlayerTracker {
      * Only changes between ticks
      */
     protected boolean isProfiling = false;
-
-    /**
-     * Creates a new playertracker using the supplied GameProfile.
-     * DO NOT USE THIS METHOD YOURSELF. See: cf.terminator.tiquality.store.TrackerHub
-     *
-     * @param profile the GameProfile of the owner.
-     */
-    PlayerTracker(@Nonnull GameProfile profile) {
-        this.profile = profile;
-    }
-
 
     /**
      * Gets the TickLogger.
@@ -76,10 +165,10 @@ public class PlayerTracker {
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
             public void run() {
-                if(PlayerTracker.this.isProfiling != shouldProfile) {
-                    PlayerTracker.this.isProfiling = shouldProfile;
+                if(TrackerBase.this.isProfiling != shouldProfile) {
+                    TrackerBase.this.isProfiling = shouldProfile;
                     if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(PlayerTracker.this, getTickLogger()));
+                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, getTickLogger()));
                     }else{
                         tickLogger.reset();
                     }
@@ -104,9 +193,9 @@ public class PlayerTracker {
         return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
             @Override
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
-                if(PlayerTracker.this.isProfiling == true) {
-                    PlayerTracker.this.isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(PlayerTracker.this, getTickLogger()));
+                if(TrackerBase.this.isProfiling == true) {
+                    TrackerBase.this.isProfiling = false;
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, getTickLogger()));
                     variable.set(getTickLogger());
                 }
             }
@@ -129,66 +218,15 @@ public class PlayerTracker {
     }
 
     /**
-     * Checks if the owner is a fake owner.
-     * Trackers belonging to fake owners are not removed and kept in memory.
-     * This method is meant to be overridden.
-     *
-     * @return true if this is a fake owner.
-     */
-    public boolean isFakeOwner(){
-        return false;
-    }
-
-
-    /**
-     * Returns true if this PlayerTracker requires Ticks to be assigned to it.
-     * This is meant to be overriden, for fake player implementations.
-     *
-     * @return true if this is a ticking PlayerTracker. false if you do not want
-     * the blocks of this owner to tick.
-     */
-    public boolean isConsumer(){
-        return true;
-    }
-
-    /**
-     * Checks if the owner of this tracker is online or not.
-     * @param onlinePlayerProfiles an array of online players
-     * @return true if online
-     */
-    public boolean isPlayerOnline(final GameProfile[] onlinePlayerProfiles){
-        for(GameProfile profile : onlinePlayerProfiles){
-            if(this.profile.equals(profile)){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Gets the tick time multiplier for the PlayerTracker.
+     * Gets the tick time multiplier for the Tracker.
      * This is used to distribute tick time in a more controlled manner.
      * @param cache The current online player cache
      * @return the multiplier
      */
-    public double getMultiplier(final GameProfile[] cache){
-        if(isPlayerOnline(cache)){
-            return 1;
-        }else{
-            return TiqualityConfig.OFFLINE_PLAYER_TICK_TIME_MULTIPLIER;
-        }
-    }
+    public abstract double getMultiplier(final GameProfile[] cache);
 
     /**
-     * Gets the owner corresponding to this PlayerTracker.
-     * @return the owner's profile
-     */
-    public GameProfile getOwner(){
-        return profile;
-    }
-
-    /**
-     * Decreases the remaining tick time for a player.
+     * Decreases the remaining tick time for a tracker.
      * @param time in nanoseconds
      */
     public void consume(long time){
@@ -196,7 +234,7 @@ public class PlayerTracker {
     }
 
     /**
-     * Gets the remaining tick time this player has.
+     * Gets the remaining tick time this tracker has.
      * Can be compared against the set tick time to
      * check if there are any active ticking entities.
      *
@@ -230,12 +268,12 @@ public class PlayerTracker {
 
     /**
      * Decides whether or not to tick, based on
-     * the time the player has already consumed.
+     * the time the tracker has already consumed.
      * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
      */
     public void tickTileEntity(TiqualitySimpleTickable tickable){
         if (updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(tickable.getLocation().getBlock()) == false){
-            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsRef(tickable) == false) {
                 untickedTickables.addToQueue(tickable);
             }
@@ -258,12 +296,12 @@ public class PlayerTracker {
 
     /**
      * Decides whether or not to tick, based on
-     * the time the player has already consumed.
+     * the time the tracker has already consumed.
      * @param entity the Entity to tick
      */
     public void tickEntity(TiqualityEntity entity){
         if (updateOld() == false){
-            /* This PlayerTracker ran out of time, we queue the entity update for another tick.*/
+            /* This Tracker ran out of time, we queue the entity update for another tick.*/
             if (untickedTickables.containsRef(entity) == false) {
                 untickedTickables.addToQueue(entity);
             }
@@ -293,7 +331,7 @@ public class PlayerTracker {
      */
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
-            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             BlockUpdateHolder holder = new BlockUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -326,7 +364,7 @@ public class PlayerTracker {
      */
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
-            /* This PlayerTracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             BlockRandomUpdateHolder holder = new BlockRandomUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -352,8 +390,8 @@ public class PlayerTracker {
     }
 
     /**
-     * After running out of tick time for this player, the server may have more
-     * tick time to spare after ticking other players, it grants unchecked ticks
+     * After running out of tick time for this Tracker, the server may have more
+     * tick time to spare after ticking other Trackers, it grants unchecked ticks
      */
     public void grantTick(){
         if(untickedTickables.size() > 0) {
@@ -370,8 +408,8 @@ public class PlayerTracker {
     }
 
     /**
-     * Associates chunks with this PlayerTracker.
-     * The player tracker will only be garbage collected when all associated chunks are unloaded.
+     * Associates chunks with this Tracker.
+     * The tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
     public void associateChunk(TiqualityChunk chunk){
@@ -382,8 +420,8 @@ public class PlayerTracker {
     }
 
     /**
-     * Removes associated chunks with this PlayerTracker.
-     * The player tracker will only be garbage collected when all associated chunks are unloaded.
+     * Removes associated chunks with this Tracker.
+     * The tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
     public void disAssociateChunk(TiqualityChunk chunk){
@@ -393,9 +431,9 @@ public class PlayerTracker {
     }
 
     /**
-     * Checks if this PlayerTracker has chunks associated with it,
+     * Checks if this Tracker has chunks associated with it,
      * removes references to unloaded chunks,
-     * @return true if this PlayerTracker has a loaded chunk, false otherwise
+     * @return true if this Tracker has a loaded chunk, false otherwise
      */
     public boolean isLoaded(){
         if(unloadCooldown > 0){
@@ -414,7 +452,15 @@ public class PlayerTracker {
     }
 
     /**
-     * @return true if the PlayerTracker has completed all of it's work.
+     * Gets the associated players for this tracker
+     * @return a list of all players involved with this tracker.
+     */
+    @Nonnull
+    public abstract List<GameProfile> getAssociatedPlayers();
+
+    /**
+     * Used to determine if it's safe to unload this tracker
+     * @return true if the Tracker has completed all of it's work.
      */
     public boolean isDone(){
         return untickedTickables.size() == 0;
@@ -425,20 +471,35 @@ public class PlayerTracker {
      * @return description
      */
     public String toString(){
-        return "PlayerTracker:{Owner: '" + getOwner().getName() + "', nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
+        return this.getClass() + ":{nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
-    @Override
-    public boolean equals(Object o){
-        if(o == null || o instanceof PlayerTracker == false){
-            return false;
-        }else{
-            return o == this || this.getOwner().getId().equals(((PlayerTracker) o).getOwner().getId());
-        }
+    /**
+     * @return the info describing this Tracker (Like the owner)
+     */
+    @Nonnull
+    public abstract TextComponentString getInfo();
+
+    /**
+     * @return an unique identifier for this Tracker CLASS TYPE, used to re-instantiate the tracker later on.
+     * This should just return a hardcoded string.
+     */
+    @Nonnull
+    public String getIdentifier(){
+        throw new TiqualityException.ReadTheDocsException("You are required to implement 'public static String getIdentifier()' using a string constant in your Tracker.");
     }
 
-    @Override
-    public int hashCode(){
-        return getOwner().getId().hashCode();
+    /**
+     * Checks if this tracker should be unloaded, overrides all other checks
+     * @return false to keep this tracker from being garbage collected, true otherwise.
+     */
+    public boolean forceUnload() {
+        return false;
+    }
+
+    /**
+     * Ran when this tracker is being unloaded. Do cleanup here, if you have to.
+     */
+    public void onUnload() {
     }
 }

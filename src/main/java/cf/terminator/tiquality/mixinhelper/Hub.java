@@ -3,8 +3,8 @@ package cf.terminator.tiquality.mixinhelper;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.store.ForcedTracker;
-import cf.terminator.tiquality.store.PlayerTracker;
+import cf.terminator.tiquality.tracking.ForcedTracker;
+import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -20,7 +20,7 @@ import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASS
 public class Hub {
 
     public static void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        PlayerTracker tracker = ((TiqualityWorld) world).getPlayerTracker(pos);
+        TrackerBase tracker = ((TiqualityWorld) world).getTracker(pos);
         if(tracker != null) {
             tracker.doBlockTick(block,world, pos, state, rand);
         }else{
@@ -31,7 +31,7 @@ public class Hub {
     }
 
     public static void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        PlayerTracker tracker = ((TiqualityWorld) world).getPlayerTracker(pos);
+        TrackerBase tracker = ((TiqualityWorld) world).getTracker(pos);
         if(tracker != null) {
             tracker.doRandomBlockTick(block,world, pos, state, rand);
         }else{
@@ -43,7 +43,7 @@ public class Hub {
 
     public static void onTileEntityTick(ITickable tickable){
         TileEntity entity = (TileEntity) tickable;
-        PlayerTracker tracker = ((TiqualityWorld)entity.getWorld()).getPlayerTracker(entity.getPos());
+        TrackerBase tracker = ((TiqualityWorld)entity.getWorld()).getTracker(entity.getPos());
         if(tracker != null) {
             tracker.tickTileEntity((TiqualitySimpleTickable) tickable);
         }else{
@@ -55,7 +55,7 @@ public class Hub {
 
     public static void onEntityTick(Entity e){
         TiqualityEntity entity = (TiqualityEntity) e;
-        PlayerTracker tracker = entity.getPlayerTracker();
+        TrackerBase tracker = entity.getTracker();
         if(tracker != null) {
             tracker.tickEntity(entity);
         }else{

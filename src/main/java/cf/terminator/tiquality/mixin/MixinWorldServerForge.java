@@ -16,7 +16,7 @@ import java.util.Random;
 public abstract class MixinWorldServerForge {
 
     @SuppressWarnings("InvalidMemberReference")
-    @Redirect(method={"tickUpdates","updateBlockTick"}, at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
+    @Redirect(method={"tickUpdates","updateBlockTick"}, at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/WorldHelper;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
     private void onBlockTick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
         Hub.onBlockTick(block, worldIn, pos, state, rand);
     }

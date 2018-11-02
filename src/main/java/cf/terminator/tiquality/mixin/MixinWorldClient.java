@@ -1,9 +1,9 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.interfaces.TiqualityChunkProviderClient;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.store.PlayerTracker;
+import cf.terminator.tiquality.mixinhelper.WorldHelper;
+import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.math.BlockPos;
@@ -15,6 +15,7 @@ import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Mixin;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Mixin(value = WorldClient.class, priority = 999)
@@ -30,37 +31,43 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nullable
-    TiqualityChunk getChunkFast(BlockPos pos){
-        return (TiqualityChunk) ((ChunkProviderServer)chunkProvider).id2ChunkMap.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
+    public @Nonnull TiqualityChunk getChunk(BlockPos pos){
+        TiqualityChunk chunk = (TiqualityChunk) ((ChunkProviderServer)chunkProvider).id2ChunkMap.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
+        return chunk != null ? chunk : (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
     /**
-     * Optimized way of getting the PlayerTracker using a BlockPos.
-     * Don't forget PlayerTrackers reside inside chunks, so it still has to grab the chunk.
+     * Optimized way of getting the Tracker using a BlockPos.
+     * Don't forget Tracker reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nullable PlayerTracker getPlayerTracker(BlockPos pos){
-        TiqualityChunk chunk = (TiqualityChunk) ((TiqualityChunkProviderClient)chunkProvider).getChunkFromCache(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-        return chunk == null ? null : chunk.lagGoggles_findTrackerByBlockPos(pos);
+    public @Nullable TrackerBase getTracker(BlockPos pos){
+        return getChunk(pos).tiquality_findTrackerByBlockPos(pos);
     }
 
     /**
-     * Optimized way of setting the PlayerTracker using a BlockPos.
-     * Don't forget PlayerTrackers reside inside chunks, so it still has to grab the chunk.
+     * Optimized way of setting the Tracker using a BlockPos.
+     * Don't forget Tracker reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
-     * @param tracker the PlayerTracker to append.
+     * @param tracker the Tracker to set.
      */
-    public void setPlayerTracker(BlockPos pos, PlayerTracker tracker){
-        TiqualityChunk chunk = (TiqualityChunk) ((TiqualityChunkProviderClient)chunkProvider).getChunkFromCache(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-        if(chunk != null){
-            chunk.tiquality_setTrackedPosition(pos, tracker);
-        }
+    public void setTracker(BlockPos pos, TrackerBase tracker){
+        getChunk(pos).tiquality_setTrackedPosition(pos, tracker);
     }
 
+    /**
+     * Sets the tracker in a cuboid area
+     * @param start start coord (All lower)
+     * @param end end coord (All lower)
+     * @param tracker the tracker to add
+     * @param callback a task to run on completion
+     */
+    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback){
+        WorldHelper.setTrackerCuboidAsync(this, start, end, tracker, callback);
+    }
 }

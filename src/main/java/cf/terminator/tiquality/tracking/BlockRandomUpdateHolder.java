@@ -1,4 +1,4 @@
-package cf.terminator.tiquality.store;
+package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
@@ -31,7 +31,7 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
      */
     @Override
     public void doUpdateTick() {
-        TiqualityChunk chunk = ((TiqualityWorld) world).getChunkFast(pos);
+        TiqualityChunk chunk = ((TiqualityWorld) world).getChunk(pos);
         if(chunk != null && chunk.isChunkLoaded()) {
             block.randomTick(world, pos, state, rand);
         }

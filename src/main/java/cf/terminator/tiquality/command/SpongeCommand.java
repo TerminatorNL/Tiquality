@@ -12,6 +12,8 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,7 +63,13 @@ public class SpongeCommand implements CommandCallable {
         PermissionHolder holder = new SpongePermissionHolder(source);
         try{
             holder.checkPermission(PermissionHolder.Permission.USE);
-            return CommandExecutor.getSuggestions(arguments.split(" "), holder);
+            String[] split = arguments.split(" ");
+            if(arguments.endsWith(" ")){
+                List<String> list = new ArrayList<>(Arrays.asList(split));
+                list.add("");
+                split = list.toArray(new String[0]);
+            }
+            return CommandExecutor.getSuggestions(split, holder);
         } catch (net.minecraft.command.CommandException e) {
             throw new CommandException(Text.of(e.getMessage()), e);
         }

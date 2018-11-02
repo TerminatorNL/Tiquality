@@ -8,6 +8,10 @@ buildscript {
             name = 'sponge'
             url = 'https://repo.spongepowered.org/maven'
         }
+        maven {
+            name = 'jitpack.io'
+            url = 'https://jitpack.io'
+        }
     }
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
@@ -22,6 +26,10 @@ repositories {
         name = "sponge"
         url = "https://repo.spongepowered.org/maven/"
     }
+    maven {
+        name = 'bStats'
+        url = 'https://repo.bstats.org/content/repositories/releases/'
+    }
 }
 
 
@@ -30,7 +38,7 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-version = "1.12.2-BETA-0.5"
+version = "1.12.2-BETA-0.6"
 group = "cf.terminator" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
 println("Compiling: " + archivesBaseName + "-" + version)
@@ -47,7 +55,7 @@ compileJava {
 
 
 minecraft {
-    version = "1.12.2-14.23.4.2756"
+    version = "1.12.2-14.23.4.2705"
     runDir = "run"
 
     // the mappings can be changed at any time, and must be in the following format.
@@ -69,9 +77,21 @@ configurations {
 }
 
 dependencies {
+    compileOnly ('me.ryanhamshire:griefprevention:1.12.2-4.3.0.654:original'){
+       /*
+
+       Run configuration requires: -Dbstats.relocatecheck="false" in VM options.
+
+        */
+    }
+
     compileOnly 'org.spongepowered:spongeforge:1.12.2-2705-7.1.0-BETA-3361:dev'
+
     if(isFat) {
         embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+            ['gson','guava','commons-io'].each {
+                exclude module: it
+            }
             exclude module: 'launchwrapper'
         }
     }else{

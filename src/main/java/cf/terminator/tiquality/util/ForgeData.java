@@ -14,4 +14,8 @@ public class ForgeData {
     public static GameProfile getGameProfileByUUID(UUID uuid){
         return SERVER.getPlayerProfileCache().getProfileByUUID(uuid);
     }
+
+    public static GameProfile getGameProfileByName(String name){
+        return SERVER.getPlayerProfileCache().getGameProfileForUsername(name);
+    }
 }

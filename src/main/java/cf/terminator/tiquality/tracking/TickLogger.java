@@ -1,4 +1,4 @@
-package cf.terminator.tiquality.store;
+package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.util.Copyable;
@@ -141,13 +141,9 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
             return nanoseconds;
         }
 
-        public long averageNanosPerCall(){
-            return nanoseconds/calls;
-        }
-
         @Override
         public int compareTo(@Nonnull Metrics o) {
-            return Long.compare(this.averageNanosPerCall(), o.averageNanosPerCall());
+            return Long.compare(this.nanoseconds, o.nanoseconds);
         }
 
         @Override
@@ -156,6 +152,11 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
             clone.nanoseconds = this.nanoseconds;
             clone.calls = this.calls;
             return clone;
+        }
+
+        public void add(Metrics other){
+            this.calls += other.calls;
+            this.nanoseconds += other.calls;
         }
     }
 
@@ -301,10 +302,24 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
 
         @Override
         public String toString(){
-            return TextFormatting.DARK_GRAY + "D" + TextFormatting.WHITE + world +
-                    TextFormatting.DARK_GRAY + " X" + TextFormatting.WHITE + x +
-                    TextFormatting.DARK_GRAY + " Y" + TextFormatting.WHITE + y +
-                    TextFormatting.DARK_GRAY + " Z" + TextFormatting.WHITE + z;
+            switch (type){
+                case BLOCK:
+                    return TextFormatting.DARK_GRAY + "D" + TextFormatting.WHITE + world +
+                            TextFormatting.DARK_GRAY + " X" + TextFormatting.WHITE + x +
+                            TextFormatting.DARK_GRAY + " Y" + TextFormatting.WHITE + y +
+                            TextFormatting.DARK_GRAY + " Z" + TextFormatting.WHITE + z;
+                case ENTITY:
+                    Entity e = FMLCommonHandler.instance().getMinecraftServerInstance().getEntityFromUuid(entityUUID);
+                    if(e == null){
+                        return TextFormatting.RED + "Entity no longer exists";
+                    }else {
+                        return TextFormatting.DARK_GRAY + "D" + TextFormatting.WHITE + e.world.provider.getDimension() +
+                                TextFormatting.DARK_GRAY + " X" + TextFormatting.WHITE + (int) e.posX +
+                                TextFormatting.DARK_GRAY + " Y" + TextFormatting.WHITE + (int) e.posY +
+                                TextFormatting.DARK_GRAY + " Z" + TextFormatting.WHITE + (int) e.posZ;
+                    }
+            }
+            return TextFormatting.DARK_RED + "Unknown type";
         }
 
         @Override

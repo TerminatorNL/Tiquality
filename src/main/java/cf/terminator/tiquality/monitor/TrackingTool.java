@@ -1,10 +1,9 @@
 package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.store.PlayerTracker;
-import cf.terminator.tiquality.store.TrackerHub;
+import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.Utils;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
@@ -17,13 +16,10 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import javax.annotation.Nonnull;
 
-public class ClaimMonitor {
+public class TrackingTool {
 
     public static final TextFormatting[] COLORSCALE = new TextFormatting[]{
             TextFormatting.GRAY,
-            TextFormatting.GRAY,
-            TextFormatting.WHITE,
-            TextFormatting.WHITE,
             TextFormatting.WHITE
     };
 
@@ -34,7 +30,7 @@ public class ClaimMonitor {
     private long lastTime = 0;
     private int timeout = 0;
 
-    public ClaimMonitor(@Nonnull EntityPlayerMP player){
+    public TrackingTool(@Nonnull EntityPlayerMP player){
         this.player = player;
     }
 
@@ -60,11 +56,11 @@ public class ClaimMonitor {
         if(player.hasDisconnected()){
             return;
         }
-        Utils.sendStatusBarMessage(player,new TextComponentString("Claiming tool stopped."));
+        Utils.sendStatusBarMessage(player,new TextComponentString("Tracking tool stopped."));
     }
 
     private void sendTime(){
-        Utils.sendStatusBarMessage(player,new TextComponentString("Claiming tool started, aim at a block and sneak to claim it. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
+        Utils.sendStatusBarMessage(player,new TextComponentString("Tracking tool started, aim at a block and sneak to track it. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
     }
 
     @SubscribeEvent
@@ -99,21 +95,15 @@ public class ClaimMonitor {
             step = 0;
         }
         selectedPos = result.getBlockPos();
-        PlayerTracker tracker = ((TiqualityWorld) player.world).getPlayerTracker(selectedPos);
+        TrackerBase tracker = ((TiqualityWorld) player.world).getTracker(selectedPos);
 
         if(tracker != null){
-            GameProfile owner = tracker.getOwner();
-            String name = owner.getName() == null ? owner.getId().toString() : owner.getName();
-            if(player.getName().equals(owner.getName())){
-                Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.GREEN + "Claimed by you."));
-            }else{
-                Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.RED + "Claimed by: " + name));
-            }
+            Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.RED + "Already tracked: " + tracker.getInfo().getText()));
             return;
         }
         if(step == COLORSCALE.length){
             --step;
-            ((TiqualityWorld) player.world).setPlayerTracker(selectedPos, TrackerHub.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
+            ((TiqualityWorld) player.world).setTracker(selectedPos, TrackerManager.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
             return;
         }
         Block block = player.world.getBlockState(selectedPos).getBlock();

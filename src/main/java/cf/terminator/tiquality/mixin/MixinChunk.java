@@ -1,13 +1,12 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.store.ChunkStorage;
-import cf.terminator.tiquality.store.PlayerTracker;
-import cf.terminator.tiquality.store.TrackerHub;
-import cf.terminator.tiquality.util.ForgeData;
+import cf.terminator.tiquality.tracking.ChunkStorage;
+import cf.terminator.tiquality.tracking.TrackerBase;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -15,6 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,7 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Mixin(value = Chunk.class, priority = 1001)
 public abstract class MixinChunk implements TiqualityChunk {
@@ -31,31 +33,33 @@ public abstract class MixinChunk implements TiqualityChunk {
     @Shadow public abstract boolean isLoaded();
     @Shadow public abstract ChunkPos getPos();
 
-    private final BiMap<Byte, PlayerTracker> trackerLookup = HashBiMap.create();
+    private final BiMap<Byte, TrackerBase> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
     /**
      * Gets the first free index for a player.
      *
-     * There are 3 reserved values:
+     * There are 6 reserved values:
      *           0: No owner
      *          -1: Reserved for potentional future use-case
      *          -2: Reserved for potentional future use-case
+     *          -3: Reserved for potentional future use-case
+     *          -4: Reserved for potentional future use-case
+     *          -5: Reserved for potentional future use-case
      * @return the owner value
      */
     private byte getFirstFreeIndex(){
         byte i=1;
         while(trackerLookup.containsKey(i)){
             ++i;
-            if(i == -2){
+            if(i == -5){
                 throw new IllegalStateException("There are too many owners in this chunk: " + this);
             }
         }
         return i;
     }
 
-    private byte getProfileIDforChunk(GameProfile profile){
-        PlayerTracker tracker = TrackerHub.getOrCreatePlayerTrackerByProfile(profile);
+    private byte getIDbyTracker(TrackerBase tracker){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             owner_id = getFirstFreeIndex();
@@ -84,16 +88,28 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_setTrackedPosition(BlockPos pos, @Nonnull PlayerTracker tracker){
-        byte id = getProfileIDforChunk(tracker.getOwner());
-        STORAGE.set(pos, id);
-        tracker.associateChunk(this);
-        trackerLookup.forcePut(id, tracker);
+    public Chunk getMinecraftChunk(){
+        return (Chunk) (Object) this;
     }
 
     @Override
-    public void tiquality_removeTracker(BlockPos pos){
-        STORAGE.set(pos, (byte) 0);
+    public synchronized void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker){
+
+        TiqualityEvent.SetBlockTrackerEvent event = new TiqualityEvent.SetBlockTrackerEvent(this, pos, tracker);
+
+        if(MinecraftForge.EVENT_BUS.post(event) /* if cancelled */){
+            return;
+        }
+        tracker = event.getTracker();
+
+        if(tracker == null){
+            STORAGE.set(pos, (byte) 0);
+        }else {
+            byte id = getIDbyTracker(tracker);
+            STORAGE.set(pos, id);
+            tracker.associateChunk(this);
+            trackerLookup.forcePut(id, tracker);
+        }
     }
 
     @Override
@@ -102,17 +118,18 @@ public abstract class MixinChunk implements TiqualityChunk {
         NBTTagList list = tag.getTagList("Sections", 10);
         STORAGE.injectNBTAfter(list);
         tag.setTag("Sections", list);
-        NBTTagList ownerList = new NBTTagList();
-        for(Map.Entry<Byte, PlayerTracker> e : trackerLookup.entrySet()){
-            UUID uuid = e.getValue().getOwner().getId();
-            NBTTagCompound owner = new NBTTagCompound();
-            owner.setByte("id", e.getKey());
-            owner.setLong("uuidMost", uuid.getMostSignificantBits());
-            owner.setLong("uuidLeast", uuid.getLeastSignificantBits());
-            ownerList.appendTag(owner);
+        NBTTagList trackerList = new NBTTagList();
+        for(Map.Entry<Byte, TrackerBase> e : trackerLookup.entrySet()){
+            if(e.getValue().shouldSaveToDisk() == false){
+                continue;
+            }
+            NBTTagCompound trackerData = new NBTTagCompound();
+            trackerData.setByte("chunk_id", e.getKey());
+            trackerData.setTag("tracker", TrackerBase.getTrackerTag(e.getValue()));
+            trackerList.appendTag(trackerData);
         }
-        if(ownerList.tagCount() > 0) {
-            tag.setTag("Tiquality", ownerList);
+        if(trackerList.tagCount() > 0) {
+            tag.setTag("Tiquality", trackerList);
         }
     }
 
@@ -120,19 +137,19 @@ public abstract class MixinChunk implements TiqualityChunk {
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
-        Iterator<NBTBase> list = tag.getTagList("Tiquality",10).iterator();
-        while(list.hasNext()){
-            NBTTagCompound owner = (NBTTagCompound) list.next();
-            UUID uuid = new UUID(owner.getLong("uuidMost"),owner.getLong("uuidLeast"));
-
-            trackerLookup.forcePut(owner.getByte("id"),
-                    TrackerHub.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
-
+        for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
+            NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
+            TrackerBase tracker = TrackerBase.getTracker(this, trackerData.getCompoundTag("tracker"));
+            if(tracker != null){
+                trackerLookup.forcePut(trackerData.getByte("chunk_id"), tracker);
+            }else{
+                Tiquality.LOGGER.debug("Failed to load tracker in chunk: ", this);
+            }
         }
     }
 
     @Override
-    public @Nullable PlayerTracker lagGoggles_findTrackerByBlockPos(BlockPos pos){
+    public synchronized @Nullable TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos){
         return trackerLookup.get(STORAGE.get(pos));
     }
 
@@ -152,14 +169,14 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Inject(method = "onLoad", at=@At("HEAD"))
     private void onLoad(CallbackInfo ci){
-        for(PlayerTracker tracker : trackerLookup.values()){
+        for(TrackerBase tracker : trackerLookup.values()){
             tracker.associateChunk(this);
         }
     }
 
     @Inject(method = "onUnload", at=@At("HEAD"))
     private void onUnLoad(CallbackInfo ci){
-        for(PlayerTracker tracker : trackerLookup.values()){
+        for(TrackerBase tracker : trackerLookup.values()){
             tracker.disAssociateChunk(this);
         }
     }

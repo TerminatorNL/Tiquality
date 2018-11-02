@@ -2,15 +2,16 @@ package cf.terminator.tiquality.command;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.api.DataProcessing;
+import cf.terminator.tiquality.integration.ExternalHooker;
+import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.monitor.ClaimMonitor;
 import cf.terminator.tiquality.monitor.InfoMonitor;
-import cf.terminator.tiquality.store.PlayerTracker;
-import cf.terminator.tiquality.store.TickLogger;
-import cf.terminator.tiquality.store.TrackerHub;
-import cf.terminator.tiquality.util.Entry3;
-import cf.terminator.tiquality.util.SynchronizedAction;
+import cf.terminator.tiquality.monitor.TrackingTool;
+import cf.terminator.tiquality.tracking.PlayerTracker;
+import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.util.ForgeData;
+import cf.terminator.tiquality.util.SimpleProfiler;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.command.CommandBase;
@@ -24,7 +25,10 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 import static cf.terminator.tiquality.Tiquality.SCHEDULER;
 import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASSIGNED_OBJECTS_FAST;
@@ -41,9 +45,9 @@ public class CommandExecutor {
 
     public static String getUsage(PermissionHolder holder){
         if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-            return "Usage: /tiquality <info [point]|claim|profile <secs> [target]|reload|add>";
+            return "Usage: /tiquality <info [point]|track|profile <secs> [target]|reload|add>";
         }else if (holder.hasPermission(PermissionHolder.Permission.USE)) {
-            return "Usage: /tiquality <info [point]|claim|profile <secs>>";
+            return "Usage: /tiquality <info [point]|track|profile <secs>>";
         }else{
             return "";
         }
@@ -62,7 +66,6 @@ public class CommandExecutor {
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Reloading..."));
             TiqualityConfig.QuickConfig.reloadFromFile();
-            TiqualityConfig.QuickConfig.update();
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Done!"));
         /*
 
@@ -91,23 +94,23 @@ public class CommandExecutor {
                 throw new CommandException("Please stand on top of a block and run this command again.");
             }
             if (blockBelowFeet != Blocks.AIR) {
-                PlayerTracker tracker = ((TiqualityWorld) player.getEntityWorld()).getPlayerTracker(player.getPosition().down());
-                String indicator = tracker == null ? TextFormatting.AQUA + "Not claimed" : TextFormatting.GREEN + "Claimed by: " + TextFormatting.AQUA + tracker.getOwner().getName();
+                TrackerBase tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition().down());
+                TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (belowAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "claimed only") + TextFormatting.WHITE + " Status: " + indicator));
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (belowAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
             }
             if (blockAtFeet != Blocks.AIR) {
-                PlayerTracker tracker = ((TiqualityWorld) player.getEntityWorld()).getPlayerTracker(player.getPosition());
-                String indicator = tracker == null ? TextFormatting.AQUA + "Not claimed" : TextFormatting.GREEN + "Claimed by: " + TextFormatting.AQUA + tracker.getOwner().getName();
-                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " " + (feetAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "claimed only") + TextFormatting.WHITE + " Status: " + indicator));
+                TrackerBase tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition());
+                TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
+                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (feetAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
             }
         /*
 
-                CLAIM
+                TRACK
 
          */
-        }else if(args[0].equalsIgnoreCase("claim")){
+        }else if(args[0].equalsIgnoreCase("track")){
             if(sender instanceof EntityPlayerMP == false){
                 throw new CommandException("Only players can use this command!");
             }
@@ -117,7 +120,7 @@ public class CommandExecutor {
                 time = CommandBase.parseInt(args[1],0,60);
             }
 
-            new ClaimMonitor((EntityPlayerMP) sender).start(time * 1000);
+            new TrackingTool((EntityPlayerMP) sender).start(time * 1000);
         /*
 
                 ADD
@@ -171,81 +174,52 @@ public class CommandExecutor {
          */
         }else if(args[0].equalsIgnoreCase("profile")){
             holder.checkPermission(PermissionHolder.Permission.USE);
-            final PlayerTracker tracker;
+            final TrackerBase tracker;
             if(args.length == 1) {
                 incorrectUsageError(sender, holder);
             }
             int time = CommandBase.parseInt(args[1],1,30);
+            GameProfile target_player;
             if(args.length == 3){
                 String target = args[2];
                 holder.checkPermission(PermissionHolder.Permission.ADMIN);
-                tracker = SynchronizedAction.run(new SynchronizedAction.Action<PlayerTracker>() {
-                    @Override
-                    public void run(SynchronizedAction.DynamicVar<PlayerTracker> variable) {
-                        for(Map.Entry<UUID, PlayerTracker> t : TrackerHub.getEntrySet()){
-                            PlayerTracker tracker = t.getValue();
-                            GameProfile owner = tracker.getOwner();
-                            UUID trackerUUID = owner.getId();
-                            if((trackerUUID != null && trackerUUID.toString().equals(target)) || target.equalsIgnoreCase(owner.getName())){
-                                variable.set(tracker);
-                                return;
-                            }
-                        }
-                    }
-                });
-                if(tracker == null){
-                    throw new CommandException("Sorry, the tracker belonging to: " + target + " isn't found.");
-                }
+                target_player = ForgeData.getGameProfileByName(target);
             }else{
                 if (sender instanceof EntityPlayer == false) {
                     throw new CommandException("You need to specify a playername or UUID.");
                 }
-                tracker = TrackerHub.getPlayerTrackerByProfile(((EntityPlayer) sender).getGameProfile());
-                if(tracker == null){
-                    throw new CommandException("Sorry, you do not have a tracker associated!");
+                target_player = (((EntityPlayer) sender).getGameProfile());
+            }
+            if(target_player == null){
+                throw new CommandException("Player not found.");
+            }
+            ArrayList<TrackerBase> trackersToProfile = new ArrayList<>();
+            for(TrackerBase t : TrackerManager.getEntrySet()){
+                if(t.getAssociatedPlayers().contains(target_player)){
+                    trackersToProfile.add(t);
                 }
             }
+            if(trackersToProfile.size() == 0){
+                throw new CommandException("Player is found, but there are no trackers associated.");
+            }
+            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Profiler started"));
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    tracker.setProfileEnabled(true);
                     try {
-                        sender.sendMessage(new TextComponentString(TextFormatting.AQUA + "Basic profiler started for " + time + " seconds."));
+                        SimpleProfiler profiler = new SimpleProfiler(trackersToProfile.toArray(new TrackerBase[0]));
+                        profiler.start();
                         Thread.sleep(time * 1000);
-                    } catch (InterruptedException e) {
+                        profiler.stop();
+                        for(TextComponentString line : profiler.createReport()){
+                            sender.sendMessage(line);
+                        }
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    TickLogger logger = tracker.stopProfiler();
-                    if(logger == null){
-                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "Looks like something stopped your profiler! Please try again."));
-                        return;
-                    }
-                    ArrayList<Entry3<Block, TickLogger.Location, TickLogger.Metrics>> data = DataProcessing.findBlocks(DataProcessing.getLast(DataProcessing.sortByTime(logger),100));
-                    for(Entry3<Block, TickLogger.Location, TickLogger.Metrics> e : data){
-                        sender.sendMessage(new TextComponentString(
-                                TextFormatting.WHITE + e.getFirst().getLocalizedName() + TextFormatting.BLACK + " - "
-                                + e.getSecond() + TextFormatting.BLACK + " - "
-                                + TextFormatting.WHITE + ((e.getThird().averageNanosPerCall()) / 1000) + TextFormatting.DARK_GRAY + "µs/c "
-                                + TextFormatting.WHITE + ((e.getThird().getNanoseconds()) /logger.getTicks()) / 1000 + TextFormatting.DARK_GRAY + "µs/t"
-                                //+ TextFormatting.WHITE + e.getThird().getCalls() + TextFormatting.DARK_GRAY + "c"
-                        ));
-                    }
-
-                    long consumedMicrosPerTick = (DataProcessing.getTotalNanos(logger)/logger.getTicks())/1000;
-                    long grantedMicrosPerTick = (logger.getGrantedNanos()/logger.getTicks())/1000;
-                    String percentageUsed = String.valueOf(Math.floor((new Long(consumedMicrosPerTick).doubleValue()/new Long(grantedMicrosPerTick).doubleValue()) * 10000D)/100);
-                    sender.sendMessage(new TextComponentString(
-                            TextFormatting.DARK_GRAY + "Consumed time: " + TextFormatting.WHITE + consumedMicrosPerTick + TextFormatting.DARK_GRAY + "µs/t" + TextFormatting.BLACK + " - "
-                                    + TextFormatting.DARK_GRAY + "Granted time: " + TextFormatting.WHITE + grantedMicrosPerTick + TextFormatting.DARK_GRAY + "µs/t" + TextFormatting.BLACK + " - "
-                                    + TextFormatting.DARK_GRAY + "(" + TextFormatting.WHITE + percentageUsed + "%" + TextFormatting.DARK_GRAY + ")"
-                    ));
-                    sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "Total ticks: " + TextFormatting.WHITE + logger.getTicks()));
-
-
-
-
                 }
-            },"Tiquality profile processing thread for: " + tracker.getOwner().getName()).start();
+            },"Tiquality profile processing thread").start();
+
         /*
 
             DEBUG
@@ -256,12 +230,10 @@ public class CommandExecutor {
             SCHEDULER.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    Set<Map.Entry<UUID, PlayerTracker>> set = TrackerHub.getEntrySet();
-                    sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded PlayerTracker objects (" + set.size() + "):"));
-                    for(Map.Entry<UUID, PlayerTracker> e : set){
-                        sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.getKey().toString() + ": "));
-                        sender.sendMessage(new TextComponentString(TextFormatting.WHITE + e.getValue().toString()));
-                        sender.sendMessage(new TextComponentString(""));
+                    Set<TrackerBase> set = TrackerManager.getEntrySet();
+                    sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded Tracker objects (" + set.size() + "):"));
+                    for(TrackerBase e : set){
+                        sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.toString()));
                     }
                 }
             });
@@ -270,6 +242,15 @@ public class CommandExecutor {
                 UNKNOWN ARGUMENT
 
          */
+        }else if(args[0].equalsIgnoreCase("import_griefprevention")){
+            holder.checkPermission(PermissionHolder.Permission.ADMIN);
+            if(ExternalHooker.LOADED_HOOKS.contains("griefprevention")){
+                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing..."));
+                GriefPreventionHook.loadClaimsForcibly();
+                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing done."));
+            }else{
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
+            }
         }else{
             incorrectUsageError(sender, holder);
         }
@@ -279,7 +260,7 @@ public class CommandExecutor {
         ArrayList<String> list = new ArrayList<>();
         if(args.length == 1){
             String start = args[0];
-            addIfStartsWith(list, start, "claim");
+            addIfStartsWith(list, start, "track");
             addIfStartsWith(list, start, "info");
             addIfStartsWith(list, start, "profile");
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)){
@@ -294,7 +275,7 @@ public class CommandExecutor {
             }else if(args[0].equalsIgnoreCase("add")){
                 addIfStartsWith(list, start, "below");
                 addIfStartsWith(list, start, "feet");
-            }else if(args[0].equalsIgnoreCase("claim")){
+            }else if(args[0].equalsIgnoreCase("track")){
                 addIfStartsWith(list, start, "1");
                 addIfStartsWith(list, start, "5");
                 addIfStartsWith(list, start, "10");
@@ -306,8 +287,10 @@ public class CommandExecutor {
             String start = args[2];
             if(args[0].equalsIgnoreCase("profile")) {
                 if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-                    for(Map.Entry<UUID, PlayerTracker> e : TrackerHub.getEntrySet()){
-                        addIfStartsWith(list, start, e.getValue().getOwner().getName());
+                    for(TrackerBase e : TrackerManager.getEntrySet()){
+                        if (e instanceof PlayerTracker) {
+                            addIfStartsWith(list, start, ((PlayerTracker) e).getOwner().getName());
+                        }
                     }
                 }
             }

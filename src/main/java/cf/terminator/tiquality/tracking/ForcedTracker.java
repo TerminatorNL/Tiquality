@@ -1,38 +1,48 @@
-package cf.terminator.tiquality.store;
+package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * A class used to Track unowned updates for profiling purposes.
  * This Tracker does not throttle it's tickables.
  */
-public class ForcedTracker extends PlayerTracker {
+public class ForcedTracker extends TrackerBase {
 
-    public static ForcedTracker INSTANCE = new ForcedTracker();
+    public static final ForcedTracker INSTANCE = new ForcedTracker();
 
     private ForcedTracker() {
-        super(new GameProfile(new UUID(9136712361234667432L, 1812357000566439086L), "[TiqualityForce]"));
     }
 
     /**
-     * Checks if the owner is a fake owner.
-     * Trackers belonging to fake owners are not removed and kept in memory.
-     * This method is meant to be overridden.
-     *
-     * @return true if this is a fake owner.
+     * Gets the NBT data from this object, is called when the tracker is saved to disk.
      */
     @Override
-    public boolean isFakeOwner(){
-        return true;
+    public NBTTagCompound getNBT() {
+        return new NBTTagCompound();
+    }
+
+    /**
+     * We don't want this to be saved to disk, due to config options.
+     * Because we don't save to disk, we don't need the constructor(TiqualityChunk, NBTTagCompound)
+     * @return false
+     */
+    @Override
+    public boolean shouldSaveToDisk(){
+        return false;
     }
 
     /**
@@ -92,6 +102,17 @@ public class ForcedTracker extends PlayerTracker {
     }
 
     /**
+     * Gets the associated players for this tracker
+     *
+     * @return an empty list
+     */
+    @Nonnull
+    @Override
+    public List<GameProfile> getAssociatedPlayers() {
+        return new ArrayList<>();
+    }
+
+    /**
      * Ticks the entity, and optionally profiles it
      * @param entity the Entity to tick
      */
@@ -123,7 +144,25 @@ public class ForcedTracker extends PlayerTracker {
      */
     @Override
     public String toString(){
-        return "ForcedTracker:{Owner: '[TiqualityForce]', hashCode: " + System.identityHashCode(this) + "}";
+        return "ForcedTracker:{hashCode: " + System.identityHashCode(this) + "}";
+    }
+
+    /**
+     * @return the info describing this Tracker (Like the owner)
+     */
+    @Nonnull
+    @Override
+    public TextComponentString getInfo() {
+        return new TextComponentString(TextFormatting.LIGHT_PURPLE + "Forced");
+    }
+
+    /**
+     * @return an unique identifier for this Tracker CLASS TYPE, used to re-instantiate the tracker later on.
+     * This should just return a hardcoded string.
+     */
+    @Nonnull
+    public String getIdentifier() {
+        return "forced";
     }
 
     @Override
@@ -131,7 +170,16 @@ public class ForcedTracker extends PlayerTracker {
         if(o == null || o instanceof ForcedTracker == false){
             return false;
         }else{
-            return o == this || this.getOwner().getId().equals(((ForcedTracker) o).getOwner().getId());
+            if(o != this){
+                throw new IllegalStateException("Detected two ForcedTracker objects, this is impossible. HALT");
+            }else{
+                return true;
+            }
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 }

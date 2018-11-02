@@ -1,6 +1,6 @@
 package cf.terminator.tiquality.api;
 
-import cf.terminator.tiquality.store.TickLogger;
+import cf.terminator.tiquality.tracking.TickLogger;
 import cf.terminator.tiquality.util.Entry3;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import net.minecraft.block.Block;
@@ -12,14 +12,14 @@ import java.util.*;
 
 public class DataProcessing {
 
-    public static ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> sortByTime(TickLogger logger){
-        ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>(logger.getMetrics().entrySet());
+    public static ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> sortByTime(Collection<Map.Entry<TickLogger.Location, TickLogger.Metrics>> data){
+        ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>(data);
         list.sort(Comparator.comparing(Map.Entry::getValue));
         return list;
     }
 
-    public static ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> sortByLocation(TickLogger logger){
-        ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>(logger.getMetrics().entrySet());
+    public static ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> sortByLocation(Collection<Map.Entry<TickLogger.Location, TickLogger.Metrics>> data){
+        ArrayList<Map.Entry<TickLogger.Location, TickLogger.Metrics>> list = new ArrayList<>(data);
         list.sort(Comparator.comparing(Map.Entry::getKey));
         return list;
     }

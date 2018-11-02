@@ -1,16 +1,13 @@
 package cf.terminator.tiquality.monitor;
 
-import cf.terminator.tiquality.store.PlayerTracker;
-import cf.terminator.tiquality.store.TrackerHub;
+import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.Constants;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-
-import java.util.Map;
-import java.util.UUID;
 
 public class TickMaster {
 
@@ -32,11 +29,7 @@ public class TickMaster {
 
             /* First, we asses the amount of active PlayerTrackers. */
             double totalWeight = 0;
-            for(Map.Entry<UUID, PlayerTracker> entry : TrackerHub.getEntrySet()){
-                PlayerTracker tracker = entry.getValue();
-                if(tracker.isConsumer() == false){
-                    continue;
-                }
+            for(TrackerBase tracker : TrackerManager.getEntrySet()){
                 totalWeight += tracker.getMultiplier(cache);
             }
 
@@ -46,20 +39,15 @@ public class TickMaster {
             */
             double totalweight = Math.max(1, totalWeight);
 
-            for(Map.Entry<UUID, PlayerTracker> entry : TrackerHub.getEntrySet()){
-                PlayerTracker tracker = entry.getValue();
-                if(tracker.isConsumer() == false){
-                    tracker.setNextTickTime(0);
-                }else{
-                    long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
+            for(TrackerBase tracker : TrackerManager.getEntrySet()){
+                long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
 
-                    //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
-                    tracker.setNextTickTime(time);
-                }
+                //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
+                tracker.setNextTickTime(time);
             }
         }else if(e.phase == TickEvent.Phase.END){
-            TrackerHub.removeInactiveTrackers();
-            TrackerHub.tickUntil(startTime + TICK_DURATION);
+            TrackerManager.removeInactiveTrackers();
+            TrackerManager.tickUntil(startTime + TICK_DURATION);
         }
     }
 }

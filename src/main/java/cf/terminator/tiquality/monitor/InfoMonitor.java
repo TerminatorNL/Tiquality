@@ -1,10 +1,8 @@
 package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.store.PlayerTracker;
+import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.util.Utils;
-import com.mojang.authlib.GameProfile;
-import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
@@ -81,22 +79,12 @@ public class InfoMonitor {
         }
         endTime = System.currentTimeMillis() + timeout;
 
-        PlayerTracker tracker = ((TiqualityWorld) player.world).getPlayerTracker(result.getBlockPos());
-        Block block = player.world.getBlockState(result.getBlockPos()).getBlock();
-
-        String type = TextFormatting.WHITE.toString() + Block.REGISTRY.getNameForObject(block).toString();
+        TrackerBase tracker = ((TiqualityWorld) player.world).getTracker(result.getBlockPos());
 
         if(tracker != null){
-            GameProfile owner = tracker.getOwner();
-            String name = owner.getName() == null ? owner.getId().toString() : owner.getName();
-            if(player.getName().equals(owner.getName())){
-                Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.GREEN + " Claimed by you."));
-            }else{
-                Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.RED + " Claimed by: " + name));
-            }
-            return;
+            Utils.sendStatusBarMessage(player,tracker.getInfo());
+        }else{
+            Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.AQUA + " Not tracked."));
         }
-
-        Utils.sendStatusBarMessage(player,new TextComponentString(type + TextFormatting.AQUA + " Unclaimed."));
     }
 }

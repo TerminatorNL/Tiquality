@@ -1,6 +1,6 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.store.TickLogger;
+import cf.terminator.tiquality.tracking.TickLogger;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 

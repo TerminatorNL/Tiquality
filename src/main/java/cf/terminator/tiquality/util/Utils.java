@@ -5,6 +5,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,10 +37,10 @@ public class Utils {
         return entity.getPositionEyes(1F).add(entity.getLookVec().scale(distance));
     }
 
-    private static final HashMap<EntityPlayer, ITextComponent> LAST_MESSAGES = new HashMap<>();
+    private static final HashMap<EntityPlayer, Map.Entry<Long,ITextComponent>> LAST_MESSAGES = new HashMap<>();
     public static void sendStatusBarMessage(EntityPlayer player, ITextComponent text){
-        if(LAST_MESSAGES.containsKey(player) == false || LAST_MESSAGES.get(player).equals(text) == false){
-            LAST_MESSAGES.put(player, text);
+        if(LAST_MESSAGES.containsKey(player) == false || LAST_MESSAGES.get(player).getValue().equals(text) == false || LAST_MESSAGES.get(player).getKey() < System.currentTimeMillis() + 3000){
+            LAST_MESSAGES.put(player, new AbstractMap.SimpleEntry<>(System.currentTimeMillis(), text));
             player.sendStatusMessage(text, true);
         }
     }
