@@ -74,5 +74,5 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * tiquality.admin
    
  * /tq import_griefprevention
-   * Will update every GriefPrevention claim existing before Tiquality was installed with TiqualityTrackers.
+   * Will update every GriefPrevention claim existing before Tiquality was installed with TiqualityTrackers. You only need to run this once during first run! This command is hidden from TAB autocompletion.
    * tiquality.admin
