@@ -72,3 +72,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
  * /tq reload
    * Reloads the config file.
    * tiquality.admin
+   
+ * /tq import_griefprevention
+   * Will update every GriefPrevention claim existing before Tiquality was installed with TiqualityTrackers.
+   * tiquality.admin
