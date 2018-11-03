@@ -245,9 +245,12 @@ public class CommandExecutor {
         }else if(args[0].equalsIgnoreCase("import_griefprevention")){
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
             if(ExternalHooker.LOADED_HOOKS.contains("griefprevention")){
-                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing..."));
-                GriefPreventionHook.loadClaimsForcibly();
-                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing done."));
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        GriefPreventionHook.loadClaimsForcibly(sender);
+                    }
+                }, "Tiquality GP import thread").start();
             }else{
                 sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
             }

@@ -8,6 +8,7 @@ import cf.terminator.tiquality.tracking.TrackerManager;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.*;
+import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
@@ -15,6 +16,7 @@ import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.EventListener;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import javax.annotation.Nonnull;
@@ -31,7 +33,7 @@ public class GriefPreventionHook {
     private static final UserAddTrustClaimEventHandler userAddTrustHandler = new UserAddTrustClaimEventHandler();
     private static final UserRemoveTrustClaimEventHandler userRemoveTrustHandler = new UserRemoveTrustClaimEventHandler();
 
-    public static void loadClaimsForcibly(){
+    public static void loadClaimsForcibly(ICommandSender sender){
         Tiquality.LOGGER.info("Importing griefprevention claims...");
 
         List<Claim> list = new ArrayList<>();
@@ -40,11 +42,23 @@ public class GriefPreventionHook {
         }
         for(Claim claim : list){
             Text owner = claim.getOwnerName();
-            Tiquality.LOGGER.info("Importing claim for: " + (owner != null ? owner.toPlain() : "Unknown"));
+            net.minecraft.world.World world = (net.minecraft.world.World) claim.getWorld();
+            Location<World> pos = claim.getLesserBoundaryCorner();
+
+
+            String identifier =
+                    (owner != null ? owner.toPlain() : "Unknown") + " at DIM=" +
+                            (world != null ? String.valueOf(world.provider.getDimension()) : "Unknown") + " "
+                            + (pos != null ? "X: " + pos.getBlockX() + " Z: " + pos.getBlockZ() : "unknown");
+
+
+            Tiquality.LOGGER.info("Importing claim: " + identifier);
+            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing claim: " + identifier));
             findOrGetTrackerByClaim(claim).setBlockTrackers();
         }
 
         Tiquality.LOGGER.info("Importing griefprevention claims finished.");
+        sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing claims finished."));
     }
 
     public static GriefPreventionTracker findOrGetTrackerByClaim(@Nonnull Claim claim){

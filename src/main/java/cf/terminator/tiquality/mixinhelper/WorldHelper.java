@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.TrackerBase;
@@ -35,14 +36,19 @@ public class WorldHelper {
         List<TiqualityChunk> chunkList = new ArrayList<>();
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for(int x = low_x; x <= high_x + 16; x = x + 16) {
-            for (int y = low_y; y <= high_y + 16; y = y + 16) {
-                for (int z = low_z; z <= high_z + 16; z = z + 16) {
-                    pos.setPos(x,y,z);
-                    chunkList.add(world.getChunk(pos));
+        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
+            @Override
+            public void run() {
+                for(int x = low_x; x <= high_x + 16; x = x + 16) {
+                    for (int y = low_y; y <= high_y + 16; y = y + 16) {
+                        for (int z = low_z; z <= high_z + 16; z = z + 16) {
+                            pos.setPos(x,y,z);
+                            chunkList.add(world.getChunk(pos));
+                        }
+                    }
                 }
             }
-        }
+        });
         for(TiqualityChunk chunk : chunkList){
             executor.execute(new SetTrackerTask(chunk, start, end, tracker));
         }
