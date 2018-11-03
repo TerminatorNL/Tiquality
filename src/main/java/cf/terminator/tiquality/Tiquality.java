@@ -6,7 +6,7 @@ import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.monitor.BlockPlaceMonitor;
 import cf.terminator.tiquality.monitor.TPSMonitor;
 import cf.terminator.tiquality.monitor.TickMaster;
-import cf.terminator.tiquality.tracking.EntitySpawnEventHandler;
+import cf.terminator.tiquality.tracking.EntitySetTrackerEventHandler;
 import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.util.Scheduler;
@@ -100,7 +100,7 @@ public class Tiquality {
             COMMAND_HUB.initForge();
         }
         MinecraftForge.EVENT_BUS.register(new TickMaster(e.getServer()));
-        MinecraftForge.EVENT_BUS.register(EntitySpawnEventHandler.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
     }
 

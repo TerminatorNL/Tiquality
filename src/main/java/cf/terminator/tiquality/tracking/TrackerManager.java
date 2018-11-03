@@ -1,8 +1,11 @@
 package cf.terminator.tiquality.tracking;
 
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import com.mojang.authlib.GameProfile;
 import com.sun.istack.internal.NotNull;
+import net.minecraft.nbt.NBTTagCompound;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -22,7 +25,7 @@ public class TrackerManager {
      * @return the set
      */
     public static Set<TrackerBase> getEntrySet(){
-        return Collections.unmodifiableSet(TRACKER_LIST);
+        return new HashSet<>(TRACKER_LIST);
     }
 
     /**
@@ -99,5 +102,35 @@ public class TrackerManager {
         final PlayerTracker newTracker = new PlayerTracker(profile);
         TRACKER_LIST.add(newTracker);
         return newTracker;
+    }
+
+    /**
+     * Instantiates a new tracker using an NBT compound tag.
+     * If the tracker already exists, a reference to the pre-existing tracker is used.
+     * @param tagCompound The NBT tag compound
+     * @return the tracker
+     */
+    @Nullable
+    public static TrackerBase getTracker(TiqualityWorld world, NBTTagCompound tagCompound){
+        String type = tagCompound.getString("type");
+        if(type.equals("")){
+            return null;
+        }
+        Class<? extends TrackerBase> clazz = TrackerBase.REGISTERED_TRACKER_TYPES.get(type);
+        if(clazz == null){
+            /*
+                Either a mod author completely forgot to call cf.terminator.tiquality.api.Tracking.registerCustomTracker(),
+                or a mod providing a tracker has been removed since last load.
+             */
+            return null;
+        }
+        TrackerBase newTracker;
+        try {
+            newTracker =  clazz.getDeclaredConstructor(TiqualityWorld.class, NBTTagCompound.class).newInstance(world, tagCompound.getCompoundTag("data"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        newTracker.setUniqueId(tagCompound.getLong("id"));
+        return preventCopies(newTracker);
     }
 }

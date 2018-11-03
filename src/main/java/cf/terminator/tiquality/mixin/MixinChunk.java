@@ -3,8 +3,10 @@ package cf.terminator.tiquality.mixin;
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.ChunkStorage;
 import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerManager;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import net.minecraft.nbt.NBTBase;
@@ -139,7 +141,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
-            TrackerBase tracker = TrackerBase.getTracker(this, trackerData.getCompoundTag("tracker"));
+            TrackerBase tracker = TrackerManager.getTracker((TiqualityWorld) world, trackerData.getCompoundTag("tracker"));
             if(tracker != null){
                 trackerLookup.forcePut(trackerData.getByte("chunk_id"), tracker);
             }else{

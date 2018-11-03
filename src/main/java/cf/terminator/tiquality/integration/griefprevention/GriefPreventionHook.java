@@ -2,6 +2,7 @@ package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.Tracking;
+import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.tracking.TrackerManager;
@@ -26,12 +27,13 @@ import java.util.UUID;
 
 public class GriefPreventionHook {
 
-    private static final CreateClaimHandler createClaimHandler = new CreateClaimHandler();
+    private static final CreateClaimEventHandler createClaimHandler = new CreateClaimEventHandler();
     private static final ChangeClaimEventHandler claimChangeHandler = new ChangeClaimEventHandler();
     private static final TransferClaimEventHandler transferClaimHandler = new TransferClaimEventHandler();
     private static final DeleteClaimEventHandler deleteClaimHandler = new DeleteClaimEventHandler();
     private static final UserAddTrustClaimEventHandler userAddTrustHandler = new UserAddTrustClaimEventHandler();
     private static final UserRemoveTrustClaimEventHandler userRemoveTrustHandler = new UserRemoveTrustClaimEventHandler();
+    private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
 
     public static void loadClaimsForcibly(ICommandSender sender){
         Tiquality.LOGGER.info("Importing griefprevention claims...");
@@ -82,20 +84,27 @@ public class GriefPreventionHook {
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, DeleteClaimEvent.class, deleteClaimHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UserTrustClaimEvent.Add.class, userAddTrustHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UserTrustClaimEvent.Remove.class, userRemoveTrustHandler);
+        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
 
         Tracking.registerCustomTracker(new GriefPreventionTracker(null));
-        MinecraftForge.EVENT_BUS.register(SetTrackerInterceptor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(EntityEventHandler.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(EventHandler.INSTANCE);
     }
 
-    private static class CreateClaimHandler implements EventListener<CreateClaimEvent>{
+
+    private static class CreateClaimEventHandler implements EventListener<CreateClaimEvent>{
         @Override
         public void handle(@Nonnull CreateClaimEvent event) {
-
-            for(Claim claim : event.getClaims()){
-                GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.setBlockTrackers();
-            }
+            /*
+                Using a temporary workaround since the claims are not fully populated yet.
+             */
+            Tiquality.SCHEDULER.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    for(Claim claim : event.getClaims()){
+                        MinecraftForge.EVENT_BUS.post(new GPClaimCreatedFullyEvent(claim));
+                    }
+                }
+            });
         }
     }
 
@@ -162,14 +171,11 @@ public class GriefPreventionHook {
             TiqualityEntity entity = (TiqualityEntity) event.getTargetEntity();
 
             Claim claim = event.getEnterClaim();
-            if(claim.isWilderness()){
+            if(claim.isWilderness() && entity.getTracker() instanceof GriefPreventionTracker){
                 entity.setTracker(null);
             }else{
                 entity.setTracker(findOrGetTrackerByClaim(claim));
             }
-
-
-
         }
     }
 }

@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.tracking.TrackerManager;
@@ -27,8 +26,12 @@ public class GriefPreventionTracker extends TrackerBase {
     public final List<GameProfile> trustedPlayers = new ArrayList<>();
     public GameProfile owner;
 
-    public GriefPreventionTracker(TiqualityChunk chunk, NBTTagCompound tag){
-        this(thisMustBeFirstStatementInBodyWorkaround(chunk, tag));
+    @SuppressWarnings("unused")
+    /*
+     * Used by Tiquality, using reflection.
+     */
+    public GriefPreventionTracker(TiqualityWorld world, NBTTagCompound tag){
+        this(thisMustBeFirstStatementInBodyWorkaround(world, tag));
     }
 
     public GriefPreventionTracker(Claim in){
@@ -60,16 +63,16 @@ public class GriefPreventionTracker extends TrackerBase {
 
     /**
      * Because java is incompetent.
-     * @param chunk .
+     * @param world .
      * @param tag .
      * @return .
      */
-    private static Claim thisMustBeFirstStatementInBodyWorkaround(TiqualityChunk chunk, NBTTagCompound tag){
+    private static Claim thisMustBeFirstStatementInBodyWorkaround(TiqualityWorld world, NBTTagCompound tag){
         long least = tag.getLong("uuidLeast");
         long most = tag.getLong("uuidMost");
         UUID claim_uuid = new UUID(most, least);
-        org.spongepowered.api.world.World world = (org.spongepowered.api.world.World) chunk.getMinecraftChunk().getWorld();
-        Optional<Claim> result = GriefPrevention.getApi().getClaimManager(world).getClaimByUUID(claim_uuid);
+        org.spongepowered.api.world.World spongeWorld = (org.spongepowered.api.world.World) world;
+        Optional<Claim> result = GriefPrevention.getApi().getClaimManager(spongeWorld).getClaimByUUID(claim_uuid);
         if(result.isPresent() == false){
             return null;
         }else{

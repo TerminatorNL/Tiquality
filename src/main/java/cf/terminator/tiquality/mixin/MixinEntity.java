@@ -1,11 +1,11 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.TickLogger;
 import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -85,8 +85,7 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Inject(method = "readFromNBT", at = @At("HEAD"))
     private void TiqualityOnRead(NBTTagCompound compound, CallbackInfo ci){
         if(compound.hasKey("Tiquality")) {
-            TiqualityChunk chunk = ((TiqualityWorld) world).getChunk(getPos());
-            tracker = TrackerBase.getTracker(chunk, compound.getCompoundTag("Tiquality"));
+            tracker = TrackerManager.getTracker((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));
         }
     }
 }

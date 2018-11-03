@@ -6,16 +6,16 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-public class EntitySpawnEventHandler {
+public class EntitySetTrackerEventHandler {
 
-    public static final EntitySpawnEventHandler INSTANCE = new EntitySpawnEventHandler();
+    public static final EntitySetTrackerEventHandler INSTANCE = new EntitySetTrackerEventHandler();
 
-    private EntitySpawnEventHandler(){
+    private EntitySetTrackerEventHandler(){
 
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onSpawn(TiqualityEvent.SetEntityTrackerEvent e){
+    public void onSet(TiqualityEvent.SetEntityTrackerEvent e){
         TiqualityEntity entity = e.getEntity();
         if(entity instanceof EntityPlayer){
             e.setTracker(ForcedTracker.INSTANCE);

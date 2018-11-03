@@ -64,42 +64,16 @@ public abstract class TrackerBase {
         }
     }
 
-    /**
-     * Instantiates a new tracker using an NBT compound tag.
-     * If the tracker already exists, a reference to the pre-existing tracker is used.
-     * @param tagCompound The NBT tag compound
-     * @return the tracker
-     */
-    @Nullable
-    public static TrackerBase getTracker(TiqualityChunk chunk, NBTTagCompound tagCompound){
-        String type = tagCompound.getString("type");
-        if(type.equals("")){
-            return null;
-        }
-        Class<? extends TrackerBase> clazz = REGISTERED_TRACKER_TYPES.get(type);
-        if(clazz == null){
-            /*
-                Either a mod author completely forgot to call cf.terminator.tiquality.api.Tracking.registerCustomTracker(),
-                or a mod providing a tracker has been removed since last load.
-             */
-            return null;
-        }
-        TrackerBase newTracker;
-        try {
-            newTracker =  clazz.getDeclaredConstructor(TiqualityChunk.class, NBTTagCompound.class).newInstance(chunk, tagCompound.getCompoundTag("data"));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        newTracker.uniqueId = tagCompound.getLong("id");
-        return TrackerManager.preventCopies(newTracker);
-    }
-
     public static NBTTagCompound getTrackerTag(TrackerBase tracker){
         NBTTagCompound tag = new NBTTagCompound();
         tag.setString("type", tracker.getIdentifier());
         tag.setLong("id", tracker.getUniqueId());
         tag.setTag("data", tracker.getNBT());
         return tag;
+    }
+
+    void setUniqueId(long id){
+        uniqueId = id;
     }
 
     /**

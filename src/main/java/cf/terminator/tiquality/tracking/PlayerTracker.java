@@ -1,7 +1,7 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.util.ForgeData;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.nbt.NBTTagCompound;
@@ -20,9 +20,9 @@ public class PlayerTracker extends TrackerBase{
 
     /**
      * This method is called by Tiquality, do not instantiate these yourself!
-     * This method is required, and always uses TiqualityChunk and NBTCompoundTag
+     * This method is required, and always uses TiqualityWorld and NBTCompoundTag
      */
-    public PlayerTracker(TiqualityChunk chunk, NBTTagCompound tag) {
+    public PlayerTracker(TiqualityWorld world, NBTTagCompound tag) {
         this(ForgeData.getGameProfileByUUID(new UUID(tag.getLong("uuidMost"), tag.getLong("uuidLeast"))));
     }
 
