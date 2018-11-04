@@ -17,6 +17,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,11 +36,16 @@ public abstract class MixinChunk implements TiqualityChunk {
     @Shadow public abstract boolean isLoaded();
     @Shadow public abstract ChunkPos getPos();
 
+    @Shadow public abstract World getWorld();
+
+    @Shadow @Final public int x;
+    @Shadow @Final public int z;
     private final BiMap<Byte, TrackerBase> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
     /**
      * Gets the first free index for a player.
+     * If Tiquality detects that there are too many owners assigned to this chunk, it wipes all data in this chunk.
      *
      * There are 6 reserved values:
      *           0: No owner
@@ -50,18 +56,24 @@ public abstract class MixinChunk implements TiqualityChunk {
      *          -5: Reserved for potentional future use-case
      * @return the owner value
      */
-    private byte getFirstFreeIndex(){
+    private synchronized byte getFirstFreeIndex(){
         byte i=1;
         while(trackerLookup.containsKey(i)){
             ++i;
             if(i == -5){
-                throw new IllegalStateException("There are too many owners in this chunk: " + this);
+                trackerLookup.clear();
+                STORAGE.clearAll();
+                Tiquality.LOGGER.warn("There are too many owners in this chunk: " + this.getWorld().provider.getDimension() + " X=" + this.x + " Z=" + this.z);
+                Tiquality.LOGGER.warn("All tracking elements in this chunk have been removed to prevent undefined behavior.");
+
+                /* It's now safe to assume that recursion cannot occur. */
+                return getFirstFreeIndex();
             }
         }
         return i;
     }
 
-    private byte getIDbyTracker(TrackerBase tracker){
+    private synchronized byte getIDbyTracker(TrackerBase tracker){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             owner_id = getFirstFreeIndex();
@@ -73,7 +85,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     /**
      * Removes unused block owners.
      */
-    private void tiquality_refresh(){
+    private synchronized void tiquality_refresh(){
         Set<Byte> ownersToKeep = new TreeSet<>();
         for(byte[] data : STORAGE.getAll()){
             for(byte b : data){
@@ -115,7 +127,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_writeToNBT(NBTTagCompound tag) {
+    public synchronized void tiquality_writeToNBT(NBTTagCompound tag) {
         tiquality_refresh();
         NBTTagList list = tag.getTagList("Sections", 10);
         STORAGE.injectNBTAfter(list);
@@ -136,7 +148,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_loadNBT(World world, NBTTagCompound tag) {
+    public synchronized void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
@@ -170,14 +182,14 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Inject(method = "onLoad", at=@At("HEAD"))
-    private void onLoad(CallbackInfo ci){
+    private synchronized void onLoad(CallbackInfo ci){
         for(TrackerBase tracker : trackerLookup.values()){
             tracker.associateChunk(this);
         }
     }
 
     @Inject(method = "onUnload", at=@At("HEAD"))
-    private void onUnLoad(CallbackInfo ci){
+    private synchronized void onUnLoad(CallbackInfo ci){
         for(TrackerBase tracker : trackerLookup.values()){
             tracker.disAssociateChunk(this);
         }

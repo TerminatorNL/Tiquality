@@ -7,18 +7,13 @@ import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.io.File;
-import java.security.CodeSource;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     public static boolean spongePresent = false;
     public static boolean hasClientClasses = true;
-    public static boolean griefPreventionPresent = false;
     public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
     private static final Logger LOGGER = LogManager.getLogger("Tiquality-Mixin");
 
@@ -56,34 +51,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
             if(isProductionEnvironment()){
                 LOGGER.info("We're running in a production environment.");
-                CodeSource source = getClass().getProtectionDomain().getCodeSource();
-                String path = source.getLocation().getFile().replaceFirst("file:", "").replaceFirst("!.+", "");
-                File MODS_DIR = new File(path).getParentFile();
-                for(File file : Objects.requireNonNull(MODS_DIR.listFiles())){
-                    String fileName = file.getName().toLowerCase();
-                    if(fileName.endsWith(".jar") == true && fileName.contains("griefprevention")){
-                        griefPreventionPresent = true;
-                        break;
-                    }
-                }
-                if(griefPreventionPresent == true){
-                    LOGGER.info("GriefPrevention is present!");
-                }else{
-                    LOGGER.info("GriefPrevention is not present!");
-                    LOGGER.info("If you do have GriefPrevention installed, please put the jar in the mods folder, and");
-                    LOGGER.info("make sure that the the filename contains 'griefprevention' and ends with '.jar'");
-                }
             }else{
                 LOGGER.info("We're running in a deobfuscated environment.");
-                try {
-                    Class.forName("me.ryanhamshire.griefprevention.GriefPreventionPlugin", false, getClass().getClassLoader());
-                    griefPreventionPresent = true;
-                    LOGGER.info("GriefPrevention is present!");
-                } catch (ClassNotFoundException ignored) {
-                    LOGGER.info("GriefPrevention is not present!");
-                }
             }
-
 
         }
     }
@@ -105,15 +75,6 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             switch (mixin){
                 case "cf.terminator.tiquality.mixin.MixinChunkProviderClient":
                 case "cf.terminator.tiquality.mixin.MixinWorldClient":
-                    return false;
-            }
-        }
-        /*
-         * Not really needed, but it makes our point extra clear.
-         */
-        if(griefPreventionPresent == false){
-            switch (mixin){
-                case "cf.terminator.tiquality.mixin.integration.griefprevention.MixinGPClaim":
                     return false;
             }
         }
@@ -144,14 +105,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public List<String> getMixins() {
-        List<String> list = new ArrayList<>();
-        if(griefPreventionPresent){
-            //TODO: Remove this, and ask for a better event instead of trying to use Mixin.
-            //This works perfectly in development environments, but not in deobfuscated environments.
-            //Mixin cannot find the target class, perhaps because it's nested?
-            //list.add("integration.griefprevention.MixinGPClaim");
-        }
-        return list;
+        return null;
     }
 
     @Override

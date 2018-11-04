@@ -63,11 +63,11 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
     /**
      * Sets the tracker in a cuboid area
      * @param start start coord (All lower)
-     * @param end end coord (All lower)
+     * @param end end coord (All higher)
      * @param tracker the tracker to add
-     * @param callback a task to run on completion
+     * @param callback a task to run on completion. This will run in the main thread!
      */
     public void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback){
-        WorldHelper.setTrackerCuboidAsync(this, start, end, tracker, callback);
+        WorldHelper.setTrackerCuboid(this, start, end, tracker, callback);
     }
 }

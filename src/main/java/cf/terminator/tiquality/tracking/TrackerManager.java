@@ -2,9 +2,9 @@ package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import com.mojang.authlib.GameProfile;
-import com.sun.istack.internal.NotNull;
 import net.minecraft.nbt.NBTTagCompound;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
@@ -13,7 +13,7 @@ public class TrackerManager {
 
     /**
      * Variable holding all PlayerTrackers.
-     * All access to it's variables is synchronized.
+     * All access to it's variables is synchronized, for for loops we use getEntrySet()
      */
     private static final Set<TrackerBase> TRACKER_LIST = Collections.synchronizedSet(new HashSet<>());
     static {
@@ -37,7 +37,7 @@ public class TrackerManager {
         boolean ticked = true;
         while(System.nanoTime() < time && ticked){
             ticked = false;
-            for(TrackerBase tracker : TRACKER_LIST){
+            for(TrackerBase tracker : getEntrySet()){
                 if(tracker.isDone() == false){
                     tracker.grantTick();
                     ticked = true;
@@ -51,7 +51,7 @@ public class TrackerManager {
      */
     public static void removeInactiveTrackers(){
         ArrayList<TrackerBase> inactiveTrackers = new ArrayList<>();
-        for(TrackerBase tracker : TRACKER_LIST){
+        for(TrackerBase tracker : getEntrySet()){
             if(tracker.isDone() && tracker.isLoaded() == false){
                 inactiveTrackers.add(tracker);
             }else if(tracker.forceUnload() == true){
@@ -71,7 +71,7 @@ public class TrackerManager {
      * @return the supplied Tracker, or the old one, if it exists.
      */
     public static <T extends TrackerBase> T preventCopies(T input){
-        for(TrackerBase tracker : TRACKER_LIST){
+        for(TrackerBase tracker : getEntrySet()){
             if(input.getUniqueId() == tracker.getUniqueId()){
                 //noinspection unchecked
                 return (T) tracker;
@@ -86,12 +86,12 @@ public class TrackerManager {
      * @param profile the profile to bind this tracker to the profile MUST contain an UUID!
      * @return the associated PlayerTracker
      */
-    public static @NotNull PlayerTracker getOrCreatePlayerTrackerByProfile(@NotNull final GameProfile profile){
+    public static @Nonnull PlayerTracker getOrCreatePlayerTrackerByProfile(@Nonnull final GameProfile profile){
         UUID id = profile.getId();
         if(id == null){
             throw new IllegalArgumentException("GameProfile must have an UUID");
         }
-        for(TrackerBase tracker : TRACKER_LIST){
+        for(TrackerBase tracker : getEntrySet()){
             if(tracker instanceof PlayerTracker){
                 PlayerTracker playerTracker = (PlayerTracker) tracker;
                 if(playerTracker.getOwner().equals(profile)){

@@ -16,6 +16,13 @@ public class ChunkStorage {
     }
 
     /**
+     * Removes all data from this ChunkStorage.
+     */
+    public void clearAll(){
+        data = new Element[16];
+    }
+
+    /**
      * Gets the stored owner associated with the BlockPos.
      * @param pos the block pos
      * @return the owner ID, or 0 if none is found

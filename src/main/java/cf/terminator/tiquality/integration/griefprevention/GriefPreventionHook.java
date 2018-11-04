@@ -47,12 +47,10 @@ public class GriefPreventionHook {
             net.minecraft.world.World world = (net.minecraft.world.World) claim.getWorld();
             Location<World> pos = claim.getLesserBoundaryCorner();
 
-
             String identifier =
                     (owner != null ? owner.toPlain() : "Unknown") + " at DIM=" +
                             (world != null ? String.valueOf(world.provider.getDimension()) : "Unknown") + " "
                             + (pos != null ? "X: " + pos.getBlockX() + " Z: " + pos.getBlockZ() : "unknown");
-
 
             Tiquality.LOGGER.info("Importing claim: " + identifier);
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing claim: " + identifier));
