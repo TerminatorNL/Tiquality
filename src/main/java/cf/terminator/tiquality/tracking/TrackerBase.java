@@ -7,6 +7,7 @@ import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.PersistentData;
@@ -44,7 +45,7 @@ public abstract class TrackerBase {
      * Holds a list of all registered trackers
      * See: cf.terminator.tiquality.api.Tracking#registerCustomTracker(java.lang.Class)
      */
-    public static HashMap<String, Class<? extends TrackerBase>> REGISTERED_TRACKER_TYPES = new HashMap<>();
+    public static final HashMap<String, Class<? extends TrackerBase>> REGISTERED_TRACKER_TYPES = new HashMap<>();
 
     private long uniqueId;
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
@@ -93,11 +94,12 @@ public abstract class TrackerBase {
 
     /**
      * Used to initialize a new Tracker with saved data, if this constructor isn't overridden, I complain.
+     * @param world The world
      * @param tag the NBTTagCompound. (generated using the getNBT method on the last save)
      */
-    public TrackerBase(NBTTagCompound tag){
+    public TrackerBase(TiqualityWorld world, NBTTagCompound tag){
         super();
-        throw new TiqualityException.ReadTheDocsException("You MUST define a constructor using an NBTTagCompound as argument!");
+        throw new TiqualityException.ReadTheDocsException("You MUST define a constructor using an NBTTagCompound as argument: " + getClass());
     }
 
     /**

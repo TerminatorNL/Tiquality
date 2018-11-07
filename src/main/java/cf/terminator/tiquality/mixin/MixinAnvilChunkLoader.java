@@ -18,12 +18,12 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 public class MixinAnvilChunkLoader {
 
     @Inject(method = "writeChunkToNBT", at=@At("RETURN"), locals = LocalCapture.CAPTURE_FAILEXCEPTION)
-    private void lagGoggles_onSaveChunk(Chunk chunk, World world, NBTTagCompound tag, CallbackInfo ci) {
+    private void tiquality_onSaveChunk(Chunk chunk, World world, NBTTagCompound tag, CallbackInfo ci) {
         ((TiqualityChunk) chunk).tiquality_writeToNBT(tag);
     }
 
     @Inject(method = "readChunkFromNBT", at=@At("RETURN"), locals = LocalCapture.CAPTURE_FAILEXCEPTION)
-    private void lagGoggles_onLoad(World worldIn, NBTTagCompound tag, CallbackInfoReturnable<Chunk> cir, int i, int j, Chunk chunk, NBTTagList nbttaglist, int k, ExtendedBlockStorage aextendedblockstorage[], boolean flag) {
+    private void tiquality_onChunkLoad(World worldIn, NBTTagCompound tag, CallbackInfoReturnable<Chunk> cir, int i, int j, Chunk chunk, NBTTagList nbttaglist, int k, ExtendedBlockStorage aextendedblockstorage[], boolean flag) {
         ((TiqualityChunk) chunk).tiquality_loadNBT(worldIn, tag);
     }
 

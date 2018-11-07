@@ -28,10 +28,17 @@ public class TickMaster {
 
 
             /* First, we asses the amount of active PlayerTrackers. */
-            double totalWeight = 0;
-            for(TrackerBase tracker : TrackerManager.getEntrySet()){
-                totalWeight += tracker.getMultiplier(cache);
-            }
+            double totalWeight = TrackerManager.foreach(new TrackerManager.Action<Double>() {
+
+                @Override
+                public void each(TrackerBase tracker) {
+                    if(value == null){
+                        value = 0D;
+                    }else{
+                        value += tracker.getMultiplier(cache);
+                    }
+                }
+            });
 
             /*
                 We divide the tick time amongst users, based on whether they are online or not and config multiplier.
@@ -39,12 +46,16 @@ public class TickMaster {
             */
             double totalweight = Math.max(1, totalWeight);
 
-            for(TrackerBase tracker : TrackerManager.getEntrySet()){
-                long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
+            TrackerManager.foreach(new TrackerManager.Action<Object>() {
+                @Override
+                public void each(TrackerBase tracker) {
+                    long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
 
-                //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
-                tracker.setNextTickTime(time);
-            }
+                    //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
+                    tracker.setNextTickTime(time);
+                }
+            });
+
         }else if(e.phase == TickEvent.Phase.END){
             TrackerManager.removeInactiveTrackers();
             TrackerManager.tickUntil(startTime + TICK_DURATION);

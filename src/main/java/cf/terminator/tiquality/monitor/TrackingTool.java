@@ -1,8 +1,8 @@
 package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerBase;
-import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -103,7 +103,7 @@ public class TrackingTool {
         }
         if(step == COLORSCALE.length){
             --step;
-            ((TiqualityWorld) player.world).setTracker(selectedPos, TrackerManager.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
+            ((TiqualityWorld) player.world).setTracker(selectedPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
             return;
         }
         Block block = player.world.getBlockState(selectedPos).getBlock();

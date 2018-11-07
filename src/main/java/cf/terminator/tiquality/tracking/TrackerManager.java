@@ -1,12 +1,12 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.nbt.NBTTagCompound;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
 public class TrackerManager {
@@ -15,17 +15,24 @@ public class TrackerManager {
      * Variable holding all PlayerTrackers.
      * All access to it's variables is synchronized, for for loops we use getEntrySet()
      */
-    private static final Set<TrackerBase> TRACKER_LIST = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<TrackerBase> TRACKER_LIST = new HashSet<>();
     static {
         TRACKER_LIST.add(ForcedTracker.INSTANCE);
     }
 
     /**
-     * Gets an unmodifiable set of entries.
-     * @return the set
+     * Loop over the protected set.
      */
-    public static Set<TrackerBase> getEntrySet(){
-        return new HashSet<>(TRACKER_LIST);
+    public static <T> T foreach(Action<T> foreach){
+        synchronized (TRACKER_LIST){
+            for(TrackerBase tracker : TRACKER_LIST){
+                foreach.each(tracker);
+                if(foreach.stop){
+                    return foreach.value;
+                }
+            }
+        }
+        return foreach.value;
     }
 
     /**
@@ -34,15 +41,16 @@ public class TrackerManager {
      * @param time the time (System.nanoTime()) when the ticking should stop.
      */
     public static void tickUntil(long time){
-        boolean ticked = true;
-        while(System.nanoTime() < time && ticked){
-            ticked = false;
-            for(TrackerBase tracker : getEntrySet()){
+        while(System.nanoTime() < time && foreach(new Action<Boolean>() {
+            @Override
+            public void each(TrackerBase tracker) {
                 if(tracker.isDone() == false){
                     tracker.grantTick();
-                    ticked = true;
+                    value = true;
                 }
             }
+        }) != null){
+            /* Woah this is some nasty code formatting. */
         }
     }
 
@@ -50,17 +58,19 @@ public class TrackerManager {
      * Removes trackers which do not tick anymore due to their tickables being unloaded
      */
     public static void removeInactiveTrackers(){
-        ArrayList<TrackerBase> inactiveTrackers = new ArrayList<>();
-        for(TrackerBase tracker : getEntrySet()){
-            if(tracker.isDone() && tracker.isLoaded() == false){
-                inactiveTrackers.add(tracker);
-            }else if(tracker.forceUnload() == true){
-                inactiveTrackers.add(tracker);
+        synchronized (TRACKER_LIST) {
+            ArrayList<TrackerBase> inactiveTrackers = new ArrayList<>();
+            for (TrackerBase tracker : TRACKER_LIST) {
+                if (tracker.isDone() && tracker.isLoaded() == false) {
+                    inactiveTrackers.add(tracker);
+                } else if (tracker.forceUnload() == true) {
+                    inactiveTrackers.add(tracker);
+                }
             }
-        }
-        for(TrackerBase tracker : inactiveTrackers){
-            tracker.onUnload();
-            TRACKER_LIST.remove(tracker);
+            for (TrackerBase tracker : inactiveTrackers) {
+                tracker.onUnload();
+                TRACKER_LIST.remove(tracker);
+            }
         }
     }
 
@@ -71,37 +81,16 @@ public class TrackerManager {
      * @return the supplied Tracker, or the old one, if it exists.
      */
     public static <T extends TrackerBase> T preventCopies(T input){
-        for(TrackerBase tracker : getEntrySet()){
-            if(input.getUniqueId() == tracker.getUniqueId()){
-                //noinspection unchecked
-                return (T) tracker;
-            }
-        }
-        TRACKER_LIST.add(input);
-        return input;
-    }
-
-    /*
-     * Gets the tracker for a player, if no one exists yet, it will create one. Never returns null.
-     * @param profile the profile to bind this tracker to the profile MUST contain an UUID!
-     * @return the associated PlayerTracker
-     */
-    public static @Nonnull PlayerTracker getOrCreatePlayerTrackerByProfile(@Nonnull final GameProfile profile){
-        UUID id = profile.getId();
-        if(id == null){
-            throw new IllegalArgumentException("GameProfile must have an UUID");
-        }
-        for(TrackerBase tracker : getEntrySet()){
-            if(tracker instanceof PlayerTracker){
-                PlayerTracker playerTracker = (PlayerTracker) tracker;
-                if(playerTracker.getOwner().equals(profile)){
-                    return playerTracker;
+        synchronized (TRACKER_LIST) {
+            for (TrackerBase tracker : TRACKER_LIST) {
+                if (input.getUniqueId() == tracker.getUniqueId()) {
+                    //noinspection unchecked
+                    return (T) tracker;
                 }
             }
+            TRACKER_LIST.add(input);
         }
-        final PlayerTracker newTracker = new PlayerTracker(profile);
-        TRACKER_LIST.add(newTracker);
-        return newTracker;
+        return input;
     }
 
     /**
@@ -132,5 +121,16 @@ public class TrackerManager {
         }
         newTracker.setUniqueId(tagCompound.getLong("id"));
         return preventCopies(newTracker);
+    }
+
+    public static abstract class Action<T>{
+        public T value = null;
+        private boolean stop = false;
+
+        public void stop(T value){
+            this.stop = true;
+            this.value = value;
+        }
+        public abstract void each(TrackerBase tracker);
     }
 }

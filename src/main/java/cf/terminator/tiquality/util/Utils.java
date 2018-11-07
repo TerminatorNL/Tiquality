@@ -39,7 +39,10 @@ public class Utils {
 
     private static final HashMap<EntityPlayer, Map.Entry<Long,ITextComponent>> LAST_MESSAGES = new HashMap<>();
     public static void sendStatusBarMessage(EntityPlayer player, ITextComponent text){
-        if(LAST_MESSAGES.containsKey(player) == false || LAST_MESSAGES.get(player).getValue().equals(text) == false || LAST_MESSAGES.get(player).getKey() < System.currentTimeMillis() + 3000){
+        if(text == null || player == null){
+            return;
+        }
+        if(LAST_MESSAGES.containsKey(player) == false || LAST_MESSAGES.get(player).getValue().getFormattedText().equals(text.getFormattedText()) == false || LAST_MESSAGES.get(player).getKey() < System.currentTimeMillis() + 3000){
             LAST_MESSAGES.put(player, new AbstractMap.SimpleEntry<>(System.currentTimeMillis(), text));
             player.sendStatusMessage(text, true);
         }

@@ -17,6 +17,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -40,6 +41,10 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow @Final public int x;
     @Shadow @Final public int z;
+
+    @Shadow public abstract void markDirty();
+
+    @Shadow @Final private static Logger LOGGER;
     private final BiMap<Byte, TrackerBase> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
@@ -56,7 +61,7 @@ public abstract class MixinChunk implements TiqualityChunk {
      *          -5: Reserved for potentional future use-case
      * @return the owner value
      */
-    private synchronized byte getFirstFreeIndex(){
+    private byte getFirstFreeIndex(){
         byte i=1;
         while(trackerLookup.containsKey(i)){
             ++i;
@@ -73,7 +78,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         return i;
     }
 
-    private synchronized byte getIDbyTracker(TrackerBase tracker){
+    private byte getIDbyTracker(TrackerBase tracker){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             owner_id = getFirstFreeIndex();
@@ -85,7 +90,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     /**
      * Removes unused block owners.
      */
-    private synchronized void tiquality_refresh(){
+    private void tiquality_refresh(){
         Set<Byte> ownersToKeep = new TreeSet<>();
         for(byte[] data : STORAGE.getAll()){
             for(byte b : data){
@@ -107,7 +112,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public synchronized void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker){
+    public void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker){
 
         TiqualityEvent.SetBlockTrackerEvent event = new TiqualityEvent.SetBlockTrackerEvent(this, pos, tracker);
 
@@ -124,10 +129,11 @@ public abstract class MixinChunk implements TiqualityChunk {
             tracker.associateChunk(this);
             trackerLookup.forcePut(id, tracker);
         }
+        markDirty();
     }
 
     @Override
-    public synchronized void tiquality_writeToNBT(NBTTagCompound tag) {
+    public void tiquality_writeToNBT(NBTTagCompound tag) {
         tiquality_refresh();
         NBTTagList list = tag.getTagList("Sections", 10);
         STORAGE.injectNBTAfter(list);
@@ -148,7 +154,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public synchronized void tiquality_loadNBT(World world, NBTTagCompound tag) {
+    public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
@@ -163,7 +169,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public synchronized @Nullable TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos){
+    public @Nullable TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos){
         return trackerLookup.get(STORAGE.get(pos));
     }
 

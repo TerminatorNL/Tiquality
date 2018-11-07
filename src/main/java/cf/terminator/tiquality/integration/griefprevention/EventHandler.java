@@ -22,7 +22,7 @@ public class EventHandler {
     @SubscribeEvent
     public void onClaimCreate(GPClaimCreatedFullyEvent e){
         GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(e.getClaim());
-        tracker.setBlockTrackers();
+        tracker.setBlockTrackers(null);
     }
 
     @SubscribeEvent

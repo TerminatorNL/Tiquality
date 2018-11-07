@@ -7,7 +7,6 @@ import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
-import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.ForgeData;
@@ -25,10 +24,7 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static cf.terminator.tiquality.Tiquality.SCHEDULER;
 import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASSIGNED_OBJECTS_FAST;
@@ -194,11 +190,21 @@ public class CommandExecutor {
                 throw new CommandException("Player not found.");
             }
             ArrayList<TrackerBase> trackersToProfile = new ArrayList<>();
-            for(TrackerBase t : TrackerManager.getEntrySet()){
-                if(t.getAssociatedPlayers().contains(target_player)){
-                    trackersToProfile.add(t);
+
+
+            TrackerManager.foreach(new TrackerManager.Action<Object>() {
+                @Override
+                public void each(TrackerBase tracker) {
+                    if(tracker.getAssociatedPlayers().contains(target_player)){
+                        trackersToProfile.add(tracker);
+                    }
                 }
-            }
+            });
+
+
+
+
+
             if(trackersToProfile.size() == 0){
                 throw new CommandException("Player is found, but there are no trackers associated.");
             }
@@ -227,16 +233,18 @@ public class CommandExecutor {
          */
         }else if(args[0].equalsIgnoreCase("debug")){
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
-            SCHEDULER.schedule(new Runnable() {
+            Set<TrackerBase> set = new HashSet<>();
+            TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
-                public void run() {
-                    Set<TrackerBase> set = TrackerManager.getEntrySet();
-                    sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded Tracker objects (" + set.size() + "):"));
-                    for(TrackerBase e : set){
-                        sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.toString()));
-                    }
+                public void each(TrackerBase tracker) {
+                    set.add(tracker);
                 }
             });
+
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded Tracker objects (" + set.size() + "):"));
+            for(TrackerBase e : set){
+                sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.toString()));
+            }
         /*
 
                 UNKNOWN ARGUMENT
@@ -290,10 +298,16 @@ public class CommandExecutor {
             String start = args[2];
             if(args[0].equalsIgnoreCase("profile")) {
                 if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-                    for(TrackerBase e : TrackerManager.getEntrySet()){
-                        if (e instanceof PlayerTracker) {
-                            addIfStartsWith(list, start, ((PlayerTracker) e).getOwner().getName());
+                    Set<GameProfile> profiles = new HashSet<>();
+                    TrackerManager.foreach(new TrackerManager.Action<Object>() {
+                        @Override
+                        public void each(TrackerBase tracker) {
+                            profiles.addAll(tracker.getAssociatedPlayers());
                         }
+                    });
+
+                    for(GameProfile profile : profiles){
+                        addIfStartsWith(list, start, profile.getName());
                     }
                 }
             }

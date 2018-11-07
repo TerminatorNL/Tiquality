@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper;
 
+import cf.terminator.tiquality.Tiquality;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,18 +8,20 @@ import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class MixinConfigPlugin implements IMixinConfigPlugin {
+public class MixinConfigPlugin implements IMixinConfigPlugin{
 
     public static boolean spongePresent = false;
     public static boolean hasClientClasses = true;
     public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
-    private static final Logger LOGGER = LogManager.getLogger("Tiquality-Mixin");
+    public static final Logger LOGGER = LogManager.getLogger("Tiquality-Boot");
 
     /*
-     * Snippet straight out of SpongForge's source.
+     * Snippet straight out of SpongeForges' source.
      */
     public static boolean isProductionEnvironment(){
         return System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir") == null;
@@ -26,6 +29,8 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     private void setup(){
         if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
+            File thisJar = new File(Tiquality.class.getProtectionDomain().getCodeSource().getLocation().getFile());
+            LOGGER.info("I am located here: " + thisJar);
             MIXIN_CONFIG_PLUGIN_WAS_LOADED = true;
             if(getClass().getClassLoader().getResource("net/minecraft/client/main/Main.class") == null){
                 hasClientClasses = false;
@@ -54,8 +59,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             }else{
                 LOGGER.info("We're running in a deobfuscated environment.");
             }
-
         }
+
+
     }
 
     private boolean shouldApplyMixin(String mixin){
@@ -80,6 +86,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
         }
         return true;
     }
+
     @Override
     public void onLoad(String mixinPackage) {
         setup();
@@ -105,7 +112,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public List<String> getMixins() {
-        return null;
+        List<String> list = new ArrayList<>();
+        //list.add("");
+        return list;
     }
 
     @Override
@@ -117,6 +126,4 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
     public void postApply(String s, ClassNode classNode, String s1, IMixinInfo iMixinInfo) {
 
     }
-
-
 }

@@ -34,6 +34,35 @@ public class PlayerTracker extends TrackerBase{
         this.profile = profile;
     }
 
+    /*
+     * Gets the tracker for a player, if no one exists yet, it will create one. Never returns null.
+     * @param profile the profile to bind this tracker to the profile MUST contain an UUID!
+     * @return the associated PlayerTracker
+     */
+    public static @Nonnull PlayerTracker getOrCreatePlayerTrackerByProfile(@Nonnull final GameProfile profile){
+        UUID id = profile.getId();
+        if(id == null){
+            throw new IllegalArgumentException("GameProfile must have an UUID");
+        }
+
+        PlayerTracker tracker = TrackerManager.foreach(new TrackerManager.Action<PlayerTracker>() {
+            @Override
+            public void each(TrackerBase tracker) {
+                if(tracker instanceof PlayerTracker){
+                    PlayerTracker playerTracker = (PlayerTracker) tracker;
+                    if(playerTracker.getOwner().equals(profile)){
+                        stop(playerTracker);
+                    }
+                }
+            }
+        });
+
+        if(tracker != null){
+            return tracker;
+        }
+        return TrackerManager.preventCopies(new PlayerTracker(profile));
+    }
+
     /**
      * Checks if the owner of this tracker is online or not.
      * @param onlinePlayerProfiles an array of online players

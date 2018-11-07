@@ -34,23 +34,31 @@ public class WorldHelper {
         int high_y = end.getY();
         int high_z = end.getZ();
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
         synchronized (TASKS) {
             for (int x = low_x; x <= high_x + 16; x = x + 16) {
                 for (int y = low_y; y <= high_y + 16; y = y + 16) {
                     for (int z = low_z; z <= high_z + 16; z = z + 16) {
-                        pos.setPos(x, y, z);
-
-                        TASKS.addToQueue(new SetTrackerTask(world, pos, start, end, tracker));
+                        TASKS.addToQueue(new SetTrackerTask(world, new BlockPos(x,y,z), start, end, tracker));
                     }
                 }
             }
             if(callback != null) {
                 TASKS.addToQueue(callback);
             }
+            MinecraftForge.EVENT_BUS.register(SmearedAction.INSTANCE);
         }
-        MinecraftForge.EVENT_BUS.register(SmearedAction.INSTANCE);
+    }
+
+    public static void appendTask(Runnable task){
+        synchronized (TASKS){
+            TASKS.addToQueue(task);
+        }
+    }
+
+    public static int getQueuedTasks(){
+        synchronized (TASKS){
+            return TASKS.size();
+        }
     }
 
     /**
@@ -59,7 +67,7 @@ public class WorldHelper {
      */
     public static class SmearedAction{
 
-        public static SmearedAction INSTANCE = new SmearedAction();
+        public static final SmearedAction INSTANCE = new SmearedAction();
 
         private SmearedAction(){
 
@@ -67,15 +75,17 @@ public class WorldHelper {
 
         @SubscribeEvent
         public void onTick(TickEvent.ServerTickEvent event){
-            synchronized (TASKS) {
-                if(TASKS.size() == 0){
-                    MinecraftForge.EVENT_BUS.unregister(this);
-                    return;
+            Runnable task;
+            long maxTime = System.currentTimeMillis() + 100;
+            while(System.currentTimeMillis() < maxTime){
+                synchronized (TASKS) {
+                    if(TASKS.size() == 0){
+                        MinecraftForge.EVENT_BUS.unregister(this);
+                        return;
+                    }
+                    task = TASKS.take();
                 }
-                long maxTime = System.currentTimeMillis() + 100;
-                while (maxTime > System.currentTimeMillis() && TASKS.size() > 0) {
-                    TASKS.take().run();
-                }
+                task.run();
             }
         }
     }

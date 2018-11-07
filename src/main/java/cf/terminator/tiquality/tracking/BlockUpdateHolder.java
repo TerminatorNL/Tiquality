@@ -32,7 +32,7 @@ public class BlockUpdateHolder implements TiqualitySimpleTickable {
     @Override
     public void doUpdateTick() {
         TiqualityChunk chunk = ((TiqualityWorld) world).getChunk(pos);
-        if(chunk != null && chunk.isChunkLoaded()) {
+        if(chunk.isChunkLoaded()) {
             block.updateTick(world, pos, state, rand);
         }
     }

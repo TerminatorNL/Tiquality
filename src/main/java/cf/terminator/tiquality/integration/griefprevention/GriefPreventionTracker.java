@@ -2,8 +2,8 @@ package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerBase;
-import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.ForgeData;
 import com.mojang.authlib.GameProfile;
 import me.ryanhamshire.griefprevention.GriefPrevention;
@@ -44,7 +44,7 @@ public class GriefPreventionTracker extends TrackerBase {
         trustedPlayers.remove(this.owner);
     }
 
-    public void setBlockTrackers(){
+    public void setBlockTrackers(Runnable callback){
         BlockPos startPos = new BlockPos(
             claim.getLesserBoundaryCorner().getBlockX(),
             claim.getLesserBoundaryCorner().getBlockY(),
@@ -58,7 +58,7 @@ public class GriefPreventionTracker extends TrackerBase {
         );
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-        world.setTrackerCuboidAsync(startPos, endPos, this, null);
+        world.setTrackerCuboidAsync(startPos, endPos, this, callback);
     }
 
     /**
@@ -118,7 +118,7 @@ public class GriefPreventionTracker extends TrackerBase {
     @Override
     public void onUnload(){
         if(owner != null && doesClaimExists() == false){
-            replaceTracker(TrackerManager.getOrCreatePlayerTrackerByProfile(owner));
+            replaceTracker(PlayerTracker.getOrCreatePlayerTrackerByProfile(owner));
         }
     }
 
@@ -190,7 +190,7 @@ public class GriefPreventionTracker extends TrackerBase {
      */
     @Nonnull
     public String getIdentifier(){
-        return "GriefPrevention";
+        return "MixinClaim";
     }
 
     /**
