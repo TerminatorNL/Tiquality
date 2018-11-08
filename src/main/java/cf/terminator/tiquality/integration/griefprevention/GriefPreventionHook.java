@@ -75,12 +75,12 @@ public class GriefPreventionHook {
             @Override
             public void run() {
                 try {
-                    synchronized (counter) {
-                        while(counter.get() > 0){
+                    while(counter.get() > 0){
+                        synchronized (counter) {
                             counter.wait(5000);
-                            int tasks = WorldHelper.getQueuedTasks();
-                            sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
                         }
+                        int tasks = WorldHelper.getQueuedTasks();
+                        sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
                     }
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import finished."));
                     Tiquality.LOGGER.info("Import finished.");

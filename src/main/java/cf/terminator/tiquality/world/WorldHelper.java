@@ -102,8 +102,8 @@ public class WorldHelper {
             }
             try {
                 long maxTime = System.currentTimeMillis() + 40;
-                synchronized (TASKS) {
-                    while (System.currentTimeMillis() < maxTime) {
+                while (System.currentTimeMillis() < maxTime) {
+                    synchronized (TASKS) {
                         if (TASKS.size() == 0) {
                             MinecraftForge.EVENT_BUS.unregister(this);
                             return;
