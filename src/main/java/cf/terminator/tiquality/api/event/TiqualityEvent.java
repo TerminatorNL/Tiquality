@@ -89,6 +89,45 @@ public class TiqualityEvent extends Event {
     }
 
     /**
+     * Fired when a tracker is assigned to an entire chunk at once.
+     * Canceling this event will cause no tracker to be assigned.
+     *
+     * Remember: This can be called ASYNC. if you need to access the world, make sure it runs in the main thread.
+     */
+    @Cancelable
+    public static class SetChunkTrackerEvent extends TiqualityEvent{
+
+        private TrackerBase tracker;
+        private final TiqualityChunk chunk;
+
+        public SetChunkTrackerEvent(TiqualityChunk chunk, TrackerBase tracker){
+            this.tracker = tracker;
+            this.chunk = chunk;
+        }
+
+        public TiqualityChunk getChunk(){
+            return chunk;
+        }
+
+        public TiqualityWorld getTiqualityWorld(){
+            return (TiqualityWorld) chunk.getMinecraftChunk().getWorld();
+        }
+
+        public World getMinecraftWorld(){
+            return chunk.getMinecraftChunk().getWorld();
+        }
+
+        public TrackerBase getTracker(){
+            return tracker;
+        }
+
+        public void setTracker(TrackerBase tracker){
+            this.tracker = tracker;
+        }
+
+    }
+
+    /**
      * Fired when a tracker is assigned to an entity.
      * Canceling this event will cause no tracker to be assigned.
      *

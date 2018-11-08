@@ -17,7 +17,6 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
-import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,7 +43,6 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract void markDirty();
 
-    @Shadow @Final private static Logger LOGGER;
     private final BiMap<Byte, TrackerBase> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
@@ -133,6 +131,28 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
+    public void tiquality_setTrackerForEntireChunk(TrackerBase tracker){
+
+        TiqualityEvent.SetChunkTrackerEvent event = new TiqualityEvent.SetChunkTrackerEvent(this, tracker);
+
+        if(MinecraftForge.EVENT_BUS.post(event) /* if cancelled */){
+            return;
+        }
+        tracker = event.getTracker();
+
+        if(tracker == null){
+            STORAGE.clearAll();
+        }else {
+            byte id = getIDbyTracker(tracker);
+            STORAGE.setAll(id);
+            tracker.associateChunk(this);
+            trackerLookup.forcePut(id, tracker);
+        }
+        tiquality_refresh();
+        markDirty();
+    }
+
+    @Override
     public void tiquality_writeToNBT(NBTTagCompound tag) {
         tiquality_refresh();
         NBTTagList list = tag.getTagList("Sections", 10);
@@ -194,11 +214,17 @@ public abstract class MixinChunk implements TiqualityChunk {
         }
     }
 
+    /*
+    No longer needed! I use WeakReference to do this now.
+     */
+
+    /*
     @Inject(method = "onUnload", at=@At("HEAD"))
     private synchronized void onUnLoad(CallbackInfo ci){
         for(TrackerBase tracker : trackerLookup.values()){
             tracker.disAssociateChunk(this);
         }
     }
+    */
 
 }

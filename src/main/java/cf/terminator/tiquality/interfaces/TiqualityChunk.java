@@ -19,6 +19,12 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
      */
     void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker);
 
+    /**
+     * Sets a tracker for the entire chunk at once
+     * @param tracker the tracker, or null if all trackers should be removed.
+     */
+    void tiquality_setTrackerForEntireChunk(TrackerBase tracker);
+
     TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos);
 
     boolean isChunkLoaded();

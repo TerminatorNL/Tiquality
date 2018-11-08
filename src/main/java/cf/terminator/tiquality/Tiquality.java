@@ -34,6 +34,7 @@ public class Tiquality {
     public static final String DESCRIPTION = "Evenly distribute tick time amongst player, its time we all tick equally!";
     public static final String URL = "https://minecraft.curseforge.com/projects/tiquality";
     public static final String[] AUTHORS = {"Terminator_NL"};
+    public static boolean SPONGE_IS_PRESENT = false;
 
     /**
      * Is also the sponge container.
@@ -95,6 +96,7 @@ public class Tiquality {
     @EventHandler
     public void onPreServerStart(FMLServerAboutToStartEvent e){
         if (Loader.isModLoaded("sponge")) {
+            SPONGE_IS_PRESENT = true;
             COMMAND_HUB.initSponge();
         } else {
             COMMAND_HUB.initForge();

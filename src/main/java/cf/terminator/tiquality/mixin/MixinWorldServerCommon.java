@@ -2,8 +2,8 @@ package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.mixinhelper.WorldHelper;
 import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;

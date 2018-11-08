@@ -6,6 +6,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class ChunkStorage {
@@ -20,6 +21,20 @@ public class ChunkStorage {
      */
     public void clearAll(){
         data = new Element[16];
+    }
+
+    /**
+     * Sets all data from this ChunkStorage.
+     */
+    public void setAll(byte owner_id){
+        data = new Element[16];
+
+        byte[] storage = new byte[4096];
+        Arrays.fill(storage, owner_id);
+
+        for(int i=0;i<data.length;i++){
+            data[i] = new Element(storage);
+        }
     }
 
     /**
@@ -97,7 +112,7 @@ public class ChunkStorage {
         /**
          * Creates a new storage element with the given array.
          * THIS MUST HAVE A LENGTH OF 4096.
-         * @param storage
+         * @param storage byte array
          */
         Element(byte[] storage){
             this.storage = storage;

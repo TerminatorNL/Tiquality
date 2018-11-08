@@ -8,6 +8,7 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.PersistentData;
@@ -50,7 +51,7 @@ public abstract class TrackerBase {
     private long uniqueId;
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
     protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
-    protected final HashSet<TiqualityChunk> ASSOCIATED_CHUNKS = new HashSet<>();
+    protected final HashSet<WeakReferencedChunk> ASSOCIATED_CHUNKS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
 
     public long getUniqueId(){
@@ -391,18 +392,7 @@ public abstract class TrackerBase {
     public void associateChunk(TiqualityChunk chunk){
         unloadCooldown = 40;
         synchronized (ASSOCIATED_CHUNKS) {
-            ASSOCIATED_CHUNKS.add(chunk);
-        }
-    }
-
-    /**
-     * Removes associated chunks with this Tracker.
-     * The tracker will only be garbage collected when all associated chunks are unloaded.
-     * @param chunk the chunk.
-     */
-    public void disAssociateChunk(TiqualityChunk chunk){
-        synchronized (ASSOCIATED_CHUNKS) {
-            ASSOCIATED_CHUNKS.remove(chunk);
+            ASSOCIATED_CHUNKS.add(new WeakReferencedChunk(chunk));
         }
     }
 
@@ -415,11 +405,11 @@ public abstract class TrackerBase {
         if(unloadCooldown > 0){
             return true;
         }
-        HashSet<TiqualityChunk> loadedChunks = new HashSet<>();
+        HashSet<WeakReferencedChunk> loadedChunks = new HashSet<>();
         synchronized (ASSOCIATED_CHUNKS) {
-            for (TiqualityChunk chunk : ASSOCIATED_CHUNKS) {
-                if (chunk.isChunkLoaded() == true) {
-                    loadedChunks.add(chunk);
+            for (WeakReferencedChunk ref : ASSOCIATED_CHUNKS) {
+                if (ref.isChunkLoaded()) {
+                    loadedChunks.add(ref);
                 }
             }
             ASSOCIATED_CHUNKS.retainAll(loadedChunks);

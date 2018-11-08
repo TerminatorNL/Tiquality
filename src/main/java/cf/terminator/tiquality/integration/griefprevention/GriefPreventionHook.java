@@ -4,10 +4,10 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.mixinhelper.WorldHelper;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.world.WorldHelper;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.*;
@@ -64,6 +64,9 @@ public class GriefPreventionHook {
                     String message = "[Tiquality] Remaining: " + counter.getAndDecrement() + ". Imported: " + identifier;
                     Tiquality.LOGGER.info(message);
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + message));
+                    synchronized (counter) {
+                        counter.notifyAll();
+                    }
                 }
             });
         }
@@ -72,10 +75,12 @@ public class GriefPreventionHook {
             @Override
             public void run() {
                 try {
-                    while(counter.get() > 0){
-                        Thread.sleep(5000);
-                        int tasks = WorldHelper.getQueuedTasks();
-                        sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
+                    synchronized (counter) {
+                        while(counter.get() > 0){
+                            counter.wait(5000);
+                            int tasks = WorldHelper.getQueuedTasks();
+                            sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
+                        }
                     }
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import finished."));
                     Tiquality.LOGGER.info("Import finished.");
@@ -166,7 +171,7 @@ public class GriefPreventionHook {
             Object source = event.getSource();
             if(source instanceof EntityPlayer){
                 EntityPlayer player = (EntityPlayer) source;
-                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] Claim removal detected, trackers updated."));
+                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] Claim removal detected, updating trackers..."));
 
                 for(Claim claim : event.getClaims()){
                     GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
