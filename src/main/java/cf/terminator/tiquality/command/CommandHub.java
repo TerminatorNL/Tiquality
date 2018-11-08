@@ -27,9 +27,7 @@ public class CommandHub {
      * This makes sure we do not accidentally load Sponge classes, which aren't present.
      */
     public void initForge(){
-        if(registerType == RegisterType.SPONGEFORGE){
-            return;
-        }else if(registerType != RegisterType.NONE){
+        if(registerType != RegisterType.NONE){
             throw new IllegalStateException("Must not register commands twice!");
         }
         registerType = RegisterType.FORGE_ONLY;

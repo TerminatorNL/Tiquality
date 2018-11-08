@@ -31,8 +31,7 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nonnull
-    TiqualityChunk getChunk(BlockPos pos){
+    public @Nonnull TiqualityChunk getChunk(BlockPos pos){
         TiqualityChunk chunk = (TiqualityChunk) ((ChunkProviderServer)chunkProvider).id2ChunkMap.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
         return chunk != null ? chunk : (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }

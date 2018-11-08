@@ -27,14 +27,14 @@ public class EventHandler {
 
     @SubscribeEvent
     public void onSetTracker(TiqualityEvent.SetBlockTrackerEvent e){
+        if(e.getTracker() instanceof GriefPreventionTracker){
+            return;
+        }
         ClaimManager claimManager = GriefPrevention.getApi().getClaimManager((World) e.getMinecraftWorld());
         Location<World> pos = new Location<>((World) e.getMinecraftWorld(), e.getPos().getX(), e.getPos().getY(), e.getPos().getZ());
 
         Claim claim = claimManager.getClaimAt(pos);
         if(claim.isWilderness()){
-            return;
-        }
-        if(e.getTracker() instanceof GriefPreventionTracker){
             return;
         }
         GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);

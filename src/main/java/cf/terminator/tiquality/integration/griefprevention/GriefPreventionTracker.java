@@ -98,6 +98,9 @@ public class GriefPreventionTracker extends TrackerBase {
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
         world.setTrackerCuboidAsync(startPos, endPos, tracker, null);
+        for(Claim subClaim : claim.getChildren(false)){
+            world.setTrackerCuboidAsync(startPos, endPos, GriefPreventionHook.findOrGetTrackerByClaim(subClaim), null);
+        }
     }
 
     public void updatePlayers(){

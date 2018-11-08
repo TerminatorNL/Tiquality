@@ -75,9 +75,10 @@ public class GriefPreventionHook {
                     while(counter.get() > 0){
                         Thread.sleep(5000);
                         int tasks = WorldHelper.getQueuedTasks();
-                        sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " chunks to process left."));
+                        sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
                     }
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import finished."));
+                    Tiquality.LOGGER.info("Import finished.");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

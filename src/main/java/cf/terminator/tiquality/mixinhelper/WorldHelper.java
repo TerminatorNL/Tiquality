@@ -14,9 +14,13 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 public class WorldHelper {
 
-    private static final FiFoQueue<Runnable> TASKS = new FiFoQueue<>();
+    private static final FiFoQueue<ScheduledAction> TASKS = new FiFoQueue<>();
 
     /**
      * Sets the tracker in a cuboid area
@@ -43,15 +47,9 @@ public class WorldHelper {
                 }
             }
             if(callback != null) {
-                TASKS.addToQueue(callback);
+                TASKS.addToQueue(new CallBack(callback));
             }
             MinecraftForge.EVENT_BUS.register(SmearedAction.INSTANCE);
-        }
-    }
-
-    public static void appendTask(Runnable task){
-        synchronized (TASKS){
-            TASKS.addToQueue(task);
         }
     }
 
@@ -65,42 +63,97 @@ public class WorldHelper {
      * Executes tasks in the main thread, but limits itself to 100 milliseconds.
      * Used for large tasks that must be done in the main thread.
      */
-    public static class SmearedAction{
+    public static class SmearedAction {
 
         public static final SmearedAction INSTANCE = new SmearedAction();
 
-        private SmearedAction(){
+        private SmearedAction() {
 
         }
 
         @SubscribeEvent
-        public void onTick(TickEvent.ServerTickEvent event){
-            Runnable task;
-            long maxTime = System.currentTimeMillis() + 100;
-            while(System.currentTimeMillis() < maxTime){
+        public void onTick(TickEvent.ServerTickEvent event) {
+            try {
+
+                ExecutorService threadPool = Executors.newFixedThreadPool(20);
+                long maxTime = System.currentTimeMillis() + 100;
                 synchronized (TASKS) {
-                    if(TASKS.size() == 0){
-                        MinecraftForge.EVENT_BUS.unregister(this);
-                        return;
+                    while (System.currentTimeMillis() < maxTime) {
+                        if (TASKS.size() == 0) {
+                            MinecraftForge.EVENT_BUS.unregister(this);
+                            return;
+                        }
+                        ScheduledAction action = TASKS.take();
+                        if(action.requiresChunkLoad()){
+                            action.loadChunk();
+                        }
+                        if (action.isCallback() == false) {
+                            /* It's a task, we execute it straight away in the threadpool. */
+                            threadPool.submit(action);
+                        } else {
+                            /* It's a callback, we wait for all Tasks to end, and then call it. */
+                            threadPool.shutdown();
+                            threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                            action.run();
+                            if(TASKS.size() == 0){
+                                MinecraftForge.EVENT_BUS.unregister(this);
+                                return;
+                            }
+                            threadPool = Executors.newFixedThreadPool(20);
+                        }
                     }
-                    task = TASKS.take();
                 }
-                task.run();
+                threadPool.shutdown();
+                threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
 
+    interface ScheduledAction extends Runnable{
+        boolean isCallback();
+        boolean requiresChunkLoad();
+        void loadChunk();
+    }
 
+    public static class CallBack implements ScheduledAction{
 
+        private final Runnable runnable;
 
+        public CallBack(Runnable runnable) {
+            this.runnable = runnable;
+        }
 
-    public static class SetTrackerTask implements Runnable{
+        @Override
+        public void run() {
+            runnable.run();
+        }
+
+        @Override
+        public boolean isCallback() {
+            return true;
+        }
+
+        @Override
+        public boolean requiresChunkLoad() {
+            return false;
+        }
+
+        @Override
+        public void loadChunk() {
+        }
+    }
+
+    public static class SetTrackerTask implements ScheduledAction{
 
         private final TiqualityWorld world;
         private final BlockPos chunkBlockPos;
         private final BlockPos start;
         private final BlockPos end;
         private final TrackerBase tracker;
+        private TiqualityChunk chunk = null;
 
         /**
          * Create a new set tracker task
@@ -120,7 +173,9 @@ public class WorldHelper {
 
         @Override
         public void run() {
-            TiqualityChunk chunk = world.getChunk(chunkBlockPos);
+            if(chunk == null){
+                throw new IllegalStateException("loadChunk() not called.");
+            }
             ChunkPos chunkPos = chunk.getMinecraftChunk().getPos();
 
             int low_x = Math.max(start.getX(),chunkPos.getXStart());
@@ -152,6 +207,21 @@ public class WorldHelper {
             }else if(provider instanceof ChunkProviderClient) {
                 ((ChunkProviderClient) provider).unloadChunk(mcChunk.x, mcChunk.z);
             }
+        }
+
+        @Override
+        public boolean isCallback() {
+            return false;
+        }
+
+        @Override
+        public boolean requiresChunkLoad() {
+            return true;
+        }
+
+        @Override
+        public void loadChunk() {
+            chunk = world.getChunk(chunkBlockPos);
         }
     }
 }

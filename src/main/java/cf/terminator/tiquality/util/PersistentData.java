@@ -13,6 +13,9 @@ import java.io.IOException;
 public enum PersistentData {
     NEXT_FREE_TRACKER_ID;
 
+    /*
+            I want to change this to the world folder someday, to make it reset on new world creation
+     */
     private static final File persistentFile = new File(Loader.instance().getConfigDir(),"TiqualityStorage.nbt");
     private static final NBTTagCompound storage;
 

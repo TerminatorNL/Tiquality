@@ -1,5 +1,7 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
+import cf.terminator.tiquality.util.ForgetFulProgrammerException;
 import net.minecraft.tileentity.TileEntityHopper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,6 +16,9 @@ public class MixinHopperlag {
      */
     @Inject(method = "update", at = @At("HEAD"))
     private void dolag(CallbackInfo ci){
+        if(MixinConfigPlugin.isProductionEnvironment()){
+            throw new ForgetFulProgrammerException();
+        }
         try {
             Thread.sleep(5);
         } catch (InterruptedException e) {

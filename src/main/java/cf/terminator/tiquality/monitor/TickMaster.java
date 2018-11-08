@@ -28,7 +28,7 @@ public class TickMaster {
 
 
             /* First, we asses the amount of active PlayerTrackers. */
-            double totalWeight = TrackerManager.foreach(new TrackerManager.Action<Double>() {
+            Double totalWeight_1 = TrackerManager.foreach(new TrackerManager.Action<Double>() {
 
                 @Override
                 public void each(TrackerBase tracker) {
@@ -44,12 +44,12 @@ public class TickMaster {
                 We divide the tick time amongst users, based on whether they are online or not and config multiplier.
                 Source for formula: https://math.stackexchange.com/questions/253392/weighted-division
             */
-            double totalweight = Math.max(1, totalWeight);
+            double totalWeight = totalWeight_1 != null ? Math.max(1, totalWeight_1) : 1;
 
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
                 public void each(TrackerBase tracker) {
-                    long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalweight));
+                    long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalWeight));
 
                     //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
                     tracker.setNextTickTime(time);
