@@ -1,6 +1,7 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerBase;
@@ -101,6 +102,12 @@ public class GriefPreventionTracker extends TrackerBase {
         for(Claim subClaim : claim.getChildren(false)){
             world.setTrackerCuboidAsync(startPos, endPos, GriefPreventionHook.findOrGetTrackerByClaim(subClaim), null);
         }
+
+        for(TiqualityEntity entity : world.getEntities(true)){
+            if(entity.getTracker() == this){
+                entity.setTracker(null);
+            }
+        }
     }
 
     public void updatePlayers(){
@@ -120,13 +127,14 @@ public class GriefPreventionTracker extends TrackerBase {
 
     @Override
     public void onUnload(){
+        super.onUnload();
         if(owner != null && doesClaimExists() == false){
             replaceTracker(PlayerTracker.getOrCreatePlayerTrackerByProfile(owner));
         }
     }
 
     @Override
-    public boolean forceUnload(){
+    public boolean shouldUnload(){
         return doesClaimExists() == false;
     }
 

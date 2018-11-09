@@ -62,7 +62,7 @@ public class TrackerManager {
             final Iterator<TrackerBase> iter = TRACKER_LIST.iterator();
             while(iter.hasNext()) {
                 TrackerBase tracker = iter.next();
-                if (tracker.isDone() && tracker.isLoaded() == false || tracker.forceUnload()) {
+                if ((tracker.isDone() && tracker.isLoaded() == false) || tracker.shouldUnload()) {
                     tracker.onUnload();
                     iter.remove();
                 }

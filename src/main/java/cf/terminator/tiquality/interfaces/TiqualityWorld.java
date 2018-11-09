@@ -2,11 +2,20 @@ package cf.terminator.tiquality.interfaces;
 
 import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
 
 public interface TiqualityWorld {
+
+    /**
+     * Gets the minecraft world
+     * @return the chunk
+     */
+    @Nonnull
+    World getMinecraftWorld();
 
     /**
      * Optimized way of getting a chunk using a BlockPos
@@ -43,4 +52,13 @@ public interface TiqualityWorld {
      * @param callback a task to run on completion
      */
     void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback);
+
+    /**
+     * Gets all entities in this world
+     * @param trackersOnly set this to true if you're only intrested in entities which have a tracker associated.
+     *                    If this is true, you are also able to edit the list. If this is false, you are returned an unmodifiable list
+     * @return a list of entities, or an empty list if there are none
+     */
+    @Nonnull
+    List<TiqualityEntity> getEntities(boolean trackersOnly);
 }

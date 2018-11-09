@@ -10,6 +10,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.common.eventhandler.Cancelable;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
+import javax.annotation.Nullable;
+
 @SuppressWarnings("unused")
 public class TiqualityEvent extends Event {
 
@@ -139,7 +141,7 @@ public class TiqualityEvent extends Event {
         private TrackerBase tracker;
         private final TiqualityEntity entity;
 
-        public SetEntityTrackerEvent(TiqualityEntity entity, TrackerBase tracker){
+        public SetEntityTrackerEvent(TiqualityEntity entity, @Nullable TrackerBase tracker){
             this.tracker = tracker;
             this.entity = entity;
         }

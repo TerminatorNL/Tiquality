@@ -24,6 +24,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +48,13 @@ public abstract class TrackerBase {
      * See: cf.terminator.tiquality.api.Tracking#registerCustomTracker(java.lang.Class)
      */
     public static final HashMap<String, Class<? extends TrackerBase>> REGISTERED_TRACKER_TYPES = new HashMap<>();
+
+
+    /**
+     * When the TrackerManager forgets the tracker permanently, this will become true.
+     * Do not set this manually.
+     */
+    protected boolean isUnloaded = false;
 
     private long uniqueId;
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
@@ -111,7 +119,7 @@ public abstract class TrackerBase {
     /**
      * Internal use only. Used to determine when to unload.
      */
-    private int unloadCooldown = 20;
+    private int unloadCooldown = 40;
 
     /**
      * Only changes between ticks
@@ -277,6 +285,10 @@ public abstract class TrackerBase {
      * @param entity the Entity to tick
      */
     public void tickEntity(TiqualityEntity entity){
+        if(isUnloaded){
+            entity.doUpdateTick();
+            entity.setTracker(null);
+        }
         if (updateOld() == false){
             /* This Tracker ran out of time, we queue the entity update for another tick.*/
             if (untickedTickables.containsRef(entity) == false) {
@@ -397,22 +409,19 @@ public abstract class TrackerBase {
     }
 
     /**
-     * Checks if this Tracker has chunks associated with it,
-     * removes references to unloaded chunks,
-     * @return true if this Tracker has a loaded chunk, false otherwise
+     * Checks if this Tracker has chunks associated with it and is kept in memory by the TrackerManager.
+     * Also removes references to unloaded chunks.
+     * @return true if this Tracker has a loaded chunk or the cooldown is not over yet, false otherwise
      */
     public boolean isLoaded(){
+        if(isUnloaded){
+            return false;
+        }
         if(unloadCooldown > 0){
             return true;
         }
-        HashSet<WeakReferencedChunk> loadedChunks = new HashSet<>();
         synchronized (ASSOCIATED_CHUNKS) {
-            for (WeakReferencedChunk ref : ASSOCIATED_CHUNKS) {
-                if (ref.isChunkLoaded()) {
-                    loadedChunks.add(ref);
-                }
-            }
-            ASSOCIATED_CHUNKS.retainAll(loadedChunks);
+            ASSOCIATED_CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
             return ASSOCIATED_CHUNKS.size() > 0;
         }
     }
@@ -459,13 +468,23 @@ public abstract class TrackerBase {
      * Checks if this tracker should be unloaded, overrides all other checks
      * @return false to keep this tracker from being garbage collected, true otherwise.
      */
-    public boolean forceUnload() {
+    public boolean shouldUnload() {
         return false;
     }
 
     /**
      * Ran when this tracker is being unloaded. Do cleanup here, if you have to.
      */
+    @OverridingMethodsMustInvokeSuper
     public void onUnload() {
+        isUnloaded = true;
+
+        /*
+            We tick all remaining tickables to minimize chances on undefined behavior from mods
+         */
+        while(untickedTickables.size() > 0){
+            untickedTickables.take().doUpdateTick();
+        }
+
     }
 }

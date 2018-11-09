@@ -1,6 +1,7 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.world.WorldHelper;
@@ -17,6 +18,9 @@ import org.spongepowered.asm.mixin.Mixin;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Mixin(value = WorldClient.class, priority = 999)
 public abstract class MixinWorldClient extends World implements TiqualityWorld {
@@ -69,5 +73,33 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      */
     public void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback){
         WorldHelper.setTrackerCuboid(this, start, end, tracker, callback);
+    }
+
+    /**
+     * Gets the minecraft world
+     * @return the chunk
+     */
+    @Nonnull
+    public World getMinecraftWorld(){
+        return this;
+    }
+
+    /**
+     * Gets all entities in this world
+     * @param trackersOnly set this to true if you're only intrested in entities which have a tracker associated.
+     *                    If this is true, you are also able to edit the list. If this is false, you are returned an unmodifiable list
+     * @return a list of entities, or an empty list if there are none
+     */
+    @Nonnull
+    public List<TiqualityEntity> getEntities(boolean trackersOnly){
+        if(trackersOnly){
+            //noinspection unchecked
+            List<TiqualityEntity> list = (List<TiqualityEntity>) (Object)  new ArrayList<>(loadedEntityList);
+            list.removeIf(entity -> entity.getTracker() == null);
+            return list;
+        }else{
+            //noinspection unchecked
+            return (List<TiqualityEntity>) (Object) Collections.unmodifiableList(loadedEntityList);
+        }
     }
 }
