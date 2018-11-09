@@ -4,8 +4,8 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import net.minecraft.nbt.NBTTagCompound;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
@@ -59,17 +59,13 @@ public class TrackerManager {
      */
     public static void removeInactiveTrackers(){
         synchronized (TRACKER_LIST) {
-            ArrayList<TrackerBase> inactiveTrackers = new ArrayList<>();
-            for (TrackerBase tracker : TRACKER_LIST) {
-                if (tracker.isDone() && tracker.isLoaded() == false) {
-                    inactiveTrackers.add(tracker);
-                } else if (tracker.forceUnload() == true) {
-                    inactiveTrackers.add(tracker);
+            final Iterator<TrackerBase> iter = TRACKER_LIST.iterator();
+            while(iter.hasNext()) {
+                TrackerBase tracker = iter.next();
+                if (tracker.isDone() && tracker.isLoaded() == false || tracker.forceUnload()) {
+                    tracker.onUnload();
+                    iter.remove();
                 }
-            }
-            for (TrackerBase tracker : inactiveTrackers) {
-                tracker.onUnload();
-                TRACKER_LIST.remove(tracker);
             }
         }
     }
