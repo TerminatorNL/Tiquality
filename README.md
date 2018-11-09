@@ -82,6 +82,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
 - [What does `/tq info` do?](#what-does-tq-info-do)
 - [My blocks don't tick! What do I do?](#my-blocks-dont-tick-what-do-i-do)
 - [My fluids don't flow! What do I do?](#my-fluids-dont-flow-what-do-i-do)
+- [What is your code style?](#what-is-your-code-style)
 
 ### Why don't you move to Sponge already!?
 It is my intention to make Tiquality as widely available to everyone. Not having to install Sponge, match the Forge version, find mods that are both compatible with Sponge and that specific Forge version makes it easier to install. Everyone should be able to use Tiquality, *even if you run a Sponge-free server.*
@@ -141,4 +142,6 @@ I follow my own set of rules whilst coding, to keep intent as clear as possible.
   }
   ```
  - There are no lambdas, simply because I don't like them for readability purposes (Subject to change)
- - AtomicInteger is doubles as object for synchronization signaling when waiting for *N* tasks to end, instead of sleeping for a set time.
+ - AtomicInteger can double as object for synchronization signaling when waiting for *N* tasks to end, instead of sleeping for a set time.
+
+If you feel like you found something that needs to change, please follow the rules above before submitting a pull request.
