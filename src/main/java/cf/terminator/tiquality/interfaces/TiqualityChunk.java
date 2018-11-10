@@ -30,4 +30,6 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
     boolean isChunkLoaded();
 
     Chunk getMinecraftChunk();
+
+    void associateTrackers();
 }

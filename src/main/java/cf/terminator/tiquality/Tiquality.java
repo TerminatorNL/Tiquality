@@ -4,6 +4,7 @@ import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.command.CommandHub;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.monitor.BlockPlaceMonitor;
+import cf.terminator.tiquality.monitor.ChunkLoadMonitor;
 import cf.terminator.tiquality.monitor.TPSMonitor;
 import cf.terminator.tiquality.monitor.TickMaster;
 import cf.terminator.tiquality.tracking.EntitySetTrackerEventHandler;
@@ -52,6 +53,7 @@ public class Tiquality {
     public static final Scheduler SCHEDULER = Scheduler.INSTANCE;
     public static final BlockPlaceMonitor BLOCK_PLACE_MONITOR = BlockPlaceMonitor.INSTANCE;
     public static final CommandHub COMMAND_HUB = CommandHub.INSTANCE;
+    public static final ChunkLoadMonitor CHUNK_LOAD_MONITOR = ChunkLoadMonitor.INSTANCE;
 
     @EventHandler
     public void preinit(FMLPreInitializationEvent e){
@@ -79,6 +81,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
+        MinecraftForge.EVENT_BUS.register(CHUNK_LOAD_MONITOR);
 
         Tracking.registerCustomTracker(new PlayerTracker(null));
         Tracking.registerCustomTracker(ForcedTracker.INSTANCE);

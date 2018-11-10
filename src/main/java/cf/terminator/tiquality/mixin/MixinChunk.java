@@ -20,9 +20,6 @@ import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -207,12 +204,20 @@ public abstract class MixinChunk implements TiqualityChunk {
         return xComp != 0 ? xComp : Integer.compare(thisPos.z, otherPos.z);
     }
 
+    @Override
+    public void associateTrackers(){
+        for(TrackerBase tracker : trackerLookup.values()){
+            tracker.associateChunk(this);
+        }
+    }
+    /*
     @Inject(method = "onLoad", at=@At("HEAD"))
     private synchronized void onLoad(CallbackInfo ci){
         for(TrackerBase tracker : trackerLookup.values()){
             tracker.associateChunk(this);
         }
     }
+    */
 
     /*
     No longer needed! I use WeakReference to do this now.
