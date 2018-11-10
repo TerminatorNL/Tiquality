@@ -205,31 +205,10 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void associateTrackers(){
-        for(TrackerBase tracker : trackerLookup.values()){
+    public void associateTrackers() {
+        for (TrackerBase tracker : trackerLookup.values()) {
             tracker.associateChunk(this);
         }
     }
-    /*
-    @Inject(method = "onLoad", at=@At("HEAD"))
-    private synchronized void onLoad(CallbackInfo ci){
-        for(TrackerBase tracker : trackerLookup.values()){
-            tracker.associateChunk(this);
-        }
-    }
-    */
-
-    /*
-    No longer needed! I use WeakReference to do this now.
-     */
-
-    /*
-    @Inject(method = "onUnload", at=@At("HEAD"))
-    private synchronized void onUnLoad(CallbackInfo ci){
-        for(TrackerBase tracker : trackerLookup.values()){
-            tracker.disAssociateChunk(this);
-        }
-    }
-    */
 
 }
