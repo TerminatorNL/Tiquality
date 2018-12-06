@@ -1,7 +1,9 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.ForgeData;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.nbt.NBTTagCompound;
@@ -14,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @SuppressWarnings("WeakerAccess")
-public class PlayerTracker extends TrackerBase{
+public class PlayerTracker extends TrackerBase {
 
     private final GameProfile profile;
 
@@ -30,7 +32,8 @@ public class PlayerTracker extends TrackerBase{
      * Creates the tracker
      * @param profile a given game profile
      */
-    public PlayerTracker(GameProfile profile) {
+    public PlayerTracker(@Nonnull GameProfile profile) {
+        super();
         this.profile = profile;
     }
 
@@ -47,7 +50,7 @@ public class PlayerTracker extends TrackerBase{
 
         PlayerTracker tracker = TrackerManager.foreach(new TrackerManager.Action<PlayerTracker>() {
             @Override
-            public void each(TrackerBase tracker) {
+            public void each(Tracker tracker) {
                 if(tracker instanceof PlayerTracker){
                     PlayerTracker playerTracker = (PlayerTracker) tracker;
                     if(playerTracker.getOwner().equals(profile)){
@@ -59,8 +62,9 @@ public class PlayerTracker extends TrackerBase{
 
         if(tracker != null){
             return tracker;
+        }else {
+            return TrackerManager.addTracker(TrackerHolder.getHolder(new PlayerTracker(profile))).getTracker();
         }
-        return TrackerManager.preventCopies(new PlayerTracker(profile));
     }
 
     /**
@@ -132,7 +136,7 @@ public class PlayerTracker extends TrackerBase{
     }
 
     /**
-     * @return the info describing this Tracker (Like the owner)
+     * @return the info describing this TrackerBase (Like the owner)
      */
     @Nonnull
     @Override
@@ -141,7 +145,7 @@ public class PlayerTracker extends TrackerBase{
     }
 
     /**
-     * @return an unique identifier for this Tracker type, used to re-instantiate the tracker later on.
+     * @return an unique identifier for this TrackerBase type, used to re-instantiate the tracker later on.
      */
     @Nonnull
     public String getIdentifier() {
@@ -149,8 +153,15 @@ public class PlayerTracker extends TrackerBase{
     }
 
     @Override
+    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+        if(this.equals(tracker)){
+            throw new TrackerAlreadyExistsException(this, tracker);
+        }
+    }
+
+    @Override
     public boolean equals(Object o){
-        if(o == null || o instanceof PlayerTracker == false){
+        if(o instanceof PlayerTracker == false){
             return false;
         }else{
             return o == this || this.getOwner().getId().equals(((PlayerTracker) o).getOwner().getId());

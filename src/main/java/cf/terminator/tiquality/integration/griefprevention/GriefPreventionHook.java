@@ -4,15 +4,19 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.world.WorldHelper;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.event.*;
+import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
@@ -28,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@SuppressWarnings("NoTranslation")
 public class GriefPreventionHook {
 
     private static final CreateClaimEventHandler createClaimHandler = new CreateClaimEventHandler();
@@ -61,7 +66,12 @@ public class GriefPreventionHook {
             findOrGetTrackerByClaim(claim).setBlockTrackers(new Runnable() {
                 @Override
                 public void run() {
-                    String message = "[Tiquality] Remaining: " + counter.getAndDecrement() + ". Imported: " + identifier;
+                    Tiquality.LOGGER.info("Importing: " + identifier);
+                }
+            },new Runnable() {
+                @Override
+                public void run() {
+                    String message = "[Tiquality] Remaining: " + counter.getAndDecrement();
                     Tiquality.LOGGER.info(message);
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + message));
                     synchronized (counter) {
@@ -92,10 +102,13 @@ public class GriefPreventionHook {
     }
 
     public static GriefPreventionTracker findOrGetTrackerByClaim(@Nonnull Claim claim){
+        if(claim.isWilderness()){
+            throw new IllegalArgumentException("Cannot add trackers to wilderness claims.");
+        }
 
         GriefPreventionTracker tracker = TrackerManager.foreach(new TrackerManager.Action<GriefPreventionTracker>() {
             @Override
-            public void each(TrackerBase tracker) {
+            public void each(Tracker tracker) {
                 if(tracker instanceof GriefPreventionTracker){
                     GriefPreventionTracker gpTracker = (GriefPreventionTracker) tracker;
                     if(gpTracker.doesClaimExists()){
@@ -109,8 +122,36 @@ public class GriefPreventionHook {
 
         if(tracker != null){
             return tracker;
+        }else {
+            return TrackerManager.addTracker(TrackerHolder.getHolder(new GriefPreventionTracker(claim))).getTracker();
         }
-        return TrackerManager.preventCopies(new GriefPreventionTracker(claim));
+    }
+
+
+    public static void importSingleClaim(EntityPlayer sender) throws CommandException {
+        BlockPos pos = sender.getPosition();
+
+        Claim claim = GriefPrevention.getApi().getClaimManager((World) sender.getEntityWorld()).getClaimAt(new Location<>((World) sender.getEntityWorld(),pos.getX(), pos.getY(), pos.getZ()));
+        if(claim == null || claim.isWilderness()){
+            throw new CommandException("Claim not found, please stand in your claim and run the command again.");
+        }
+
+        Tracker existingTracker = ((TiqualityWorld) sender.getEntityWorld()).getTracker(pos);
+        if(existingTracker != null){
+            throw new CommandException("There's already a tracker present: " + existingTracker.getInfo().getText());
+        }
+        sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import queued."));
+        findOrGetTrackerByClaim(claim).setBlockTrackers(new Runnable() {
+            @Override
+            public void run() {
+                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing your claim..."));
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Import complete!"));
+            }
+        });
     }
 
     public static void init(){
@@ -122,7 +163,7 @@ public class GriefPreventionHook {
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UserTrustClaimEvent.Remove.class, userRemoveTrustHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
 
-        Tracking.registerCustomTracker(new GriefPreventionTracker(null));
+        Tracking.registerCustomTracker("GPClaim", GriefPreventionTracker.class);
         MinecraftForge.EVENT_BUS.register(EventHandler.INSTANCE);
     }
 
@@ -149,7 +190,7 @@ public class GriefPreventionHook {
         public void handle(@Nonnull ChangeClaimEvent event) {
             for(Claim claim : event.getClaims()){
                 GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.setBlockTrackers(null);
+                tracker.setBlockTrackers(null, null);
             }
         }
     }
@@ -209,7 +250,7 @@ public class GriefPreventionHook {
             Claim claim = event.getEnterClaim();
             if(claim.isWilderness() && entity.getTracker() instanceof GriefPreventionTracker){
                 entity.setTracker(null);
-            }else{
+            }else if(claim.isWilderness() == false){
                 entity.setTracker(findOrGetTrackerByClaim(claim));
             }
         }

@@ -1,8 +1,8 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.IChunkProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,24 +25,25 @@ public interface TiqualityWorld {
     @Nonnull TiqualityChunk getChunk(BlockPos pos);
 
     /**
-     * Optimized way of getting the Tracker using a BlockPos.
+     * Optimized way of getting the TrackerBase using a BlockPos.
      * Don't forget PlayerTrackers reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
      * @return the tracker
      */
-    @Nullable TrackerBase getTracker(BlockPos pos);
+    @Nullable
+    Tracker getTracker(BlockPos pos);
 
     /**
-     * Optimized way of setting the Tracker using a BlockPos.
+     * Optimized way of setting the TrackerBase using a BlockPos.
      * Don't forget PlayerTrackers reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
-     * @param tracker the Tracker
+     * @param tracker the TrackerBase
      */
-    void setTracker(BlockPos pos, TrackerBase tracker);
+    void setTracker(BlockPos pos, Tracker tracker);
 
     /**
      * Sets the tracker in a cuboid area
@@ -51,7 +52,17 @@ public interface TiqualityWorld {
      * @param tracker the tracker to add
      * @param callback a task to run on completion
      */
-    void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback);
+    void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback);
+
+    /**
+     * Sets the tracker in a cuboid area
+     * @param start start coord (All lower)
+     * @param end end coord (All lower)
+     * @param tracker the tracker to add
+     * @param callback a task to run on completion
+     * @param beforeRun a task to run before work starts
+     */
+    void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun);
 
     /**
      * Gets all entities in this world
@@ -61,4 +72,11 @@ public interface TiqualityWorld {
      */
     @Nonnull
     List<TiqualityEntity> getEntities(boolean trackersOnly);
+
+
+    /**
+     * Gets the minecraft chunk provider
+     * @return the minecraft chunk provider
+     */
+    IChunkProvider getMinecraftChunkProvider();
 }

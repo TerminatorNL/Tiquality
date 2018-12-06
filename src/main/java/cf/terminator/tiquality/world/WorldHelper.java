@@ -4,8 +4,9 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.concurrent.PausableThreadPoolExecutor;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.FiFoQueue;
+import cf.terminator.tiquality.util.Utils;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -13,7 +14,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -23,12 +23,16 @@ public class WorldHelper {
 
     /**
      * Sets the tracker in a cuboid area
-     * @param start start coord (All lower)
-     * @param end end coord (All higher)
+     * @param corner_1 A corner
+     * @param corner_2 The opposite corner
      * @param tracker the tracker to add
      * @param callback a task to run on completion. This will run in the main thread!
+     * @param beforeRun a task to run before work starts, This runs in the main thread.
      */
-    public static void setTrackerCuboid(TiqualityWorld world, BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback){
+    public static void setTrackerCuboid(TiqualityWorld world, BlockPos corner_1, BlockPos corner_2, Tracker tracker, Runnable callback, Runnable beforeRun){
+        BlockPos start = Utils.BlockPos.getMin(corner_1, corner_2);
+        BlockPos end = Utils.BlockPos.getMax(corner_1, corner_2);
+
         int low_x = start.getX();
         int low_z = start.getZ();
 
@@ -37,6 +41,9 @@ public class WorldHelper {
 
         int affectedChunks = 0;
         synchronized (TASKS) {
+            if(beforeRun != null){
+                TASKS.addToQueue(new CallBack(beforeRun));
+            }
             for (int x = low_x; x <= high_x + 16; x = x + 16) {
                 for (int z = low_z; z <= high_z + 16; z = z + 16) {
                     TASKS.addToQueue(new SetTrackerTask(world, new BlockPos(x,0,z), start, end, tracker));
@@ -50,7 +57,12 @@ public class WorldHelper {
             if(callback != null) {
                 TASKS.addToQueue(new CallBack(callback));
             }
-            MinecraftForge.EVENT_BUS.register(SmearedAction.INSTANCE);
+        }
+        if(affectedChunks == 0){
+            Tiquality.LOGGER.warn("Tried to set a tracker in an area, but no chunks are affected!");
+            Tiquality.LOGGER.warn("Low: " + start);
+            Tiquality.LOGGER.warn("High: " + end);
+            new Exception().printStackTrace();
         }
     }
 
@@ -105,7 +117,6 @@ public class WorldHelper {
                 while (System.currentTimeMillis() < maxTime) {
                     synchronized (TASKS) {
                         if (TASKS.size() == 0) {
-                            MinecraftForge.EVENT_BUS.unregister(this);
                             return;
                         }
                         ScheduledAction action = TASKS.take();
@@ -120,7 +131,6 @@ public class WorldHelper {
                             threadPool.pause();
                             action.run();
                             if(TASKS.size() == 0){
-                                MinecraftForge.EVENT_BUS.unregister(this);
                                 break;
                             }
                             threadPool.resume();
@@ -203,7 +213,7 @@ public class WorldHelper {
         private final BlockPos chunkBlockPos;
         private final BlockPos start;
         private final BlockPos end;
-        private final TrackerBase tracker;
+        private final Tracker tracker;
         private TiqualityChunk chunk = null;
 
         /**
@@ -214,7 +224,7 @@ public class WorldHelper {
          * @param end The end position (all chunks)
          * @param tracker The tracker
          */
-        public SetTrackerTask(TiqualityWorld world, BlockPos chunkPos, BlockPos start, BlockPos end, TrackerBase tracker) {
+        public SetTrackerTask(TiqualityWorld world, BlockPos chunkPos, BlockPos start, BlockPos end, Tracker tracker) {
             this.world = world;
             this.chunkBlockPos = chunkPos;
             this.start = start;

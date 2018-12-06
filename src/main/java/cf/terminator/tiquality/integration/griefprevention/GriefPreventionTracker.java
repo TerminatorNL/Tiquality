@@ -1,31 +1,46 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
-import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
+import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.tracking.PlayerTracker;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.util.ForgeData;
+import cf.terminator.tiquality.util.Utils;
 import com.mojang.authlib.GameProfile;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
-import org.spongepowered.api.entity.living.player.Player;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.IChunkProvider;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.event.EventListener;
+import org.spongepowered.api.event.world.chunk.LoadChunkEvent;
+import org.spongepowered.api.event.world.chunk.UnloadChunkEvent;
+import org.spongepowered.api.world.Location;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import javax.annotation.Nullable;
+import java.util.*;
 
-public class GriefPreventionTracker extends TrackerBase {
+public class GriefPreventionTracker implements Tracker {
 
     public final Claim claim;
     public final List<GameProfile> trustedPlayers = new ArrayList<>();
-    public GameProfile owner;
+    public PlayerTracker ownerTracker;
+    private int unloadCooldown = 40;
+    private boolean scannedChunks = false;
+    private final HashSet<WeakReferencedChunk> CHUNKS = new HashSet<>();
+
+    private final LoadListener loadListener = new LoadListener();
+    private final UnLoadListener unLoadListener = new UnLoadListener();
 
     @SuppressWarnings("unused")
     /*
@@ -35,17 +50,22 @@ public class GriefPreventionTracker extends TrackerBase {
         this(thisMustBeFirstStatementInBodyWorkaround(world, tag));
     }
 
-    public GriefPreventionTracker(Claim in){
+    public GriefPreventionTracker(@Nonnull Claim in){
+
         this.claim = in;
+
         updatePlayers();
+        registerAsListener();
+
     }
 
     public void setOwner(UUID owner){
-        this.owner = ForgeData.getGameProfileByUUID(owner);
-        trustedPlayers.remove(this.owner);
+        this.ownerTracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(owner));
+        this.ownerTracker.associateDelegatingTracker(this);
+        trustedPlayers.remove(this.ownerTracker.getOwner());
     }
 
-    public void setBlockTrackers(Runnable callback){
+    public void setBlockTrackers(Runnable beforeRun, Runnable callback){
         BlockPos startPos = new BlockPos(
             claim.getLesserBoundaryCorner().getBlockX(),
             claim.getLesserBoundaryCorner().getBlockY(),
@@ -59,7 +79,73 @@ public class GriefPreventionTracker extends TrackerBase {
         );
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-        world.setTrackerCuboidAsync(startPos, endPos, this, callback);
+        world.setTrackerCuboidAsync(startPos, endPos, this, callback, beforeRun);
+    }
+
+    private void registerAsListener(){
+        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, LoadChunkEvent.class, loadListener);
+        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UnloadChunkEvent.class, unLoadListener);
+    }
+
+    private void unRegisterAsListener(){
+        Sponge.getEventManager().unregisterListeners(loadListener);
+        Sponge.getEventManager().unregisterListeners(unLoadListener);
+    }
+
+    private class LoadListener implements EventListener<LoadChunkEvent>{
+        @Override
+        public void handle(@Nonnull LoadChunkEvent event) {
+            TiqualityChunk chunk = (TiqualityChunk) event.getTargetChunk();
+
+            Location<org.spongepowered.api.world.World> startLoc = claim.getGreaterBoundaryCorner();
+            BlockPos startPos = new BlockPos(
+                    startLoc.getBlockX(),
+                    startLoc.getBlockY(),
+                    startLoc.getBlockZ()
+            );
+
+            Location<org.spongepowered.api.world.World> endLoc = claim.getGreaterBoundaryCorner();
+            BlockPos endPos = new BlockPos(
+                    endLoc.getBlockX(),
+                    endLoc.getBlockY(),
+                    endLoc.getBlockZ()
+            );
+
+            synchronized (CHUNKS) {
+                if (Utils.Chunk.isWithinBounds(chunk.getMinecraftChunk().getPos(), startPos, endPos)) {
+                    CHUNKS.add(new WeakReferencedChunk((TiqualityChunk) event.getTargetChunk()));
+                }
+            }
+
+        }
+    }
+
+    private class UnLoadListener implements EventListener<UnloadChunkEvent>{
+        @Override
+        public void handle(@Nonnull UnloadChunkEvent event) {
+            TiqualityChunk chunk = (TiqualityChunk) event.getTargetChunk();
+
+            Location<org.spongepowered.api.world.World> startLoc = claim.getGreaterBoundaryCorner();
+            BlockPos startPos = new BlockPos(
+                    startLoc.getBlockX(),
+                    startLoc.getBlockY(),
+                    startLoc.getBlockZ()
+            );
+
+            Location<org.spongepowered.api.world.World> endLoc = claim.getGreaterBoundaryCorner();
+            BlockPos endPos = new BlockPos(
+                    endLoc.getBlockX(),
+                    endLoc.getBlockY(),
+                    endLoc.getBlockZ()
+            );
+
+            synchronized (CHUNKS) {
+                if (Utils.Chunk.isWithinBounds(chunk.getMinecraftChunk().getPos(), startPos, endPos)) {
+                    CHUNKS.remove(new WeakReferencedChunk((TiqualityChunk) event.getTargetChunk()));
+                }
+            }
+
+        }
     }
 
     /**
@@ -75,13 +161,14 @@ public class GriefPreventionTracker extends TrackerBase {
         org.spongepowered.api.world.World spongeWorld = (org.spongepowered.api.world.World) world;
         Optional<Claim> result = GriefPrevention.getApi().getClaimManager(spongeWorld).getClaimByUUID(claim_uuid);
         if(result.isPresent() == false){
-            return null;
+            //return null;
+            throw new IllegalStateException();
         }else{
             return result.get();
         }
     }
 
-    public void replaceTracker(TrackerBase tracker){
+    public void replaceTracker(Tracker tracker){
         if(claim == null){
             return;
         }
@@ -108,6 +195,7 @@ public class GriefPreventionTracker extends TrackerBase {
                 entity.setTracker(null);
             }
         }
+        CHUNKS.clear();
     }
 
     public void updatePlayers(){
@@ -122,20 +210,61 @@ public class GriefPreventionTracker extends TrackerBase {
         for (UUID uuid : trustees) {
             trustedPlayers.add(ForgeData.getGameProfileByUUID(uuid));
         }
-        owner = ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId());
+        this.ownerTracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId()));
+        this.ownerTracker.associateDelegatingTracker(this);
     }
 
     @Override
     public void onUnload(){
-        super.onUnload();
-        if(owner != null && doesClaimExists() == false){
-            replaceTracker(PlayerTracker.getOrCreatePlayerTrackerByProfile(owner));
+        unRegisterAsListener();
+        if(doesClaimExists() == false && ownerTracker != null){
+            replaceTracker(ownerTracker);
+        }
+    }
+
+    public boolean hasLoadedChunks(){
+        synchronized (CHUNKS) {
+            CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
+            return CHUNKS.size() > 0;
         }
     }
 
     @Override
+    public int compareTo(@Nonnull Object o) {
+        return ownerTracker.compareTo(o);
+    }
+
+    @Override
+    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+
+    }
+
+    private TrackerHolder holder = null;
+
+    @Override
+    public void setHolder(TrackerHolder holder) {
+        this.holder = holder;
+    }
+
+    @Override
+    public TrackerHolder getHolder() {
+        return holder;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(o instanceof GriefPreventionTracker == false){
+            return false;
+        }else if(this == o){
+            return true;
+        }
+        GriefPreventionTracker other = (GriefPreventionTracker) o;
+        return this.claim.equals(other.claim);
+    }
+
+    @Override
     public boolean shouldUnload(){
-        return doesClaimExists() == false;
+        return hasLoadedChunks() == false && unloadCooldown == 0;
     }
 
     /**
@@ -163,45 +292,33 @@ public class GriefPreventionTracker extends TrackerBase {
         return tag;
     }
 
+    @Override
+    public TickLogger getTickLogger() {
+        return null;
+    }
+
     /**
-     * If the owner is online, return 1 divided by the amount of claims the owner has
-     * If a trusted player is inside the claim, return 1 divided by the amount of claims the owner has
-     *
-     * Otherwise, return the offline player time multiplier divided by the amount of claims the owner has
-     *
+     * We delegate all calls to PlayerTracker.
      * @param cache The current online player cache
      * @return the multiplier
      */
     @Override
     public double getMultiplier(GameProfile[] cache) {
-        if(doesClaimExists() == false || owner == null){
-            return 0;
-        }
-        double claimcount = claim.getClaimManager().getPlayerClaims(owner.getId()).size();
-        if(claimcount == 0) {
-            return 0;
-        }
-        for(GameProfile profile : cache){
-            if(profile.equals(owner)){
-                return 1/claimcount;
-            }else if(trustedPlayers.contains(profile)){
-                for(Player player : claim.getPlayers()){
-                    if(player.getProfile().getUniqueId().equals(profile.getId())){
-                        return 1/claimcount;
-                    }
-                }
-            }
-        }
-        return TiqualityConfig.OFFLINE_PLAYER_TICK_TIME_MULTIPLIER/claimcount;
+        return 0;
+    }
+
+    @Override
+    public long getRemainingTime() {
+        return 0;
     }
 
     /**
-     * @return an unique identifier for this Tracker CLASS TYPE, used to re-instantiate the tracker later on.
+     * @return an unique identifier for this TrackerBase CLASS TYPE, used to re-instantiate the tracker later on.
      * This should just return a hardcoded string.
      */
     @Nonnull
     public String getIdentifier(){
-        return "MixinClaim";
+        return "GPClaim";
     }
 
     /**
@@ -213,12 +330,93 @@ public class GriefPreventionTracker extends TrackerBase {
     @Override
     public List<GameProfile> getAssociatedPlayers() {
         List<GameProfile> list = new ArrayList<>(trustedPlayers);
-        list.add(owner);
+        list.add(ownerTracker.getOwner());
         return list;
     }
 
+    @Override
+    public boolean isDone() {
+        return false;
+    }
+
+    public void setProfileEnabled(boolean shouldProfile){
+        ownerTracker.setProfileEnabled(shouldProfile);
+    }
+
+    @Override
+    public @Nullable TickLogger stopProfiler(){
+        return ownerTracker.stopProfiler();
+    }
+
+    @Override
+    public void setNextTickTime(long granted_ns) {
+        if(unloadCooldown > 0){
+            unloadCooldown--;
+        }
+        if(unloadCooldown == 1 && scannedChunks == false){
+            scannedChunks = true;
+
+            int low_x = claim.getLesserBoundaryCorner().getBlockX();
+            int low_z = claim.getLesserBoundaryCorner().getBlockZ();
+
+            int high_x = claim.getGreaterBoundaryCorner().getBlockX();
+            int high_z = claim.getGreaterBoundaryCorner().getBlockZ();
+
+            IChunkProvider provider = ((TiqualityWorld) claim.getWorld()).getMinecraftChunkProvider();
+
+            for (int x = low_x; x <= high_x + 16; x = x + 16) {
+                for (int z = low_z; z <= high_z + 16; z = z + 16) {
+                    TiqualityChunk chunk = (TiqualityChunk) provider.getLoadedChunk(x >> 4, z >> 4);
+                    if(chunk != null) {
+                        CHUNKS.add(new WeakReferencedChunk(chunk));
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void tickTileEntity(TiqualitySimpleTickable t){
+        ownerTracker.tickTileEntity(t);
+    }
+
+    @Override
+    public void tickEntity(TiqualityEntity e){
+        ownerTracker.tickEntity(e);
+    }
+
+    @Override
+    public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
+        ownerTracker.doBlockTick(block, world, pos, state, rand);
+    }
+
+    @Override
+    public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
+        ownerTracker.doRandomBlockTick(block, world, pos, state, rand);
+    }
+
+    @Override
+    public void grantTick() {
+
+    }
+
+    @Override
+    public void associateChunk(TiqualityChunk chunk) {
+
+    }
+
+    @Override
+    public void associateDelegatingTracker(Tracker tracker) {
+        throw new UnsupportedOperationException("This tracker already is a delegator!");
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return hasLoadedChunks() || unloadCooldown > 0;
+    }
+
     /**
-     * @return the info describing this Tracker (Like the owner)
+     * @return the info describing this TrackerBase (Like the owner)
      */
     @Nonnull
     @Override
@@ -237,9 +435,9 @@ public class GriefPreventionTracker extends TrackerBase {
      */
     public String toString(){
 
-        String claimText = claim == null ? "deleted" : claim.getGreaterBoundaryCorner().toString();
-        String ownerText = owner == null ? "unknown" : owner.getName();
+        String claimText = claim == null ? "deleted" : claim.getLesserBoundaryCorner().toString();
+        String ownerText = ownerTracker == null ? "unknown" : ownerTracker.getOwner().getName();
 
-        return "GP-Tracker:{nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + ", claim: " + claimText + "owner: " + ownerText + "}";
+        return "GP-TrackerBase:{hashCode: " + System.identityHashCode(this) + "owner: " + ownerText + ", claim: " + claimText + "delegated: " + ownerTracker.toString() + "}";
     }
 }

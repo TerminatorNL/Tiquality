@@ -19,8 +19,8 @@ public class SpongeChunkLoader {
      */
     public static @Nonnull TiqualityChunk getChunkForced(TiqualityWorld world, BlockPos pos){
         if(world instanceof WorldServer){
-            boolean isDenying = SpongeHooks.getActiveConfig(((WorldServer) world)).getConfig().getWorld().getDenyChunkRequests();
             WorldServer worldServer = (WorldServer) world;
+            boolean isDenying = SpongeHooks.getActiveConfig(worldServer).getConfig().getWorld().getDenyChunkRequests();
             if(isDenying){
                 IMixinChunkProviderServer provider = (IMixinChunkProviderServer) worldServer.getChunkProvider();
                 provider.setDenyChunkRequests(false);
@@ -28,10 +28,9 @@ public class SpongeChunkLoader {
                 provider.setDenyChunkRequests(true);
                 return result;
             }else{
-                return world.getChunk(pos);
+                return (TiqualityChunk) world.getMinecraftWorld().getChunkProvider().provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
             }
-        }else{
-            return world.getChunk(pos);
         }
+        return (TiqualityChunk) world.getMinecraftWorld().getChunkProvider().provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
     }
 }

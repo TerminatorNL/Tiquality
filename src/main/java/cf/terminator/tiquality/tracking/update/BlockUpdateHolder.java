@@ -1,8 +1,10 @@
-package cf.terminator.tiquality.tracking;
+package cf.terminator.tiquality.tracking.update;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.tracking.TickLogger;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
@@ -10,7 +12,7 @@ import net.minecraft.world.World;
 
 import java.util.Random;
 
-public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
+public class BlockUpdateHolder implements TiqualitySimpleTickable {
 
     private final Block block;
     private final World world;
@@ -18,7 +20,7 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
     private final IBlockState state;
     private final Random rand;
 
-    public BlockRandomUpdateHolder(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
+    public BlockUpdateHolder(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
         this.block = block;
         this.world = world;
         this.pos = pos;
@@ -33,7 +35,7 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
     public void doUpdateTick() {
         TiqualityChunk chunk = ((TiqualityWorld) world).getChunk(pos);
         if(chunk.isChunkLoaded()) {
-            block.randomTick(world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
         }
     }
 
@@ -65,15 +67,15 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
      */
     @Override
     public TickType getType() {
-        return TickType.BLOCK_RANDOM;
+        return TickType.BLOCK;
     }
 
     @Override
     public boolean equals(Object o) {
-        if(o == null || o instanceof BlockRandomUpdateHolder == false){
+        if(o == null || o instanceof BlockUpdateHolder == false){
             return false;
         }
-        BlockRandomUpdateHolder other = (BlockRandomUpdateHolder) o;
+        BlockUpdateHolder other = (BlockUpdateHolder) o;
         return other.pos.equals(pos);
     }
 

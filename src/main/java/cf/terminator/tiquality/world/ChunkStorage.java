@@ -1,4 +1,4 @@
-package cf.terminator.tiquality.tracking;
+package cf.terminator.tiquality.world;
 
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;

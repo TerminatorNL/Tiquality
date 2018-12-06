@@ -1,7 +1,7 @@
 package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
@@ -79,7 +79,7 @@ public class InfoMonitor {
         }
         endTime = System.currentTimeMillis() + timeout;
 
-        TrackerBase tracker = ((TiqualityWorld) player.world).getTracker(result.getBlockPos());
+        Tracker tracker = ((TiqualityWorld) player.world).getTracker(result.getBlockPos());
 
         if(tracker != null){
             Utils.sendStatusBarMessage(player,tracker.getInfo());

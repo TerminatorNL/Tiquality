@@ -1,13 +1,14 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.world.SpongeChunkLoader;
 import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
@@ -15,6 +16,7 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,6 +26,8 @@ import java.util.List;
 
 @Mixin(value = WorldServer.class, priority = 999)
 public abstract class MixinWorldServerCommon extends World implements TiqualityWorld {
+
+    @Shadow public abstract ChunkProviderServer getChunkProvider();
 
     protected MixinWorldServerCommon(ISaveHandler saveHandlerIn, WorldInfo info, WorldProvider providerIn, Profiler profilerIn, boolean client) {
         super(saveHandlerIn, info, providerIn, profilerIn, client);
@@ -36,31 +40,35 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
      * @return the chunk
      */
     public @Nonnull TiqualityChunk getChunk(BlockPos pos){
-        TiqualityChunk chunk = (TiqualityChunk) ((ChunkProviderServer)chunkProvider).id2ChunkMap.get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
-        return chunk != null ? chunk : (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+        if(Tiquality.SPONGE_IS_PRESENT){
+            return SpongeChunkLoader.getChunkForced(this, pos);
+        }else {
+            return (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+        }
     }
 
     /**
-     * Optimized way of getting the Tracker using a BlockPos.
-     * Don't forget Tracker reside inside chunks, so it still has to grab the chunk.
+     * Optimized way of getting the TrackerBase using a BlockPos.
+     * Don't forget TrackerBase reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nullable TrackerBase getTracker(BlockPos pos){
+    public @Nullable
+    Tracker getTracker(BlockPos pos){
         return getChunk(pos).tiquality_findTrackerByBlockPos(pos);
     }
 
     /**
-     * Optimized way of setting the Tracker using a BlockPos.
-     * Don't forget Tracker reside inside chunks, so it still has to grab the chunk.
+     * Optimized way of setting the TrackerBase using a BlockPos.
+     * Don't forget TrackerBase reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.
      *
      * @param pos the position of the block
-     * @param tracker the Tracker to set.
+     * @param tracker the TrackerBase to set.
      */
-    public void setTracker(BlockPos pos, TrackerBase tracker){
+    public void setTracker(BlockPos pos, Tracker tracker){
         getChunk(pos).tiquality_setTrackedPosition(pos, tracker);
     }
 
@@ -71,10 +79,21 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
      * @param tracker the tracker to add
      * @param callback a task to run on completion. This will run in the main thread!
      */
-    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, TrackerBase tracker, Runnable callback){
-        WorldHelper.setTrackerCuboid(this, start, end, tracker, callback);
+    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback){
+        WorldHelper.setTrackerCuboid(this, start, end, tracker, callback, null);
     }
 
+    /**
+     * Sets the tracker in a cuboid area
+     * @param start start coord (All lower)
+     * @param end end coord (All higher)
+     * @param tracker the tracker to add
+     * @param callback a task to run on completion. This will run in the main thread!
+     * @param beforeRun a task to run before work starts
+     */
+    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun){
+        WorldHelper.setTrackerCuboid(this, start, end, tracker, callback, beforeRun);
+    }
 
     /**
      * Gets the minecraft world
@@ -102,5 +121,10 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
             //noinspection unchecked
             return (List<TiqualityEntity>) (Object) Collections.unmodifiableList(loadedEntityList);
         }
+    }
+
+    @Override
+    public ChunkProviderServer getMinecraftChunkProvider(){
+        return getChunkProvider();
     }
 }

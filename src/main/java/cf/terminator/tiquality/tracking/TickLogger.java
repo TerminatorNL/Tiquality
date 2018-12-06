@@ -23,6 +23,7 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
     private final SendableTreeMap<Location, Metrics> data;
     private int ticks = 0;
     private long grantedNanos = 0L;
+    private long consumedNanos = 0L;
 
     public TickLogger(){
         data = new SendableTreeMap<>();
@@ -32,6 +33,7 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
         this.ticks = logger.ticks;
         this.grantedNanos = logger.grantedNanos;
         this.data = logger.data.copy();
+        this.consumedNanos = logger.consumedNanos;
     }
 
     /**
@@ -46,6 +48,7 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
             data.put(location, metrics);
         }
         metrics.recordTime(nanos);
+        consumedNanos += nanos;
     }
 
     /**
@@ -81,6 +84,14 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
     }
 
     /**
+     * Gets the total amount of nanoseconds this TickLogger has consumed.
+     * @return the amount of nanoseconds this TickLogger has consumed.
+     */
+    public long getConsumedNanos(){
+        return consumedNanos;
+    }
+
+    /**
      * Gets the collected data from this TickLogger.
      * @return an unmodifiable TreeMap. Read access only.
      */
@@ -94,6 +105,7 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
     public void reset(){
         data.clear();
         grantedNanos = 0L;
+        consumedNanos = 0L;
         ticks = 0;
     }
 
@@ -137,13 +149,17 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
             calls++;
         }
 
+        private long getNanosPerCall(){
+            return nanoseconds/calls;
+        }
+
         public long getNanoseconds(){
             return nanoseconds;
         }
 
         @Override
         public int compareTo(@Nonnull Metrics o) {
-            return Long.compare(this.nanoseconds, o.nanoseconds);
+            return Long.compare(this.getNanosPerCall(), o.getNanosPerCall());
         }
 
         @Override

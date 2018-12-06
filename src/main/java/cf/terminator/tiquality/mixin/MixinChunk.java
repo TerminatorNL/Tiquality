@@ -4,9 +4,10 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.tracking.ChunkStorage;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.world.ChunkStorage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import net.minecraft.nbt.NBTBase;
@@ -40,7 +41,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract void markDirty();
 
-    private final BiMap<Byte, TrackerBase> trackerLookup = HashBiMap.create();
+    private final BiMap<Byte, Tracker> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
     /**
@@ -73,7 +74,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         return i;
     }
 
-    private byte getIDbyTracker(TrackerBase tracker){
+    private byte getIDbyTracker(Tracker tracker){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             owner_id = getFirstFreeIndex();
@@ -107,7 +108,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker){
+    public void tiquality_setTrackedPosition(BlockPos pos, Tracker tracker){
 
         TiqualityEvent.SetBlockTrackerEvent event = new TiqualityEvent.SetBlockTrackerEvent(this, pos, tracker);
 
@@ -128,7 +129,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_setTrackerForEntireChunk(TrackerBase tracker){
+    public void tiquality_setTrackerForEntireChunk(Tracker tracker){
 
         TiqualityEvent.SetChunkTrackerEvent event = new TiqualityEvent.SetChunkTrackerEvent(this, tracker);
 
@@ -156,13 +157,13 @@ public abstract class MixinChunk implements TiqualityChunk {
         STORAGE.injectNBTAfter(list);
         tag.setTag("Sections", list);
         NBTTagList trackerList = new NBTTagList();
-        for(Map.Entry<Byte, TrackerBase> e : trackerLookup.entrySet()){
+        for(Map.Entry<Byte, Tracker> e : trackerLookup.entrySet()){
             if(e.getValue().shouldSaveToDisk() == false){
                 continue;
             }
             NBTTagCompound trackerData = new NBTTagCompound();
             trackerData.setByte("chunk_id", e.getKey());
-            trackerData.setTag("tracker", TrackerBase.getTrackerTag(e.getValue()));
+            trackerData.setTag("tracker", TrackerManager.getTrackerTag(e.getValue().getHolder()));
             trackerList.appendTag(trackerData);
         }
         if(trackerList.tagCount() > 0) {
@@ -176,9 +177,9 @@ public abstract class MixinChunk implements TiqualityChunk {
 
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
-            TrackerBase tracker = TrackerManager.getTracker((TiqualityWorld) world, trackerData.getCompoundTag("tracker"));
-            if(tracker != null){
-                trackerLookup.forcePut(trackerData.getByte("chunk_id"), tracker);
+            TrackerHolder holder = TrackerManager.getTracker((TiqualityWorld) world, trackerData.getCompoundTag("tracker"));
+            if(holder != null){
+                trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
             }else{
                 Tiquality.LOGGER.debug("Failed to load tracker in chunk: ", this);
             }
@@ -186,7 +187,8 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public @Nullable TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos){
+    public @Nullable
+    Tracker tiquality_findTrackerByBlockPos(BlockPos pos){
         return trackerLookup.get(STORAGE.get(pos));
     }
 
@@ -206,7 +208,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void associateTrackers() {
-        for (TrackerBase tracker : trackerLookup.values()) {
+        for (Tracker tracker : trackerLookup.values()) {
             tracker.associateChunk(this);
         }
     }

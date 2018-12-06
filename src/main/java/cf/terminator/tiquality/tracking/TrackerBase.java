@@ -4,51 +4,28 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
-import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
+import cf.terminator.tiquality.memory.WeakReferencedTracker;
+import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
+import cf.terminator.tiquality.tracking.update.BlockUpdateHolder;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.FiFoQueue;
-import cf.terminator.tiquality.util.PersistentData;
 import cf.terminator.tiquality.util.SynchronizedAction;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 
-public abstract class TrackerBase {
-
-    /**
-     * There's a theoretical maximum of 1.8446744e+19 different Trackers per server. This should suffice.
-     */
-    private static long NEXT_TRACKER_ID;
-    static {
-        if(PersistentData.NEXT_FREE_TRACKER_ID.isSet() == false){
-            PersistentData.NEXT_FREE_TRACKER_ID.setLong(Long.MIN_VALUE);
-        }
-        NEXT_TRACKER_ID = PersistentData.NEXT_FREE_TRACKER_ID.getLong();
-    }
-
-    /**
-     * Holds a list of all registered trackers
-     * See: cf.terminator.tiquality.api.Tracking#registerCustomTracker(java.lang.Class)
-     */
-    public static final HashMap<String, Class<? extends TrackerBase>> REGISTERED_TRACKER_TYPES = new HashMap<>();
-
+public abstract class TrackerBase implements Tracker {
 
     /**
      * When the TrackerManager forgets the tracker permanently, this will become true.
@@ -56,65 +33,44 @@ public abstract class TrackerBase {
      */
     protected boolean isUnloaded = false;
 
-    private long uniqueId;
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
     protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
     protected final HashSet<WeakReferencedChunk> ASSOCIATED_CHUNKS = new HashSet<>();
+    protected final HashSet<WeakReferencedTracker> DELEGATING_TRACKERS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
+    private TrackerHolder holder;
 
-    public long getUniqueId(){
-        return uniqueId;
-    }
-
-    public static long generateUniqueTrackerID(){
-        synchronized (PersistentData.NEXT_FREE_TRACKER_ID) {
-            long granted = NEXT_TRACKER_ID++;
-            PersistentData.NEXT_FREE_TRACKER_ID.setLong(NEXT_TRACKER_ID);
-            return granted;
+    public void setHolder(TrackerHolder holder) {
+        if(this.holder != null){
+            throw new IllegalStateException("Attempt to bind two holders to one tracker.");
         }
+        this.holder = holder;
     }
 
-    public static NBTTagCompound getTrackerTag(TrackerBase tracker){
-        NBTTagCompound tag = new NBTTagCompound();
-        tag.setString("type", tracker.getIdentifier());
-        tag.setLong("id", tracker.getUniqueId());
-        tag.setTag("data", tracker.getNBT());
-        return tag;
-    }
-
-    void setUniqueId(long id){
-        uniqueId = id;
+    public TrackerHolder getHolder(){
+        return holder;
     }
 
     /**
      * Tiquality only saves trackers to disk if they return true here.
      * @return true if your tracker should be saved to disk.
      */
+    @Override
     public boolean shouldSaveToDisk(){
         return true;
     }
 
     /**
-     * A default constructor for Tracker elements.
-     */
-    public TrackerBase(){
-        uniqueId = generateUniqueTrackerID();
-    }
-
-    /**
-     * Used to initialize a new Tracker with saved data, if this constructor isn't overridden, I complain.
+     * Used to initialize a new TrackerBase with saved data, if this constructor isn't overridden, I complain.
      * @param world The world
      * @param tag the NBTTagCompound. (generated using the getNBT method on the last save)
      */
     public TrackerBase(TiqualityWorld world, NBTTagCompound tag){
-        super();
         throw new TiqualityException.ReadTheDocsException("You MUST define a constructor using an NBTTagCompound as argument: " + getClass());
     }
 
-    /**
-     * Gets the NBT data from this object, is called when the tracker is saved to disk.
-     */
-    public abstract NBTTagCompound getNBT();
+    public TrackerBase(){
+    }
 
     /**
      * Internal use only. Used to determine when to unload.
@@ -130,6 +86,7 @@ public abstract class TrackerBase {
      * Gets the TickLogger.
      * @return a copy of the TickLogger
      */
+    @Override
     public TickLogger getTickLogger(){
         return tickLogger.copy();
     }
@@ -146,6 +103,7 @@ public abstract class TrackerBase {
      *
      * @param shouldProfile if the profiler should be enabled
      */
+    @Override
     public synchronized void setProfileEnabled(boolean shouldProfile){
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
@@ -174,6 +132,7 @@ public abstract class TrackerBase {
      * @return The TickLogger, or null if the profiler was never running to begin with.
      *
      */
+    @Override
     public synchronized @Nullable TickLogger stopProfiler(){
         return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
             @Override
@@ -192,6 +151,7 @@ public abstract class TrackerBase {
      * Is initialized with time for a full tick. (Loading blocks mid-tick, or something like that)
      * @param granted_ns the amount of time set for the coming tick in nanoseconds
      */
+    @Override
     public void setNextTickTime(long granted_ns){
         tick_time_remaining_ns = granted_ns;
         if(isProfiling) {
@@ -201,14 +161,6 @@ public abstract class TrackerBase {
             --unloadCooldown;
         }
     }
-
-    /**
-     * Gets the tick time multiplier for the Tracker.
-     * This is used to distribute tick time in a more controlled manner.
-     * @param cache The current online player cache
-     * @return the multiplier
-     */
-    public abstract double getMultiplier(final GameProfile[] cache);
 
     /**
      * Decreases the remaining tick time for a tracker.
@@ -225,6 +177,7 @@ public abstract class TrackerBase {
      *
      * @return the remaining tick time, in nanoseconds.
      */
+    @Override
     public long getRemainingTime(){
         return tick_time_remaining_ns;
     }
@@ -234,7 +187,7 @@ public abstract class TrackerBase {
      * @return true if everything was updated, and there is more time left.
      */
     public boolean updateOld(){
-        while(untickedTickables.size() > 0 && tick_time_remaining_ns >= 0) {
+        while(untickedTickables.size() > 0 && tick_time_remaining_ns > 0) {
             if(isProfiling) {
                 TiqualitySimpleTickable tickable = untickedTickables.take();
                 long start = System.nanoTime();
@@ -248,7 +201,7 @@ public abstract class TrackerBase {
                 consume(System.nanoTime() - start);
             }
         }
-        return tick_time_remaining_ns >= 0;
+        return tick_time_remaining_ns > 0;
     }
 
     /**
@@ -256,9 +209,10 @@ public abstract class TrackerBase {
      * the time the tracker has already consumed.
      * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
      */
+    @Override
     public void tickTileEntity(TiqualitySimpleTickable tickable){
         if (updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(tickable.getLocation().getBlock()) == false){
-            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsRef(tickable) == false) {
                 untickedTickables.addToQueue(tickable);
             }
@@ -284,13 +238,15 @@ public abstract class TrackerBase {
      * the time the tracker has already consumed.
      * @param entity the Entity to tick
      */
+    @Override
     public void tickEntity(TiqualityEntity entity){
         if(isUnloaded){
             entity.doUpdateTick();
             entity.setTracker(null);
+            return;
         }
         if (updateOld() == false){
-            /* This Tracker ran out of time, we queue the entity update for another tick.*/
+            /* This TrackerBase ran out of time, we queue the entity update for another tick.*/
             if (untickedTickables.containsRef(entity) == false) {
                 untickedTickables.addToQueue(entity);
             }
@@ -318,9 +274,10 @@ public abstract class TrackerBase {
      * @param state the block's state
      * @param rand a Random
      */
+    @Override
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
-            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             BlockUpdateHolder holder = new BlockUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -331,13 +288,13 @@ public abstract class TrackerBase {
             /* Either We still have time, or the block is on the forced-tick list. We update the block*/
             if(isProfiling) {
                 long start = System.nanoTime();
-                block.updateTick(world, pos, state, rand);
+                Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
                 long elapsed = System.nanoTime() - start;
                 tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                block.updateTick(world, pos, state, rand);
+                Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
                 consume(System.nanoTime() - start);
             }
         }
@@ -351,9 +308,10 @@ public abstract class TrackerBase {
      * @param state the block's state
      * @param rand a Random
      */
+    @Override
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
-            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
+            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             BlockRandomUpdateHolder holder = new BlockRandomUpdateHolder(block, world, pos, state, rand);
             if (untickedTickables.contains(holder) == false) {
                 untickedTickables.addToQueue(holder);
@@ -366,22 +324,23 @@ public abstract class TrackerBase {
             /* Either We still have time, or the block is on the forced-tick list. We update the block*/
             if(isProfiling) {
                 long start = System.nanoTime();
-                block.randomTick(world, pos, state, rand);
+                Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
                 long elapsed = System.nanoTime() - start;
                 tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                block.randomTick(world, pos, state, rand);
+                Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
                 consume(System.nanoTime() - start);
             }
         }
     }
 
     /**
-     * After running out of tick time for this Tracker, the server may have more
+     * After running out of tick time for this TrackerBase, the server may have more
      * tick time to spare after ticking other Trackers, it grants unchecked ticks
      */
+    @Override
     public void grantTick(){
         if(untickedTickables.size() > 0) {
             if(isProfiling) {
@@ -397,10 +356,11 @@ public abstract class TrackerBase {
     }
 
     /**
-     * Associates chunks with this Tracker.
+     * Associates chunks with this TrackerBase.
      * The tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
+    @Override
     public void associateChunk(TiqualityChunk chunk){
         unloadCooldown = 40;
         synchronized (ASSOCIATED_CHUNKS) {
@@ -409,10 +369,25 @@ public abstract class TrackerBase {
     }
 
     /**
-     * Checks if this Tracker has chunks associated with it and is kept in memory by the TrackerManager.
-     * Also removes references to unloaded chunks.
-     * @return true if this Tracker has a loaded chunk or the cooldown is not over yet, false otherwise
+     * Associates another Tracker with this TrackerBase.
+     * The tracker will only be garbage collected when all delegating trackers are unloaded.
+     * Delegators are trackers that use other trackers (this one) for their data management.
+     * @param tracker the chunk.
      */
+    @Override
+    public void associateDelegatingTracker(Tracker tracker){
+        unloadCooldown = 40;
+        synchronized (DELEGATING_TRACKERS) {
+            DELEGATING_TRACKERS.add(new WeakReferencedTracker(tracker));
+        }
+    }
+
+    /**
+     * Checks if this TrackerBase has chunks associated with it and is kept in memory by the TrackerManager.
+     * Also removes references to unloaded chunks and unloaded delegating trackers.
+     * @return true if this TrackerBase has a loaded chunk or the cooldown is not over yet, false otherwise
+     */
+    @Override
     public boolean isLoaded(){
         if(isUnloaded){
             return false;
@@ -422,21 +397,31 @@ public abstract class TrackerBase {
         }
         synchronized (ASSOCIATED_CHUNKS) {
             ASSOCIATED_CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
-            return ASSOCIATED_CHUNKS.size() > 0;
+            if(ASSOCIATED_CHUNKS.size() > 0){
+                return true;
+            }
         }
+        synchronized (DELEGATING_TRACKERS) {
+            DELEGATING_TRACKERS.removeIf(tracker -> tracker.isLoaded() == false);
+
+            //for(WeakReferencedTracker weakReferencedTracker : DELEGATING_TRACKERS){
+            //    System.out.println("->" + weakReferencedTracker.isLoaded());
+            //}
+
+
+
+            if(DELEGATING_TRACKERS.size() > 0){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Gets the associated players for this tracker
-     * @return a list of all players involved with this tracker.
+     * Used to determine if this tracker needs more ticks to complete its work
+     * @return true if the TrackerBase has completed all of it's work.
      */
-    @Nonnull
-    public abstract List<GameProfile> getAssociatedPlayers();
-
-    /**
-     * Used to determine if it's safe to unload this tracker
-     * @return true if the Tracker has completed all of it's work.
-     */
+    @Override
     public boolean isDone(){
         return untickedTickables.size() == 0;
     }
@@ -445,29 +430,26 @@ public abstract class TrackerBase {
      * Debugging method. Do not use in production environments.
      * @return description
      */
+    @Override
     public String toString(){
         return this.getClass() + ":{nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
     /**
-     * @return the info describing this Tracker (Like the owner)
-     */
-    @Nonnull
-    public abstract TextComponentString getInfo();
-
-    /**
-     * @return an unique identifier for this Tracker CLASS TYPE, used to re-instantiate the tracker later on.
+     * @return an unique identifier for this TrackerBase CLASS TYPE, used to re-instantiate the tracker later on.
      * This should just return a hardcoded string.
      */
+    @Override
     @Nonnull
     public String getIdentifier(){
-        throw new TiqualityException.ReadTheDocsException("You are required to implement 'public static String getIdentifier()' using a string constant in your Tracker.");
+        throw new TiqualityException.ReadTheDocsException("You are required to implement 'public static String getIdentifier()' using a string constant in your TrackerBase.");
     }
 
     /**
      * Checks if this tracker should be unloaded, overrides all other checks
      * @return false to keep this tracker from being garbage collected, true otherwise.
      */
+    @Override
     public boolean shouldUnload() {
         return false;
     }
@@ -475,6 +457,7 @@ public abstract class TrackerBase {
     /**
      * Ran when this tracker is being unloaded. Do cleanup here, if you have to.
      */
+    @Override
     @OverridingMethodsMustInvokeSuper
     public void onUnload() {
         isUnloaded = true;
@@ -485,6 +468,13 @@ public abstract class TrackerBase {
         while(untickedTickables.size() > 0){
             untickedTickables.take().doUpdateTick();
         }
+    }
 
+    @Override
+    public int compareTo(@Nonnull Object o) {
+        if(o instanceof TrackerBase == false){
+            return -1;
+        }
+        return Long.compare(this.getHolder().getId(), ((TrackerBase) o).getHolder().getId());
     }
 }

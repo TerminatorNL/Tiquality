@@ -1,28 +1,39 @@
 package cf.terminator.tiquality.tracking;
 
+import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
+import cf.terminator.tiquality.api.event.TiqualityEvent;
+import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
+import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
 
 /**
  * A class used to Track unowned updates for profiling purposes.
- * This Tracker does not throttle it's tickables.
+ * This TrackerBase does not throttle it's tickables.
  */
-public class ForcedTracker extends TrackerBase {
+public class ForcedTracker implements Tracker {
 
     public static final ForcedTracker INSTANCE = new ForcedTracker();
+    private boolean isProfiling = false;
+    private TickLogger tickLogger = new TickLogger();
 
     private ForcedTracker() {
     }
@@ -32,7 +43,49 @@ public class ForcedTracker extends TrackerBase {
      */
     @Override
     public NBTTagCompound getNBT() {
-        return new NBTTagCompound();
+        throw new UnsupportedOperationException("Tried to save ForcedTracker!");
+    }
+
+    @Override
+    public TickLogger getTickLogger() {
+        return tickLogger;
+    }
+
+    @Override
+    public void setProfileEnabled(boolean shouldProfile) {
+        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
+            @Override
+            public void run() {
+                if(isProfiling != shouldProfile) {
+                    isProfiling = shouldProfile;
+                    if(shouldProfile == false){
+                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
+                    }else{
+                        tickLogger.reset();
+                    }
+                }
+            }
+        });
+    }
+
+    @Nullable
+    @Override
+    public TickLogger stopProfiler() {
+        return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
+            @Override
+            public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
+                if(isProfiling == true) {
+                    isProfiling = false;
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
+                    variable.set(getTickLogger());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void setNextTickTime(long granted_ns) {
+
     }
 
     /**
@@ -57,7 +110,7 @@ public class ForcedTracker extends TrackerBase {
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
         }else{
-            tickable.doUpdateTick();
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
         }
     }
 
@@ -77,7 +130,7 @@ public class ForcedTracker extends TrackerBase {
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
         }else{
-            block.updateTick(world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
         }
     }
 
@@ -97,8 +150,23 @@ public class ForcedTracker extends TrackerBase {
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
         }else{
-            block.randomTick(world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
         }
+    }
+
+    @Override
+    public void grantTick() {
+        throw new UnsupportedOperationException("ForcedTracker does not need ticks");
+    }
+
+    @Override
+    public void associateChunk(TiqualityChunk chunk) {
+        throw new UnsupportedOperationException("ForcedTracker should not be associated to chunks");
+    }
+
+    @Override
+    public void associateDelegatingTracker(Tracker tracker) {
+        throw new UnsupportedOperationException("ForcedTracker should not be delegated");
     }
 
     /**
@@ -109,7 +177,12 @@ public class ForcedTracker extends TrackerBase {
     @Nonnull
     @Override
     public List<GameProfile> getAssociatedPlayers() {
-        return new ArrayList<>();
+        throw new UnsupportedOperationException("Tried to get the associatedPlayers for a ForcedTracker");
+    }
+
+    @Override
+    public boolean isDone() {
+        return true;
     }
 
     /**
@@ -124,18 +197,31 @@ public class ForcedTracker extends TrackerBase {
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
         }else{
-            entity.doUpdateTick();
+            Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
         }
     }
 
     /**
-     * Since we're a Tracker without an owner, we assign 0 time to it's tick time.
+     * Since we're a TrackerBase without an owner, we assign 0 time to it's tick time.
      * @param cache The current online player cache
      * @return 0
      */
     @Override
     public double getMultiplier(final GameProfile[] cache){
-        return 0D;
+        return 0;
+    }
+
+    @Override
+    public long getRemainingTime() {
+        return 0;
+    }
+
+    /**
+     * @return true, this tracker must not unload.
+     */
+    @Override
+    public boolean isLoaded(){
+        return true;
     }
 
     /**
@@ -148,7 +234,7 @@ public class ForcedTracker extends TrackerBase {
     }
 
     /**
-     * @return the info describing this Tracker (Like the owner)
+     * @return the info describing this TrackerBase (Like the owner)
      */
     @Nonnull
     @Override
@@ -157,12 +243,46 @@ public class ForcedTracker extends TrackerBase {
     }
 
     /**
-     * @return an unique identifier for this Tracker CLASS TYPE, used to re-instantiate the tracker later on.
+     * @return an unique identifier for this TrackerBase CLASS TYPE, used to re-instantiate the tracker later on.
      * This should just return a hardcoded string.
      */
     @Nonnull
     public String getIdentifier() {
-        return "forced";
+        throw new UnsupportedOperationException("Attempt to get the identifier for ForcedTracker.");
+    }
+
+    @Override
+    public boolean shouldUnload() {
+        return false;
+    }
+
+    @Override
+    public void onUnload() {
+        throw new UnsupportedOperationException("Unloading ForcedTracker is never allowed.");
+    }
+
+    @Override
+    public int compareTo(@Nonnull Object o) {
+        return 0;
+    }
+
+    @Override
+    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+        if(this.equals(tracker)){
+            throw new TrackerAlreadyExistsException(this, tracker);
+        }
+    }
+
+    private TrackerHolder holder = null;
+
+    @Override
+    public void setHolder(TrackerHolder holder) {
+        this.holder = holder;
+    }
+
+    @Override
+    public TrackerHolder getHolder() {
+        return holder;
     }
 
     @Override

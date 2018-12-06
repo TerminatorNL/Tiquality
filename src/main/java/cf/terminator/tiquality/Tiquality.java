@@ -3,14 +3,18 @@ package cf.terminator.tiquality;
 import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.command.CommandHub;
 import cf.terminator.tiquality.integration.ExternalHooker;
+import cf.terminator.tiquality.interfaces.TickExecutor;
 import cf.terminator.tiquality.monitor.BlockPlaceMonitor;
 import cf.terminator.tiquality.monitor.ChunkLoadMonitor;
 import cf.terminator.tiquality.monitor.TPSMonitor;
 import cf.terminator.tiquality.monitor.TickMaster;
-import cf.terminator.tiquality.tracking.EntitySetTrackerEventHandler;
 import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
+import cf.terminator.tiquality.tracking.event.EntitySetTrackerEventHandler;
+import cf.terminator.tiquality.tracking.tickexecutors.ForgeTickExecutor;
+import cf.terminator.tiquality.tracking.tickexecutors.SpongeTickExecutor;
 import cf.terminator.tiquality.util.Scheduler;
+import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -36,6 +40,7 @@ public class Tiquality {
     public static final String URL = "https://minecraft.curseforge.com/projects/tiquality";
     public static final String[] AUTHORS = {"Terminator_NL"};
     public static boolean SPONGE_IS_PRESENT = false;
+    public static TickExecutor TICK_EXECUTOR;
 
     /**
      * Is also the sponge container.
@@ -46,14 +51,9 @@ public class Tiquality {
 
     /*
      * Added for readability and convenience
-     *
-     * TickMaster is not added, because it is not intended to be touched it after registering it.
      */
     public static final TPSMonitor TPS_MONITOR = TPSMonitor.INSTANCE;
     public static final Scheduler SCHEDULER = Scheduler.INSTANCE;
-    public static final BlockPlaceMonitor BLOCK_PLACE_MONITOR = BlockPlaceMonitor.INSTANCE;
-    public static final CommandHub COMMAND_HUB = CommandHub.INSTANCE;
-    public static final ChunkLoadMonitor CHUNK_LOAD_MONITOR = ChunkLoadMonitor.INSTANCE;
 
     @EventHandler
     public void preinit(FMLPreInitializationEvent e){
@@ -80,11 +80,10 @@ public class Tiquality {
 
         MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
-        MinecraftForge.EVENT_BUS.register(BLOCK_PLACE_MONITOR);
-        MinecraftForge.EVENT_BUS.register(CHUNK_LOAD_MONITOR);
+        MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
 
-        Tracking.registerCustomTracker(new PlayerTracker(null));
-        Tracking.registerCustomTracker(ForcedTracker.INSTANCE);
 
         /* Used to monitor TPS while testing. */
         //TPSBroadCaster.start();
@@ -100,18 +99,23 @@ public class Tiquality {
     public void onPreServerStart(FMLServerAboutToStartEvent e){
         if (Loader.isModLoaded("sponge")) {
             SPONGE_IS_PRESENT = true;
-            COMMAND_HUB.initSponge();
+            CommandHub.INSTANCE.initSponge();
+            TICK_EXECUTOR = new SpongeTickExecutor();
         } else {
-            COMMAND_HUB.initForge();
+            CommandHub.INSTANCE.initForge();
+            TICK_EXECUTOR = new ForgeTickExecutor();
         }
         MinecraftForge.EVENT_BUS.register(new TickMaster(e.getServer()));
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
+
+        Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
+        Tracking.registerCustomTracker("Forced", ForcedTracker.class);
     }
 
     @EventHandler
     public void onStop(FMLServerStoppedEvent e){
-        COMMAND_HUB.reset();
+        CommandHub.INSTANCE.reset();
     }
 
     public static void log_sync(String str){

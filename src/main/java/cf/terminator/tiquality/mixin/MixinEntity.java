@@ -1,10 +1,12 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TickLogger;
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
@@ -19,22 +21,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
-import java.util.UUID;
 
 @Mixin(Entity.class)
 public abstract class MixinEntity implements TiqualityEntity {
 
-    @Shadow public abstract void onUpdate();
-    @Shadow public abstract UUID getPersistentID();
     @Shadow public double posX;
     @Shadow public double posY;
     @Shadow public double posZ;
     @Shadow public World world;
-    private TrackerBase tracker = null;
+    private Tracker tracker = null;
 
     @Override
     public void doUpdateTick() {
-        this.onUpdate();
+        Tiquality.TICK_EXECUTOR.onEntityTick((Entity) (Object) this);
     }
 
     @Override
@@ -62,12 +61,13 @@ public abstract class MixinEntity implements TiqualityEntity {
     }
 
     @Override
-    public @Nullable TrackerBase getTracker() {
+    public @Nullable
+    Tracker getTracker() {
         return tracker;
     }
 
     @Override
-    public void setTracker(@Nullable TrackerBase tracker) {
+    public void setTracker(@Nullable Tracker tracker) {
         TiqualityEvent.SetEntityTrackerEvent event = new TiqualityEvent.SetEntityTrackerEvent(this, tracker);
         if(MinecraftForge.EVENT_BUS.post(event) /* is cancelled */){
             return;
@@ -78,14 +78,19 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Inject(method = "writeToNBT", at = @At("HEAD"))
     private void TiqualityOnWrite(NBTTagCompound compound, CallbackInfoReturnable<NBTTagCompound> cir){
         if(tracker != null && tracker.shouldSaveToDisk() == true) {
-            compound.setTag("Tiquality", TrackerBase.getTrackerTag(tracker));
+            compound.setTag("Tiquality", TrackerManager.getTrackerTag(tracker.getHolder()));
         }
     }
 
     @Inject(method = "readFromNBT", at = @At("HEAD"))
     private void TiqualityOnRead(NBTTagCompound compound, CallbackInfo ci){
         if(compound.hasKey("Tiquality")) {
-            tracker = TrackerManager.getTracker((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));
+            TrackerHolder holder = TrackerManager.getTracker((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));
+            if(holder == null){
+                tracker = null;
+            }else {
+                tracker = holder.getTracker();
+            }
         }
     }
 }

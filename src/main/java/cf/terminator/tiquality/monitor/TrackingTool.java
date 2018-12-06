@@ -1,8 +1,8 @@
 package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
-import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -95,7 +95,7 @@ public class TrackingTool {
             step = 0;
         }
         selectedPos = result.getBlockPos();
-        TrackerBase tracker = ((TiqualityWorld) player.world).getTracker(selectedPos);
+        Tracker tracker = ((TiqualityWorld) player.world).getTracker(selectedPos);
 
         if(tracker != null){
             Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.RED + "Already tracked: " + tracker.getInfo().getText()));

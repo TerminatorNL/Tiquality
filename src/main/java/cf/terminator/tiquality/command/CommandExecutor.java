@@ -5,9 +5,9 @@ import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
-import cf.terminator.tiquality.tracking.TrackerBase;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.ForgeData;
 import cf.terminator.tiquality.util.SimpleProfiler;
@@ -90,15 +90,15 @@ public class CommandExecutor {
                 throw new CommandException("Please stand on top of a block and run this command again.");
             }
             if (blockBelowFeet != Blocks.AIR) {
-                TrackerBase tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition().down());
+                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
                         TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (belowAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
             }
             if (blockAtFeet != Blocks.AIR) {
-                TrackerBase tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition());
+                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
-                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
+                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
                         TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (feetAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
             }
         /*
@@ -170,7 +170,7 @@ public class CommandExecutor {
          */
         }else if(args[0].equalsIgnoreCase("profile")){
             holder.checkPermission(PermissionHolder.Permission.USE);
-            final TrackerBase tracker;
+            final Tracker tracker;
             if(args.length == 1) {
                 incorrectUsageError(sender, holder);
             }
@@ -189,12 +189,12 @@ public class CommandExecutor {
             if(target_player == null){
                 throw new CommandException("Player not found.");
             }
-            ArrayList<TrackerBase> trackersToProfile = new ArrayList<>();
+            ArrayList<Tracker> trackersToProfile = new ArrayList<>();
 
 
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
-                public void each(TrackerBase tracker) {
+                public void each(Tracker tracker) {
                     if(tracker.getAssociatedPlayers().contains(target_player)){
                         trackersToProfile.add(tracker);
                     }
@@ -213,7 +213,7 @@ public class CommandExecutor {
                 @Override
                 public void run() {
                     try {
-                        SimpleProfiler profiler = new SimpleProfiler(trackersToProfile.toArray(new TrackerBase[0]));
+                        SimpleProfiler profiler = new SimpleProfiler(trackersToProfile.toArray(new Tracker[0]));
                         profiler.start();
                         Thread.sleep(time * 1000);
                         profiler.stop();
@@ -233,21 +233,21 @@ public class CommandExecutor {
          */
         }else if(args[0].equalsIgnoreCase("debug")){
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
-            Set<TrackerBase> set = new HashSet<>();
+            Set<Tracker> set = new HashSet<>();
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
-                public void each(TrackerBase tracker) {
+                public void each(Tracker tracker) {
                     set.add(tracker);
                 }
             });
 
-            sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded Tracker objects (" + set.size() + "):"));
-            for(TrackerBase e : set){
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + "Loaded tracker objects (" + set.size() + "):"));
+            for(Tracker e : set){
                 sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.toString()));
             }
         /*
 
-                UNKNOWN ARGUMENT
+                GRIEFPREVENTION IMPORT
 
          */
         }else if(args[0].equalsIgnoreCase("import_griefprevention")){
@@ -262,6 +262,21 @@ public class CommandExecutor {
             }else{
                 sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
             }
+        }else if(args[0].equalsIgnoreCase("import_griefprevention_claim")){
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("Only players can use this command.");
+            }
+            if(ExternalHooker.LOADED_HOOKS.contains("griefprevention")){
+                GriefPreventionHook.importSingleClaim((EntityPlayer) sender);
+            }else{
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
+            }
+        /*
+
+                UNKNOWN ARGUMENT
+
+         */
         }else{
             incorrectUsageError(sender, holder);
         }
@@ -301,7 +316,7 @@ public class CommandExecutor {
                     Set<GameProfile> profiles = new HashSet<>();
                     TrackerManager.foreach(new TrackerManager.Action<Object>() {
                         @Override
-                        public void each(TrackerBase tracker) {
+                        public void each(Tracker tracker) {
                             profiles.addAll(tracker.getAssociatedPlayers());
                         }
                     });

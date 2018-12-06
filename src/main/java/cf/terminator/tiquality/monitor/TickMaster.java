@@ -1,6 +1,6 @@
 package cf.terminator.tiquality.monitor;
 
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.util.Constants;
 import com.mojang.authlib.GameProfile;
@@ -21,17 +21,16 @@ public class TickMaster {
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public void onServerTick(TickEvent.ServerTickEvent e){
-        GameProfile[] cache = server.getOnlinePlayerProfiles();
         if(e.phase == TickEvent.Phase.START) {
-
             startTime = System.nanoTime();
+
+            GameProfile[] cache = server.getOnlinePlayerProfiles();
 
 
             /* First, we asses the amount of active PlayerTrackers. */
             Double totalWeight_1 = TrackerManager.foreach(new TrackerManager.Action<Double>() {
-
                 @Override
-                public void each(TrackerBase tracker) {
+                public void each(Tracker tracker) {
                     if(value == null){
                         value = 0D;
                     }else{
@@ -48,7 +47,7 @@ public class TickMaster {
 
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
-                public void each(TrackerBase tracker) {
+                public void each(Tracker tracker) {
                     long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalWeight));
 
                     //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
@@ -56,9 +55,12 @@ public class TickMaster {
                 }
             });
 
+
+
+
         }else if(e.phase == TickEvent.Phase.END){
-            TrackerManager.removeInactiveTrackers();
             TrackerManager.tickUntil(startTime + TICK_DURATION);
+            TrackerManager.removeInactiveTrackers();
         }
     }
 }

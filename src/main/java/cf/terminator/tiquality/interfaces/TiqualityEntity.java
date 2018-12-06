@@ -1,25 +1,24 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.tracking.TrackerBase;
-
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 public interface TiqualityEntity extends TiqualitySimpleTickable {
 
     /**
-     * Gets the Tracker belonging to this Entity.
+     * Gets the TrackerBase belonging to this Entity.
      *
      * @return the player tracker
      */
-    @Nullable TrackerBase getTracker();
+    @Nullable
+    Tracker getTracker();
 
     /**
      * Sets the PlayerTracker belonging to this Entity.
      *
      * @param tracker the PlayerTracker
      */
-    void setTracker(@Nullable TrackerBase tracker);
+    void setTracker(@Nullable Tracker tracker);
 
 
     /**

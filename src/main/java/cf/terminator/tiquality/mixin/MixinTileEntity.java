@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixin;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.tracking.TickLogger;
 import net.minecraft.tileentity.TileEntity;
@@ -20,7 +21,7 @@ public class MixinTileEntity implements TiqualitySimpleTickable {
      */
     @Override
     public void doUpdateTick() {
-        ((ITickable) this).update();
+        Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) this);
     }
 
     /**

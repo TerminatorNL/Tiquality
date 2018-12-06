@@ -1,6 +1,5 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -17,15 +16,15 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
      * @param pos the position
      * @param tracker the tracker, or null if the tracker should be removed.
      */
-    void tiquality_setTrackedPosition(BlockPos pos, TrackerBase tracker);
+    void tiquality_setTrackedPosition(BlockPos pos, Tracker tracker);
 
     /**
      * Sets a tracker for the entire chunk at once
      * @param tracker the tracker, or null if all trackers should be removed.
      */
-    void tiquality_setTrackerForEntireChunk(TrackerBase tracker);
+    void tiquality_setTrackerForEntireChunk(Tracker tracker);
 
-    TrackerBase tiquality_findTrackerByBlockPos(BlockPos pos);
+    Tracker tiquality_findTrackerByBlockPos(BlockPos pos);
 
     boolean isChunkLoaded();
 

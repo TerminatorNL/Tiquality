@@ -1,10 +1,10 @@
 package cf.terminator.tiquality.interfaces.integration.griefprevention;
 
-import cf.terminator.tiquality.tracking.TrackerBase;
+import cf.terminator.tiquality.interfaces.Tracker;
 
 public interface TiqualityGPClaim {
 
-    TrackerBase getTiqualityTracker();
+    Tracker getTiqualityTracker();
 
-    void setTiqualityTracker(TrackerBase tracker);
+    void setTiqualityTracker(Tracker tracker);
 }

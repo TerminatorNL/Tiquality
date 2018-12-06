@@ -3,8 +3,8 @@ package cf.terminator.tiquality.api.event;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TickLogger;
-import cf.terminator.tiquality.tracking.TrackerBase;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.eventhandler.Cancelable;
@@ -19,9 +19,9 @@ public class TiqualityEvent extends Event {
     public static class ProfileCompletedEvent extends TiqualityEvent{
 
         private final TickLogger logger;
-        private final TrackerBase tracker;
+        private final Tracker tracker;
 
-        public ProfileCompletedEvent(TrackerBase tracker, TickLogger logger) {
+        public ProfileCompletedEvent(Tracker tracker, TickLogger logger) {
             this.logger = logger;
             this.tracker = tracker;
         }
@@ -31,7 +31,7 @@ public class TiqualityEvent extends Event {
          *
          * To prevent memory leaks, DO NOT KEEP THIS VARIABLE IN MEMORY!
          */
-        public TrackerBase getTracker(){
+        public Tracker getTracker(){
             return tracker;
         }
 
@@ -54,11 +54,11 @@ public class TiqualityEvent extends Event {
     @Cancelable
     public static class SetBlockTrackerEvent extends TiqualityEvent{
 
-        private TrackerBase tracker;
+        private Tracker tracker;
         private final TiqualityChunk chunk;
         private final BlockPos pos;
 
-        public SetBlockTrackerEvent(TiqualityChunk chunk, BlockPos pos, TrackerBase tracker){
+        public SetBlockTrackerEvent(TiqualityChunk chunk, BlockPos pos, Tracker tracker){
             this.tracker = tracker;
             this.chunk = chunk;
             this.pos = pos;
@@ -80,11 +80,11 @@ public class TiqualityEvent extends Event {
             return pos;
         }
 
-        public TrackerBase getTracker(){
+        public Tracker getTracker(){
             return tracker;
         }
 
-        public void setTracker(TrackerBase tracker){
+        public void setTracker(Tracker tracker){
             this.tracker = tracker;
         }
 
@@ -99,10 +99,10 @@ public class TiqualityEvent extends Event {
     @Cancelable
     public static class SetChunkTrackerEvent extends TiqualityEvent{
 
-        private TrackerBase tracker;
+        private Tracker tracker;
         private final TiqualityChunk chunk;
 
-        public SetChunkTrackerEvent(TiqualityChunk chunk, TrackerBase tracker){
+        public SetChunkTrackerEvent(TiqualityChunk chunk, Tracker tracker){
             this.tracker = tracker;
             this.chunk = chunk;
         }
@@ -119,11 +119,11 @@ public class TiqualityEvent extends Event {
             return chunk.getMinecraftChunk().getWorld();
         }
 
-        public TrackerBase getTracker(){
+        public Tracker getTracker(){
             return tracker;
         }
 
-        public void setTracker(TrackerBase tracker){
+        public void setTracker(Tracker tracker){
             this.tracker = tracker;
         }
 
@@ -138,10 +138,10 @@ public class TiqualityEvent extends Event {
     @Cancelable
     public static class SetEntityTrackerEvent extends TiqualityEvent{
 
-        private TrackerBase tracker;
+        private Tracker tracker;
         private final TiqualityEntity entity;
 
-        public SetEntityTrackerEvent(TiqualityEntity entity, @Nullable TrackerBase tracker){
+        public SetEntityTrackerEvent(TiqualityEntity entity, @Nullable Tracker tracker){
             this.tracker = tracker;
             this.entity = entity;
         }
@@ -158,11 +158,11 @@ public class TiqualityEvent extends Event {
             return entity.getWorld();
         }
 
-        public TrackerBase getTracker(){
+        public Tracker getTracker(){
             return tracker;
         }
 
-        public void setTracker(TrackerBase tracker){
+        public void setTracker(Tracker tracker){
             this.tracker = tracker;
         }
 
