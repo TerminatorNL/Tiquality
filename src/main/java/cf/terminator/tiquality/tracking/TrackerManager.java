@@ -12,7 +12,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @SuppressWarnings("WeakerAccess")
 public class TrackerManager {
@@ -26,10 +27,7 @@ public class TrackerManager {
     /**
      * Variable holding all PlayerTrackers.
      */
-    private static final ThreadSafeSet<TrackerHolder> TRACKER_LIST = new ThreadSafeSet<>(new HashSet<>());
-    //static {
-        //TRACKER_LIST.add(new TrackerHolder()ForcedTracker.INSTANCE);
-   // }
+    private static final ThreadSafeSet<TrackerHolder> TRACKER_LIST = new ThreadSafeSet<>(new CopyOnWriteArraySet<>());
 
     /**
      * Loop over the protected set.
@@ -75,14 +73,17 @@ public class TrackerManager {
      */
     public static void removeInactiveTrackers(){
         TRACKER_LIST.lock();
-        final Iterator<TrackerHolder> iter = TRACKER_LIST.iterator();
-        while(iter.hasNext()) {
-            Tracker tracker = iter.next().getTracker();
+
+        Set<TrackerHolder> removables = new HashSet<>();
+
+        for (TrackerHolder holder : TRACKER_LIST){
+            Tracker tracker = holder.getTracker();
             if ((tracker.isDone() && tracker.isLoaded() == false) || tracker.shouldUnload()) {
                 tracker.onUnload();
-                iter.remove();
+                removables.add(holder);
             }
         }
+        TRACKER_LIST.removeAll(removables);
         TRACKER_LIST.unlock();
     }
 
