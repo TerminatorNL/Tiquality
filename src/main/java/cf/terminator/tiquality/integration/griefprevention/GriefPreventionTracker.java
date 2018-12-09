@@ -50,9 +50,14 @@ public class GriefPreventionTracker implements Tracker {
         this(thisMustBeFirstStatementInBodyWorkaround(world, tag));
     }
 
-    public GriefPreventionTracker(@Nonnull Claim in){
-
+    public GriefPreventionTracker(Claim in){
         this.claim = in;
+        if (claim == null){
+            unloadCooldown = 0;
+            return;
+        }
+
+
 
         updatePlayers();
         registerAsListener();
@@ -161,8 +166,8 @@ public class GriefPreventionTracker implements Tracker {
         org.spongepowered.api.world.World spongeWorld = (org.spongepowered.api.world.World) world;
         Optional<Claim> result = GriefPrevention.getApi().getClaimManager(spongeWorld).getClaimByUUID(claim_uuid);
         if(result.isPresent() == false){
-            //return null;
-            throw new IllegalStateException();
+            return null;
+            //throw new IllegalStateException();
         }else{
             return result.get();
         }

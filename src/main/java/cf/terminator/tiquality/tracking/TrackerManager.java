@@ -161,7 +161,9 @@ public class TrackerManager {
             try {
                 newTracker =  clazz.getDeclaredConstructor(TiqualityWorld.class, NBTTagCompound.class).newInstance(world, tagCompound.getCompoundTag("data"));
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                Tiquality.LOGGER.warn("An exception has occurred whilst creating a tracker:");
+                e.printStackTrace();
+                return null;
             }
             return addTracker(new TrackerHolder<>(newTracker, id));
         }finally {
