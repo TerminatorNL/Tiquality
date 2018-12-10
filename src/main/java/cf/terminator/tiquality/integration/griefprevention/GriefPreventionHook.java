@@ -43,6 +43,8 @@ public class GriefPreventionHook {
     private static final UserRemoveTrustClaimEventHandler userRemoveTrustHandler = new UserRemoveTrustClaimEventHandler();
     private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
 
+
+
     public static void loadClaimsForcibly(ICommandSender sender){
         final AtomicInteger counter = new AtomicInteger(0);
         Tiquality.LOGGER.info("Importing griefprevention claims...");
@@ -53,6 +55,9 @@ public class GriefPreventionHook {
             list.addAll(GriefPrevention.getApi().getClaimManager(world).getWorldClaims());
         }
         for(Claim claim : list){
+            if(GriefPreventionHook.isValidClaim(claim) == false){
+                return;
+            }
             counter.getAndIncrement();
             Text owner = claim.getOwnerName();
             net.minecraft.world.World world = (net.minecraft.world.World) claim.getWorld();
@@ -101,9 +106,21 @@ public class GriefPreventionHook {
         }).start();
     }
 
+    public static boolean isValidClaim(Claim claim){
+        /*
+            Output reversed to improve readability.
+         */
+        boolean isInvalid = claim == null || claim.isAdminClaim() || claim.isWilderness() || claim.getOwnerUniqueId() == null;
+        return isInvalid == false;
+    }
+
     public static GriefPreventionTracker findOrGetTrackerByClaim(@Nonnull Claim claim){
         if(claim.isWilderness()){
             throw new IllegalArgumentException("Cannot add trackers to wilderness claims.");
+        }else if(claim.isAdminClaim()){
+            throw new IllegalArgumentException("Cannot add trackers to admin claims.");
+        }else if(claim.getOwnerUniqueId() == null){
+            throw new IllegalArgumentException("Claim owner is null!");
         }
 
         GriefPreventionTracker tracker = TrackerManager.foreach(new TrackerManager.Action<GriefPreventionTracker>() {
@@ -132,8 +149,13 @@ public class GriefPreventionHook {
         BlockPos pos = sender.getPosition();
 
         Claim claim = GriefPrevention.getApi().getClaimManager((World) sender.getEntityWorld()).getClaimAt(new Location<>((World) sender.getEntityWorld(),pos.getX(), pos.getY(), pos.getZ()));
-        if(claim == null || claim.isWilderness()){
-            throw new CommandException("Claim not found, please stand in your claim and run the command again.");
+
+        if(claim == null){
+            throw new CommandException("Claim not found, please stand in your claim where no tracker is present and run the command again.");
+        }
+
+        if(GriefPreventionHook.isValidClaim(claim) == false){
+            throw new CommandException("Claim is found, but it is not of a valid type.");
         }
 
         Tracker existingTracker = ((TiqualityWorld) sender.getEntityWorld()).getTiqualityTracker(pos);
@@ -248,9 +270,11 @@ public class GriefPreventionHook {
             TiqualityEntity entity = (TiqualityEntity) event.getTargetEntity();
 
             Claim claim = event.getEnterClaim();
-            if(claim.isWilderness() && entity.getTracker() instanceof GriefPreventionTracker){
+            boolean isValidClaim = GriefPreventionHook.isValidClaim(claim);
+
+            if(isValidClaim == false && entity.getTracker() instanceof GriefPreventionTracker){
                 entity.setTracker(null);
-            }else if(claim.isWilderness() == false){
+            }else if(isValidClaim){
                 entity.setTracker(findOrGetTrackerByClaim(claim));
             }
         }

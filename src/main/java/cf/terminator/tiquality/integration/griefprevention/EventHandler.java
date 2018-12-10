@@ -21,6 +21,9 @@ public class EventHandler {
 
     @SubscribeEvent
     public void onClaimCreate(GPClaimCreatedFullyEvent e){
+        if(GriefPreventionHook.isValidClaim(e.getClaim()) == false){
+            return;
+        }
         GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(e.getClaim());
         tracker.setBlockTrackers(null,null);
     }
@@ -34,7 +37,7 @@ public class EventHandler {
         Location<World> pos = new Location<>((World) e.getMinecraftWorld(), e.getPos().getX(), e.getPos().getY(), e.getPos().getZ());
 
         Claim claim = claimManager.getClaimAt(pos);
-        if(claim.isWilderness()){
+        if(GriefPreventionHook.isValidClaim(claim) == false){
             return;
         }
         GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
@@ -47,7 +50,7 @@ public class EventHandler {
         Location<World> pos = new Location<>((World) e.getWorld(), e.getEntity().posX, e.getEntity().posY, e.getEntity().posZ);
 
         Claim claim = manager.getClaimAt(pos);
-        if(claim.isWilderness()){
+        if(GriefPreventionHook.isValidClaim(claim) == false){
             return;
         }
 
