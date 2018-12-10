@@ -32,7 +32,6 @@ import java.util.TreeSet;
 public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract boolean isLoaded();
-    @Shadow public abstract ChunkPos getPos();
 
     @Shadow public abstract World getWorld();
 
@@ -199,7 +198,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public int compareTo(@Nonnull TiqualityChunk other){
-        ChunkPos thisPos = this.getPos();
+        ChunkPos thisPos = ((Chunk) (Object) this).getPos();
         ChunkPos otherPos = ((Chunk) other).getPos();
 
         int xComp = Integer.compare(thisPos.x, otherPos.x);

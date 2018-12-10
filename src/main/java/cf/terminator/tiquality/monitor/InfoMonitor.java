@@ -79,7 +79,7 @@ public class InfoMonitor {
         }
         endTime = System.currentTimeMillis() + timeout;
 
-        Tracker tracker = ((TiqualityWorld) player.world).getTracker(result.getBlockPos());
+        Tracker tracker = ((TiqualityWorld) player.world).getTiqualityTracker(result.getBlockPos());
 
         if(tracker != null){
             Utils.sendStatusBarMessage(player,tracker.getInfo());

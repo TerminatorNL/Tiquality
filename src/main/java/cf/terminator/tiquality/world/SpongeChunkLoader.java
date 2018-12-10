@@ -24,7 +24,7 @@ public class SpongeChunkLoader {
             if(isDenying){
                 IMixinChunkProviderServer provider = (IMixinChunkProviderServer) worldServer.getChunkProvider();
                 provider.setDenyChunkRequests(false);
-                TiqualityChunk result = world.getChunk(pos);
+                TiqualityChunk result = world.getTiqualityChunk(pos);
                 provider.setDenyChunkRequests(true);
                 return result;
             }else{

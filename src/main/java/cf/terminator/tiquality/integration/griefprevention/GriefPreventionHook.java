@@ -136,7 +136,7 @@ public class GriefPreventionHook {
             throw new CommandException("Claim not found, please stand in your claim and run the command again.");
         }
 
-        Tracker existingTracker = ((TiqualityWorld) sender.getEntityWorld()).getTracker(pos);
+        Tracker existingTracker = ((TiqualityWorld) sender.getEntityWorld()).getTiqualityTracker(pos);
         if(existingTracker != null){
             throw new CommandException("There's already a tracker present: " + existingTracker.getInfo().getText());
         }

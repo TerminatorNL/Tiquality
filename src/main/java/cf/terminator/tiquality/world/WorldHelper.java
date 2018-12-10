@@ -297,7 +297,7 @@ public class WorldHelper {
             if(Tiquality.SPONGE_IS_PRESENT){
                 chunk = SpongeChunkLoader.getChunkForced(world, chunkBlockPos);
             }else {
-                chunk = world.getChunk(chunkBlockPos);
+                chunk = world.getTiqualityChunk(chunkBlockPos);
             }
         }
     }

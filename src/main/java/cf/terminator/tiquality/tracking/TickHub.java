@@ -19,7 +19,7 @@ import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASS
 public class TickHub {
 
     public static void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        Tracker tracker = ((TiqualityWorld) world).getTracker(pos);
+        Tracker tracker = ((TiqualityWorld) world).getTiqualityTracker(pos);
         if(tracker != null) {
             tracker.doBlockTick(block,world, pos, state, rand);
         }else{
@@ -30,7 +30,7 @@ public class TickHub {
     }
 
     public static void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        Tracker tracker = ((TiqualityWorld) world).getTracker(pos);
+        Tracker tracker = ((TiqualityWorld) world).getTiqualityTracker(pos);
         if(tracker != null) {
             tracker.doRandomBlockTick(block,world, pos, state, rand);
         }else{
@@ -42,7 +42,7 @@ public class TickHub {
 
     public static void onTileEntityTick(ITickable tickable){
         TileEntity entity = (TileEntity) tickable;
-        Tracker tracker = ((TiqualityWorld)entity.getWorld()).getTracker(entity.getPos());
+        Tracker tracker = ((TiqualityWorld)entity.getWorld()).getTiqualityTracker(entity.getPos());
         if(tracker != null) {
             tracker.tickTileEntity((TiqualitySimpleTickable) tickable);
         }else{

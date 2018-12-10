@@ -22,7 +22,7 @@ public interface TiqualityWorld {
      * @param pos the position of the block
      * @return the chunk
      */
-    @Nonnull TiqualityChunk getChunk(BlockPos pos);
+    @Nonnull TiqualityChunk getTiqualityChunk(BlockPos pos);
 
     /**
      * Optimized way of getting the TrackerBase using a BlockPos.
@@ -33,7 +33,7 @@ public interface TiqualityWorld {
      * @return the tracker
      */
     @Nullable
-    Tracker getTracker(BlockPos pos);
+    Tracker getTiqualityTracker(BlockPos pos);
 
     /**
      * Optimized way of setting the TrackerBase using a BlockPos.
@@ -43,7 +43,7 @@ public interface TiqualityWorld {
      * @param pos the position of the block
      * @param tracker the TrackerBase
      */
-    void setTracker(BlockPos pos, Tracker tracker);
+    void setTiqualityTracker(BlockPos pos, Tracker tracker);
 
     /**
      * Sets the tracker in a cuboid area
@@ -52,7 +52,7 @@ public interface TiqualityWorld {
      * @param tracker the tracker to add
      * @param callback a task to run on completion
      */
-    void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback);
+    void setTiqualityTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback);
 
     /**
      * Sets the tracker in a cuboid area
@@ -62,7 +62,7 @@ public interface TiqualityWorld {
      * @param callback a task to run on completion
      * @param beforeRun a task to run before work starts
      */
-    void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun);
+    void setTiqualityTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun);
 
     /**
      * Gets all entities in this world
@@ -71,7 +71,7 @@ public interface TiqualityWorld {
      * @return a list of entities, or an empty list if there are none
      */
     @Nonnull
-    List<TiqualityEntity> getEntities(boolean trackersOnly);
+    List<TiqualityEntity> getTiqualityEntities(boolean trackersOnly);
 
 
     /**

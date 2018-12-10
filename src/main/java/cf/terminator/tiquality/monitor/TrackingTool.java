@@ -95,7 +95,7 @@ public class TrackingTool {
             step = 0;
         }
         selectedPos = result.getBlockPos();
-        Tracker tracker = ((TiqualityWorld) player.world).getTracker(selectedPos);
+        Tracker tracker = ((TiqualityWorld) player.world).getTiqualityTracker(selectedPos);
 
         if(tracker != null){
             Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.RED + "Already tracked: " + tracker.getInfo().getText()));
@@ -103,7 +103,7 @@ public class TrackingTool {
         }
         if(step == COLORSCALE.length){
             --step;
-            ((TiqualityWorld) player.world).setTracker(selectedPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
+            ((TiqualityWorld) player.world).setTiqualityTracker(selectedPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
             return;
         }
         Block block = player.world.getBlockState(selectedPos).getBlock();

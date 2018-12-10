@@ -39,7 +39,7 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @param pos the position of the block
      * @return the chunk
      */
-    public @Nonnull TiqualityChunk getChunk(BlockPos pos){
+    public @Nonnull TiqualityChunk getTiqualityChunk(BlockPos pos){
         if(Tiquality.SPONGE_IS_PRESENT){
             return SpongeChunkLoader.getChunkForced(this, pos);
         }else {
@@ -56,8 +56,8 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @return the chunk
      */
     public @Nullable
-    Tracker getTracker(BlockPos pos){
-        return getChunk(pos).tiquality_findTrackerByBlockPos(pos);
+    Tracker getTiqualityTracker(BlockPos pos){
+        return getTiqualityChunk(pos).tiquality_findTrackerByBlockPos(pos);
     }
 
     /**
@@ -68,8 +68,8 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @param pos the position of the block
      * @param tracker the TrackerBase to set.
      */
-    public void setTracker(BlockPos pos, Tracker tracker){
-        getChunk(pos).tiquality_setTrackedPosition(pos, tracker);
+    public void setTiqualityTracker(BlockPos pos, Tracker tracker){
+        getTiqualityChunk(pos).tiquality_setTrackedPosition(pos, tracker);
     }
 
     /**
@@ -79,7 +79,7 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @param tracker the tracker to add
      * @param callback a task to run on completion. This will run in the main thread!
      */
-    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback){
+    public void setTiqualityTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback){
         WorldHelper.setTrackerCuboid(this, start, end, tracker, callback, null);
     }
 
@@ -91,7 +91,7 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @param callback a task to run on completion. This will run in the main thread!
      * @param beforeRun a task to run before work starts
      */
-    public void setTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun){
+    public void setTiqualityTrackerCuboidAsync(BlockPos start, BlockPos end, Tracker tracker, Runnable callback, Runnable beforeRun){
         WorldHelper.setTrackerCuboid(this, start, end, tracker, callback, beforeRun);
     }
 
@@ -111,7 +111,7 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
      * @return a list of entities, or an empty list if there are none
      */
     @Nonnull
-    public List<TiqualityEntity> getEntities(boolean trackersOnly){
+    public List<TiqualityEntity> getTiqualityEntities(boolean trackersOnly){
         if(trackersOnly){
             //noinspection unchecked
             List<TiqualityEntity> list = (List<TiqualityEntity>) (Object)  new ArrayList<>(loadedEntityList);

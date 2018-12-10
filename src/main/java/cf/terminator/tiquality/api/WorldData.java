@@ -28,7 +28,7 @@ public class WorldData {
         return SynchronizedAction.run(new SynchronizedAction.Action<Tracker>() {
             @Override
             public void run(SynchronizedAction.DynamicVar<Tracker> variable) {
-                variable.set(((TiqualityWorld) world).getTracker(pos));
+                variable.set(((TiqualityWorld) world).getTiqualityTracker(pos));
             }
         });
     }
@@ -46,7 +46,7 @@ public class WorldData {
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
             public void run() {
-                ((TiqualityWorld) world).setTracker(pos,tracker);
+                ((TiqualityWorld) world).setTiqualityTracker(pos,tracker);
             }
         });
     }

@@ -90,13 +90,13 @@ public class CommandExecutor {
                 throw new CommandException("Please stand on top of a block and run this command again.");
             }
             if (blockBelowFeet != Blocks.AIR) {
-                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition().down());
+                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
                         TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (belowAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
             }
             if (blockAtFeet != Blocks.AIR) {
-                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTracker(player.getPosition());
+                Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
                         TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (feetAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));

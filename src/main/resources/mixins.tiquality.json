@@ -6,7 +6,6 @@
   "plugin": "cf.terminator.tiquality.mixinhelper.MixinConfigPlugin",
   "mixins": [
     "MixinChunk",
-    "MixinChunkProviderClient",
     "MixinEntity",
     "MixinMinecraftServer",
     "MixinSpongeTrackingUtil",

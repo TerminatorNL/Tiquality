@@ -84,7 +84,7 @@ public class GriefPreventionTracker implements Tracker {
         );
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-        world.setTrackerCuboidAsync(startPos, endPos, this, callback, beforeRun);
+        world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, callback, beforeRun);
     }
 
     private void registerAsListener(){
@@ -190,12 +190,12 @@ public class GriefPreventionTracker implements Tracker {
         );
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-        world.setTrackerCuboidAsync(startPos, endPos, tracker, null);
+        world.setTiqualityTrackerCuboidAsync(startPos, endPos, tracker, null);
         for(Claim subClaim : claim.getChildren(false)){
-            world.setTrackerCuboidAsync(startPos, endPos, GriefPreventionHook.findOrGetTrackerByClaim(subClaim), null);
+            world.setTiqualityTrackerCuboidAsync(startPos, endPos, GriefPreventionHook.findOrGetTrackerByClaim(subClaim), null);
         }
 
-        for(TiqualityEntity entity : world.getEntities(true)){
+        for(TiqualityEntity entity : world.getTiqualityEntities(true)){
             if(entity.getTracker() == this){
                 entity.setTracker(null);
             }

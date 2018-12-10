@@ -20,7 +20,7 @@ public class BlockPlaceMonitor {
     public void onBlockPlaceEvent(BlockEvent.PlaceEvent e){
         UUID uuid = e.getPlayer().getGameProfile().getId();
         if(uuid != null) {
-            ((TiqualityWorld) e.getWorld()).setTracker(e.getPos(), PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
+            ((TiqualityWorld) e.getWorld()).setTiqualityTracker(e.getPos(), PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
         }
     }
 
@@ -29,7 +29,7 @@ public class BlockPlaceMonitor {
         UUID uuid = e.getPlayer().getGameProfile().getId();
         if(uuid != null) {
             for (BlockSnapshot snapshot : e.getReplacedBlockSnapshots()) {
-                ((TiqualityWorld) e.getWorld()).setTracker(snapshot.getPos(), PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
+                ((TiqualityWorld) e.getWorld()).setTiqualityTracker(snapshot.getPos(), PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(uuid)));
             }
         }
     }
