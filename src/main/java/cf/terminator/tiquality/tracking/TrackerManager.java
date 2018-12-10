@@ -103,6 +103,11 @@ public class TrackerManager {
                 }catch (TrackerAlreadyExistsException e){
                     Tiquality.LOGGER.warn("TRACKER ALREADY EXISTS: " + e.getNewTracker().toString() + " and: " + e.getOldTracker().toString());
                     e.printStackTrace();
+                }catch (Throwable e){
+                    Tiquality.LOGGER.warn("TRACKER CAUSED AN ERROR! We caught it to prevent a crash, but it should still be reported!");
+                    Tiquality.LOGGER.warn("Trackers involved 1/2: " + input.getTracker().toString());
+                    Tiquality.LOGGER.warn("Trackers involved 2/2: " + holder.getTracker().toString());
+                    e.printStackTrace();
                 }
             }
             TRACKER_LIST.add(input);
@@ -110,22 +115,6 @@ public class TrackerManager {
             TRACKER_LIST.unlock();
         }
         return input;
-    }
-
-    @Nullable
-    public static <T extends Tracker> T getTrackerByID(long id){
-        TRACKER_LIST.lock();
-        try{
-            for (TrackerHolder tracker : TRACKER_LIST) {
-                if (id == tracker.getId()) {
-                    //noinspection unchecked
-                    return (T) tracker.getTracker();
-                }
-            }
-            return null;
-        }finally {
-            TRACKER_LIST.unlock();
-        }
     }
 
     /**
