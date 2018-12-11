@@ -56,7 +56,7 @@ public class GriefPreventionHook {
         }
         for(Claim claim : list){
             if(GriefPreventionHook.isValidClaim(claim) == false){
-                return;
+                continue;
             }
             counter.getAndIncrement();
             Text owner = claim.getOwnerName();
