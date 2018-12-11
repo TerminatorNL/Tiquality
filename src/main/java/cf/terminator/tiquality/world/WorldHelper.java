@@ -113,6 +113,7 @@ public class WorldHelper {
                 return;
             }
             try {
+                threadPool.resume();
                 long maxTime = System.currentTimeMillis() + 40;
                 while (System.currentTimeMillis() < maxTime) {
                     synchronized (TASKS) {

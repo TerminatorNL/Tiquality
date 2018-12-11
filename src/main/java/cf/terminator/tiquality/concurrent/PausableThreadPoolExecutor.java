@@ -74,7 +74,7 @@ public class PausableThreadPoolExecutor extends ThreadPoolExecutor {
         try {
             super.beforeExecute(thread, runnable);
             synchronized (IS_PAUSED) {
-                if(IS_PAUSED.get()){
+                while (IS_PAUSED.get()){
                     IS_PAUSED.wait();
                 }
             }
