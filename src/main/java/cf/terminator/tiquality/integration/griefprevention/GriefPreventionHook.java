@@ -76,7 +76,7 @@ public class GriefPreventionHook {
             },new Runnable() {
                 @Override
                 public void run() {
-                    String message = "[Tiquality] Remaining: " + counter.getAndDecrement();
+                    String message = "[Tiquality] Remaining claims: " + (counter.getAndDecrement() - 1);
                     Tiquality.LOGGER.info(message);
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + message));
                     synchronized (counter) {

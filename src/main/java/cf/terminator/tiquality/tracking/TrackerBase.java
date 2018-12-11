@@ -383,6 +383,17 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
+     * Removes an associated tracker (When changing ownership, for example.)
+     * @param tracker the chunk.
+     */
+    @Override
+    public void removeDelegatingTracker(Tracker tracker){
+        synchronized (DELEGATING_TRACKERS) {
+            DELEGATING_TRACKERS.removeIf(t -> tracker.equals(t.get()));
+        }
+    }
+
+    /**
      * Checks if this TrackerBase has chunks associated with it and is kept in memory by the TrackerManager.
      * Also removes references to unloaded chunks and unloaded delegating trackers.
      * @return true if this TrackerBase has a loaded chunk or the cooldown is not over yet, false otherwise

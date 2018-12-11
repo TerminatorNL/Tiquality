@@ -153,7 +153,7 @@ public class PlayerTracker extends TrackerBase {
     }
 
     @Override
-    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
         if(this.equals(tracker)){
             throw new TrackerAlreadyExistsException(this, tracker);
         }

@@ -65,6 +65,7 @@ public class GriefPreventionTracker implements Tracker {
     }
 
     public void setOwner(UUID owner){
+        this.ownerTracker.removeDelegatingTracker(this);
         this.ownerTracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(owner));
         this.ownerTracker.associateDelegatingTracker(this);
         trustedPlayers.remove(this.ownerTracker.getOwner());
@@ -228,6 +229,9 @@ public class GriefPreventionTracker implements Tracker {
     }
 
     public boolean hasLoadedChunks(){
+        if(doesClaimExists() == false){
+            return false;
+        }
         synchronized (CHUNKS) {
             CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
             return CHUNKS.size() > 0;
@@ -240,7 +244,7 @@ public class GriefPreventionTracker implements Tracker {
     }
 
     @Override
-    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
 
     }
 
@@ -335,7 +339,9 @@ public class GriefPreventionTracker implements Tracker {
     @Override
     public List<GameProfile> getAssociatedPlayers() {
         List<GameProfile> list = new ArrayList<>(trustedPlayers);
-        list.add(ownerTracker.getOwner());
+        if(ownerTracker != null) {
+            list.add(ownerTracker.getOwner());
+        }
         return list;
     }
 
@@ -382,22 +388,30 @@ public class GriefPreventionTracker implements Tracker {
 
     @Override
     public void tickTileEntity(TiqualitySimpleTickable t){
-        ownerTracker.tickTileEntity(t);
+        if(ownerTracker != null) {
+            ownerTracker.tickTileEntity(t);
+        }
     }
 
     @Override
     public void tickEntity(TiqualityEntity e){
-        ownerTracker.tickEntity(e);
+        if(ownerTracker != null) {
+            ownerTracker.tickEntity(e);
+        }
     }
 
     @Override
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        ownerTracker.doBlockTick(block, world, pos, state, rand);
+        if(ownerTracker != null) {
+            ownerTracker.doBlockTick(block, world, pos, state, rand);
+        }
     }
 
     @Override
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        ownerTracker.doRandomBlockTick(block, world, pos, state, rand);
+        if(ownerTracker != null) {
+            ownerTracker.doRandomBlockTick(block, world, pos, state, rand);
+        }
     }
 
     @Override
@@ -413,6 +427,11 @@ public class GriefPreventionTracker implements Tracker {
     @Override
     public void associateDelegatingTracker(Tracker tracker) {
         throw new UnsupportedOperationException("This tracker already is a delegator!");
+    }
+
+    @Override
+    public void removeDelegatingTracker(Tracker tracker) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

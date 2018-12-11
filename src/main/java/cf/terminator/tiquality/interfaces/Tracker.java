@@ -56,6 +56,7 @@ public interface Tracker extends Comparable {
 
     void associateChunk(TiqualityChunk chunk);
     void associateDelegatingTracker(Tracker tracker);
+    void removeDelegatingTracker(Tracker tracker);
 
     boolean isLoaded();
 
@@ -89,8 +90,9 @@ public interface Tracker extends Comparable {
 
     /**
      * Use this to throw an error if the tracker already exists, indicative of programming errors.
+     * In most cases, if you have implemented the equals method properly, use that.
      */
-    void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException;
+    void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException;
 
     /**
      * This is called when a holder has been assigned to this tracker.

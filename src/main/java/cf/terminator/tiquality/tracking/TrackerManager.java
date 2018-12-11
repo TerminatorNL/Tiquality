@@ -99,7 +99,7 @@ public class TrackerManager {
         try{
             for (TrackerHolder holder : TRACKER_LIST) {
                 try {
-                    holder.getTracker().checkColission(input.getTracker());
+                    holder.getTracker().checkCollision(input.getTracker());
                 }catch (TrackerAlreadyExistsException e){
                     Tiquality.LOGGER.warn("TRACKER ALREADY EXISTS: " + e.getNewTracker().toString() + " and: " + e.getOldTracker().toString());
                     e.printStackTrace();

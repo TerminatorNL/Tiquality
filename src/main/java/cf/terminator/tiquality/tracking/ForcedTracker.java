@@ -106,7 +106,7 @@ public class ForcedTracker implements Tracker {
     public void tickTileEntity(TiqualitySimpleTickable tickable){
         if(isProfiling) {
             long start = System.nanoTime();
-            tickable.doUpdateTick();
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
         }else{
@@ -126,7 +126,7 @@ public class ForcedTracker implements Tracker {
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(isProfiling) {
             long start = System.nanoTime();
-            block.updateTick(world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
         }else{
@@ -146,7 +146,7 @@ public class ForcedTracker implements Tracker {
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(isProfiling) {
             long start = System.nanoTime();
-            block.randomTick(world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
         }else{
@@ -167,6 +167,11 @@ public class ForcedTracker implements Tracker {
     @Override
     public void associateDelegatingTracker(Tracker tracker) {
         throw new UnsupportedOperationException("ForcedTracker should not be delegated");
+    }
+
+    @Override
+    public void removeDelegatingTracker(Tracker tracker) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -193,7 +198,7 @@ public class ForcedTracker implements Tracker {
     public void tickEntity(TiqualityEntity entity){
         if(isProfiling) {
             long start = System.nanoTime();
-            entity.doUpdateTick();
+            Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
             long elapsed = System.nanoTime() - start;
             tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
         }else{
@@ -267,7 +272,7 @@ public class ForcedTracker implements Tracker {
     }
 
     @Override
-    public void checkColission(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
+    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
         if(this.equals(tracker)){
             throw new TrackerAlreadyExistsException(this, tracker);
         }
