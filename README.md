@@ -75,6 +75,10 @@ When the next tick comes around, all trackers get a granted amount of tracking t
  * /tq import_griefprevention
    * Will update every GriefPrevention claim existing before Tiquality was installed with TiqualityTrackers. You only need to run this once during first run! This command is hidden from TAB autocompletion.
    * tiquality.admin
+   
+ * /tq import_griefprevention_claim
+   * Will update the GriefPrevention claim (where you are currently standing) existing before Tiquality was installed with TiqualityTrackers. You must use this command if the command above loaded a corrupt chunk you do not intend to fix. You only need to run this once for each claim that existed before Tiquality was installed! This command is hidden from TAB autocompletion. Abuse is prevented by only updating if no tracker yet exists.
+   * tiquality.use
 
 ## Frequently asked questions
  
@@ -83,6 +87,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
 - [My blocks don't tick! What do I do?](#my-blocks-dont-tick-what-do-i-do)
 - [My fluids don't flow! What do I do?](#my-fluids-dont-flow-what-do-i-do)
 - [What is your code style?](#what-is-your-code-style)
+- [I just installed Tiquality, and the TPS is HORRIBLE!](#i-just-installed-tiquality-and-the-tps-is-horrible)
 
 ### Why don't you move to Sponge already!?
 It is my intention to make Tiquality as widely available to everyone. Not having to install Sponge, match the Forge version, find mods that are both compatible with Sponge and that specific Forge version makes it easier to install. Everyone should be able to use Tiquality, *even if you run a Sponge-free server.*
@@ -110,6 +115,10 @@ We can break this down:
  - "whitelisted" means that this block **type** will tick, regardless of it being tracked or not.
  - "Not tracked" tells us that no tracker has been assigned to this block.
 
+Recommended usage:
+ - `tq info point` which allows you to see what blocks are tracked simply by looking at them, and sneaking.
+ - `tq info` to see if your config changes worked
+
 ### My blocks don't tick! What do I do?
 
 A block will tick if at least one of the following statements is true:
@@ -129,6 +138,15 @@ Fluid's are tracked the same way as [blocks](#my-blocks-dont-tick-what-do-i-do).
 The fastest way to solve this is simply by standing in the liquid and running `/tq add feet`. It will add the fluid to the config under `AUTO_WORLD_ASSIGNED_OBJECTS`.
 
 Protip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned in the liquid correctly.
+
+
+### I just installed Tiquality, and the TPS is HORRIBLE!
+This is because blocks are trying to tick, but have no tracker assigned. If you don't have GriefPrevention installed, you have to reset your world to fully enjoy Tiquality.
+
+If you do have GriefPrevention installed: try to use the `/tq import_griefprevention` command. Be wary, as most servers contain corrupted chunks, and this command will load them.
+If you can't import because you have corrupted chunks, use: `/tq import_griefprevention_claim`. It will only import the claim you are currently standing in, but after everyone runs that command everything should be running smooth.
+
+More alternatives to GriefPrevention are on the to-do list.
 
 ### What is your code style?
 
