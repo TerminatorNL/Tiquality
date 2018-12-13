@@ -1,11 +1,15 @@
-package cf.terminator.tiquality.tracking;
+package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
+import me.ryanhamshire.griefprevention.GriefPrevention;
+import me.ryanhamshire.griefprevention.api.claim.Claim;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -16,23 +20,26 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+import org.spongepowered.api.Sponge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A class used to Track unowned updates for profiling purposes.
- * This TrackerBase does not throttle it's tickables.
- */
-public class ForcedTracker implements Tracker {
+public class AdminClaimTracker extends GriefPreventionTracker {
 
-    public static final ForcedTracker INSTANCE = new ForcedTracker();
+    public static final AdminClaimTracker INSTANCE = new AdminClaimTracker();
+    private static TrackerHolder HOLDER = TrackerHolder.getHolder(INSTANCE);
     private boolean isProfiling = false;
     private TickLogger tickLogger = new TickLogger();
 
-    private ForcedTracker() {
+    /**
+     * Required
+     */
+    public AdminClaimTracker() {
     }
 
     /**
@@ -40,7 +47,7 @@ public class ForcedTracker implements Tracker {
      */
     @Override
     public NBTTagCompound getNBT() {
-        throw new UnsupportedOperationException("Tried to save ForcedTracker!");
+        return new NBTTagCompound();
     }
 
     @Override
@@ -56,7 +63,7 @@ public class ForcedTracker implements Tracker {
                 if(isProfiling != shouldProfile) {
                     isProfiling = shouldProfile;
                     if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
+                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, getTickLogger()));
                     }else{
                         tickLogger.reset();
                     }
@@ -73,11 +80,50 @@ public class ForcedTracker implements Tracker {
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
                 if(isProfiling == true) {
                     isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, getTickLogger()));
                     variable.set(getTickLogger());
                 }
             }
         });
+    }
+
+    private boolean IMPORTING = false;
+    @Override
+    public void setBlockTrackers(Runnable runnable, Runnable r2){
+        if(IMPORTING == true){
+            return;
+        }
+        IMPORTING = true;
+        List<Claim> list = new ArrayList<>();
+        for (org.spongepowered.api.world.World world : Sponge.getServer().getWorlds()) {
+            list.addAll(GriefPrevention.getApi().getClaimManager(world).getWorldClaims());
+        }
+        for(Claim claim : list) {
+            if(claim.isAdminClaim() == false){
+                continue;
+            }
+            BlockPos startPos = new BlockPos(
+                    claim.getLesserBoundaryCorner().getBlockX(),
+                    claim.getLesserBoundaryCorner().getBlockY(),
+                    claim.getLesserBoundaryCorner().getBlockZ()
+            );
+
+            BlockPos endPos = new BlockPos(
+                    claim.getGreaterBoundaryCorner().getBlockX(),
+                    claim.getGreaterBoundaryCorner().getBlockY(),
+                    claim.getGreaterBoundaryCorner().getBlockZ()
+            );
+            TiqualityWorld world = (TiqualityWorld) claim.getWorld();
+
+            world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, null, null);
+            for(Claim subClaim : claim.getChildren(false)){
+                if(GriefPreventionHook.isValidClaim(subClaim) == false){
+                    continue;
+                }
+                GriefPreventionHook.findOrGetTrackerByClaim(subClaim).setBlockTrackers(null, null);
+            }
+        }
+        IMPORTING = false;
     }
 
     @Override
@@ -87,17 +133,12 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public Tracker load(TiqualityWorld world, NBTTagCompound nbt) {
-        throw new UnsupportedOperationException("How can ForcedTracker be loaded, when it is never saved?");
+        return INSTANCE;
     }
 
-    /**
-     * We don't want this to be saved to disk, due to config options.
-     * Because we don't save to disk, we don't need the constructor(TiqualityChunk, NBTTagCompound)
-     * @return false
-     */
     @Override
     public boolean shouldSaveToDisk(){
-        return false;
+        return true;
     }
 
     /**
@@ -158,17 +199,17 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void grantTick() {
-        throw new UnsupportedOperationException("ForcedTracker does not need ticks");
+        throw new UnsupportedOperationException("AdminClaimTracker does not need ticks");
     }
 
     @Override
     public void associateChunk(TiqualityChunk chunk) {
-        throw new UnsupportedOperationException("ForcedTracker should not be associated to chunks");
+
     }
 
     @Override
     public void associateDelegatingTracker(Tracker tracker) {
-        throw new UnsupportedOperationException("ForcedTracker should not be delegated");
+        throw new UnsupportedOperationException("AdminClaimTracker should not be delegated");
     }
 
     @Override
@@ -184,7 +225,7 @@ public class ForcedTracker implements Tracker {
     @Nonnull
     @Override
     public List<GameProfile> getAssociatedPlayers() {
-        throw new UnsupportedOperationException("Tried to get the associatedPlayers for a ForcedTracker");
+        return Collections.emptyList();
     }
 
     /**
@@ -229,7 +270,7 @@ public class ForcedTracker implements Tracker {
      */
     @Override
     public String toString(){
-        return "ForcedTracker:{hashCode: " + System.identityHashCode(this) + "}";
+        return "AdminClaimTracker:{hashCode: " + System.identityHashCode(this) + "}";
     }
 
     /**
@@ -238,7 +279,7 @@ public class ForcedTracker implements Tracker {
     @Nonnull
     @Override
     public TextComponentString getInfo() {
-        return new TextComponentString(TextFormatting.LIGHT_PURPLE + "Forced");
+        return new TextComponentString(TextFormatting.LIGHT_PURPLE + "Admin claim");
     }
 
     /**
@@ -247,9 +288,13 @@ public class ForcedTracker implements Tracker {
      */
     @Nonnull
     public String getIdentifier() {
-        throw new UnsupportedOperationException("Attempt to get the identifier for ForcedTracker.");
+        return "GPAdmin";
     }
 
+    /**
+     * We never unload.
+     * @return
+     */
     @Override
     public boolean shouldUnload() {
         return false;
@@ -257,7 +302,7 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void onUnload() {
-        throw new UnsupportedOperationException("Unloading ForcedTracker is never allowed.");
+        throw new UnsupportedOperationException("Unloading AdminClaimTracker is never allowed.");
     }
 
     @Override
@@ -267,30 +312,26 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-        if(this.equals(tracker)){
-            throw new TrackerAlreadyExistsException(this, tracker);
-        }
-    }
 
-    private TrackerHolder holder = null;
+    }
 
     @Override
     public void setHolder(TrackerHolder holder) {
-        this.holder = holder;
+        HOLDER = holder;
     }
 
     @Override
     public TrackerHolder getHolder() {
-        return holder;
+        return HOLDER;
     }
 
     @Override
     public boolean equals(Object o){
-        if(o == null || o instanceof ForcedTracker == false){
+        if(o == null || o instanceof AdminClaimTracker == false){
             return false;
         }else{
             if(o != this){
-                throw new IllegalStateException("Detected two ForcedTracker objects, this is impossible. HALT");
+                throw new IllegalStateException("Detected two AdminClaimTracker objects, this is impossible. HALT");
             }else{
                 return true;
             }

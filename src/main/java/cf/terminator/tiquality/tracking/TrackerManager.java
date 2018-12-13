@@ -59,7 +59,7 @@ public class TrackerManager {
             hasWork = false;
             for(TrackerHolder holder : TRACKER_LIST){
                 Tracker tracker = holder.getTracker();
-                if(tracker.isDone() == false){
+                if(tracker.needsTick()){
                     hasWork = true;
                     tracker.grantTick();
                 }
@@ -78,7 +78,7 @@ public class TrackerManager {
 
         for (TrackerHolder holder : TRACKER_LIST){
             Tracker tracker = holder.getTracker();
-            if ((tracker.isDone() && tracker.isLoaded() == false) || tracker.shouldUnload()) {
+            if (tracker.shouldUnload()) {
                 tracker.onUnload();
                 removables.add(holder);
             }
@@ -146,15 +146,20 @@ public class TrackerManager {
              */
                 return null;
             }
-            Tracker newTracker;
             try {
-                newTracker =  clazz.getDeclaredConstructor(TiqualityWorld.class, NBTTagCompound.class).newInstance(world, tagCompound.getCompoundTag("data"));
+                // Depreciated
+                // newTracker =  clazz.getDeclaredConstructor(TiqualityWorld.class, NBTTagCompound.class).newInstance(world, tagCompound.getCompoundTag("data"));
+                Tracker newTracker = clazz.newInstance().load(world, tagCompound.getCompoundTag("data"));
+                if(newTracker == null){
+                    return null;
+                }else {
+                    return addTracker(new TrackerHolder<>(newTracker, id));
+                }
             } catch (Exception e) {
                 Tiquality.LOGGER.warn("An exception has occurred whilst creating a tracker:");
                 e.printStackTrace();
                 return null;
             }
-            return addTracker(new TrackerHolder<>(newTracker, id));
         }finally {
             TRACKER_LIST.unlock();
         }

@@ -2,9 +2,11 @@ package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
+import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
+import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.memory.WeakReferencedTracker;
 import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
@@ -14,7 +16,6 @@ import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
@@ -58,15 +59,6 @@ public abstract class TrackerBase implements Tracker {
     @Override
     public boolean shouldSaveToDisk(){
         return true;
-    }
-
-    /**
-     * Used to initialize a new TrackerBase with saved data, if this constructor isn't overridden, I complain.
-     * @param world The world
-     * @param tag the NBTTagCompound. (generated using the getNBT method on the last save)
-     */
-    public TrackerBase(TiqualityWorld world, NBTTagCompound tag){
-        throw new TiqualityException.ReadTheDocsException("You MUST define a constructor using an NBTTagCompound as argument: " + getClass());
     }
 
     public TrackerBase(){
@@ -398,13 +390,9 @@ public abstract class TrackerBase implements Tracker {
      * Also removes references to unloaded chunks and unloaded delegating trackers.
      * @return true if this TrackerBase has a loaded chunk or the cooldown is not over yet, false otherwise
      */
-    @Override
     public boolean isLoaded(){
         if(isUnloaded){
             return false;
-        }
-        if(unloadCooldown > 0){
-            return true;
         }
         synchronized (ASSOCIATED_CHUNKS) {
             ASSOCIATED_CHUNKS.removeIf(chunk -> chunk.isChunkLoaded() == false);
@@ -413,28 +401,12 @@ public abstract class TrackerBase implements Tracker {
             }
         }
         synchronized (DELEGATING_TRACKERS) {
-            DELEGATING_TRACKERS.removeIf(tracker -> tracker.isLoaded() == false);
-
-            //for(WeakReferencedTracker weakReferencedTracker : DELEGATING_TRACKERS){
-            //    System.out.println("->" + weakReferencedTracker.isLoaded());
-            //}
-
-
-
+            DELEGATING_TRACKERS.removeIf(tracker -> tracker.exists() == false);
             if(DELEGATING_TRACKERS.size() > 0){
                 return true;
             }
         }
         return false;
-    }
-
-    /**
-     * Used to determine if this tracker needs more ticks to complete its work
-     * @return true if the TrackerBase has completed all of it's work.
-     */
-    @Override
-    public boolean isDone(){
-        return untickedTickables.size() == 0;
     }
 
     /**
@@ -447,22 +419,17 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
-     * @return an unique identifier for this TrackerBase CLASS TYPE, used to re-instantiate the tracker later on.
-     * This should just return a hardcoded string.
-     */
-    @Override
-    @Nonnull
-    public String getIdentifier(){
-        throw new TiqualityException.ReadTheDocsException("You are required to implement 'public static String getIdentifier()' using a string constant in your TrackerBase.");
-    }
-
-    /**
      * Checks if this tracker should be unloaded, overrides all other checks
      * @return false to keep this tracker from being garbage collected, true otherwise.
      */
     @Override
     public boolean shouldUnload() {
-        return false;
+        return isLoaded() == false && unloadCooldown == 0;
+    }
+
+    @Override
+    public boolean needsTick(){
+        return untickedTickables.size() > 0;
     }
 
     /**

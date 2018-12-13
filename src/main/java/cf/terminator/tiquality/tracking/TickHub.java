@@ -44,7 +44,7 @@ public class TickHub {
         TileEntity entity = (TileEntity) tickable;
         Tracker tracker = ((TiqualityWorld)entity.getWorld()).getTiqualityTracker(entity.getPos());
         if(tracker != null) {
-            tracker.tickTileEntity((TiqualitySimpleTickable) tickable);
+            tracker.tickTileEntity((TiqualitySimpleTickable) entity);
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(entity.getBlockType())){
                 ForcedTracker.INSTANCE.tickTileEntity((TiqualitySimpleTickable) tickable);

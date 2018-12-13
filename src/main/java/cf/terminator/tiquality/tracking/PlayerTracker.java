@@ -21,11 +21,15 @@ public class PlayerTracker extends TrackerBase {
     private final GameProfile profile;
 
     /**
-     * This method is called by Tiquality, do not instantiate these yourself!
-     * This method is required, and always uses TiqualityWorld and NBTCompoundTag
+     * Required.
      */
-    public PlayerTracker(TiqualityWorld world, NBTTagCompound tag) {
-        this(ForgeData.getGameProfileByUUID(new UUID(tag.getLong("uuidMost"), tag.getLong("uuidLeast"))));
+    public PlayerTracker(){
+        profile = null;
+    }
+
+    @Override
+    public Tracker load(TiqualityWorld world, NBTTagCompound tag) {
+        return new PlayerTracker(ForgeData.getGameProfileByUUID(new UUID(tag.getLong("uuidMost"), tag.getLong("uuidLeast"))));
     }
 
     /**

@@ -42,12 +42,25 @@ public class GriefPreventionTracker implements Tracker {
     private final LoadListener loadListener = new LoadListener();
     private final UnLoadListener unLoadListener = new UnLoadListener();
 
-    @SuppressWarnings("unused")
-    /*
-     * Used by Tiquality, using reflection.
+    /**
+     * Required
      */
-    public GriefPreventionTracker(TiqualityWorld world, NBTTagCompound tag){
-        this(thisMustBeFirstStatementInBodyWorkaround(world, tag));
+    public GriefPreventionTracker(){
+        claim = null;
+    }
+
+    @Override
+    public Tracker load(TiqualityWorld world, NBTTagCompound tag) {
+        long least = tag.getLong("uuidLeast");
+        long most = tag.getLong("uuidMost");
+        UUID claim_uuid = new UUID(most, least);
+        org.spongepowered.api.world.World spongeWorld = (org.spongepowered.api.world.World) world;
+        Optional<Claim> result = GriefPrevention.getApi().getClaimManager(spongeWorld).getClaimByUUID(claim_uuid);
+        if(result.isPresent() == false){
+            return null;
+        }else{
+            return GriefPreventionHook.findOrGetTrackerByClaim(result.get());
+        }
     }
 
     public GriefPreventionTracker(Claim in){
@@ -56,9 +69,6 @@ public class GriefPreventionTracker implements Tracker {
             unloadCooldown = 0;
             return;
         }
-
-
-
         updatePlayers();
         registerAsListener();
 
@@ -86,6 +96,12 @@ public class GriefPreventionTracker implements Tracker {
         TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
         world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, callback, beforeRun);
+        for(Claim claim : claim.getChildren(false)){
+            if(GriefPreventionHook.isValidClaim(claim) == false){
+                continue;
+            }
+            GriefPreventionHook.findOrGetTrackerByClaim(claim).setBlockTrackers(null, null);
+        }
     }
 
     private void registerAsListener(){
@@ -151,26 +167,6 @@ public class GriefPreventionTracker implements Tracker {
                 }
             }
 
-        }
-    }
-
-    /**
-     * Because java is incompetent.
-     * @param world .
-     * @param tag .
-     * @return .
-     */
-    private static Claim thisMustBeFirstStatementInBodyWorkaround(TiqualityWorld world, NBTTagCompound tag){
-        long least = tag.getLong("uuidLeast");
-        long most = tag.getLong("uuidMost");
-        UUID claim_uuid = new UUID(most, least);
-        org.spongepowered.api.world.World spongeWorld = (org.spongepowered.api.world.World) world;
-        Optional<Claim> result = GriefPrevention.getApi().getClaimManager(spongeWorld).getClaimByUUID(claim_uuid);
-        if(result.isPresent() == false){
-            return null;
-            //throw new IllegalStateException();
-        }else{
-            return result.get();
         }
     }
 
@@ -321,6 +317,12 @@ public class GriefPreventionTracker implements Tracker {
         return 0;
     }
 
+    /* We don't need a tick, because we are delegating */
+    @Override
+    public boolean needsTick() {
+        return false;
+    }
+
     /**
      * @return an unique identifier for this TrackerBase CLASS TYPE, used to re-instantiate the tracker later on.
      * This should just return a hardcoded string.
@@ -343,11 +345,6 @@ public class GriefPreventionTracker implements Tracker {
             list.add(ownerTracker.getOwner());
         }
         return list;
-    }
-
-    @Override
-    public boolean isDone() {
-        return false;
     }
 
     public void setProfileEnabled(boolean shouldProfile){
@@ -421,7 +418,7 @@ public class GriefPreventionTracker implements Tracker {
 
     @Override
     public void associateChunk(TiqualityChunk chunk) {
-
+        CHUNKS.add(new WeakReferencedChunk(chunk));
     }
 
     @Override
@@ -432,11 +429,6 @@ public class GriefPreventionTracker implements Tracker {
     @Override
     public void removeDelegatingTracker(Tracker tracker) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isLoaded() {
-        return hasLoadedChunks() || unloadCooldown > 0;
     }
 
     /**

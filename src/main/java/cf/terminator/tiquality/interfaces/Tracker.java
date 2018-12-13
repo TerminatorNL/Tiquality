@@ -19,6 +19,15 @@ import java.util.Random;
 
 public interface Tracker extends Comparable {
 
+    /**
+     * Use this to determine if you need to read NBT data.
+     * You can also return an existing tracker.
+     *
+     * However, if you do return an existing tracker, update checkColission accordingly.
+     * @return Tracker
+     */
+    Tracker load(TiqualityWorld world, NBTTagCompound nbt);
+
     boolean shouldSaveToDisk();
 
     /**
@@ -43,6 +52,7 @@ public interface Tracker extends Comparable {
     double getMultiplier(GameProfile[] cache);
 
     long getRemainingTime();
+    boolean needsTick();
 
     void tickTileEntity(TiqualitySimpleTickable tickable);
 
@@ -58,16 +68,12 @@ public interface Tracker extends Comparable {
     void associateDelegatingTracker(Tracker tracker);
     void removeDelegatingTracker(Tracker tracker);
 
-    boolean isLoaded();
-
     /**
      * Gets the associated players for this tracker
      * @return a list of all players involved with this tracker.
      */
     @Nonnull
     List<GameProfile> getAssociatedPlayers();
-
-    boolean isDone();
 
     String toString();
 

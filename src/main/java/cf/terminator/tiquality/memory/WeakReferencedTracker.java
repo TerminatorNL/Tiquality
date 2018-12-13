@@ -10,9 +10,9 @@ public class WeakReferencedTracker extends WeakReference<Tracker> {
         super(tracker);
     }
 
-    public boolean isLoaded(){
+    public boolean exists(){
         Tracker tracker = get();
-        return tracker != null && tracker.isLoaded();
+        return tracker != null;
     }
 
     /**

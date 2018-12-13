@@ -9,9 +9,11 @@ import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.util.Scheduler;
 import cf.terminator.tiquality.world.WorldHelper;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
+import me.ryanhamshire.griefprevention.api.claim.ClaimType;
 import me.ryanhamshire.griefprevention.api.event.*;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -110,7 +112,7 @@ public class GriefPreventionHook {
         /*
             Output reversed to improve readability.
          */
-        boolean isInvalid = claim == null || claim.isAdminClaim() || claim.isWilderness() || claim.getOwnerUniqueId() == null;
+        boolean isInvalid = claim == null || claim.isWilderness() || claim.getOwnerUniqueId() == null;
         return isInvalid == false;
     }
 
@@ -118,7 +120,7 @@ public class GriefPreventionHook {
         if(claim.isWilderness()){
             throw new IllegalArgumentException("Cannot add trackers to wilderness claims.");
         }else if(claim.isAdminClaim()){
-            throw new IllegalArgumentException("Cannot add trackers to admin claims.");
+            return AdminClaimTracker.INSTANCE;
         }else if(claim.getOwnerUniqueId() == null){
             throw new IllegalArgumentException("Claim owner is null!");
         }
@@ -186,6 +188,7 @@ public class GriefPreventionHook {
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
 
         Tracking.registerCustomTracker("GPClaim", GriefPreventionTracker.class);
+        Tracking.registerCustomTracker("GPAdmin", AdminClaimTracker.class);
         MinecraftForge.EVENT_BUS.register(EventHandler.INSTANCE);
     }
 
@@ -210,9 +213,47 @@ public class GriefPreventionHook {
     private static class ChangeClaimEventHandler implements EventListener<ChangeClaimEvent>{
         @Override
         public void handle(@Nonnull ChangeClaimEvent event) {
-            for(Claim claim : event.getClaims()){
-                GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.setBlockTrackers(null, null);
+            if(event instanceof ChangeClaimEvent.Type){
+                ChangeClaimEvent.Type typeChangeEvent = (ChangeClaimEvent.Type) event;
+                for(Claim claim : event.getClaims()){
+                    GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
+                    ClaimType originalType = typeChangeEvent.getOriginalType();
+                    ClaimType newType = typeChangeEvent.getType();
+                    if(originalType == ClaimType.BASIC || originalType == ClaimType.TOWN || originalType == ClaimType.SUBDIVISION){
+                        if(newType == ClaimType.ADMIN){
+                            tracker.replaceTracker(AdminClaimTracker.INSTANCE);
+                        }
+                    }else if(originalType == ClaimType.ADMIN){
+                        if(newType == ClaimType.BASIC || newType == ClaimType.TOWN || newType == ClaimType.SUBDIVISION) {
+
+                            Location<World> lesser = claim.getLesserBoundaryCorner();
+                            Location<World> greater = claim.getGreaterBoundaryCorner();
+
+                            Scheduler.INSTANCE.schedule(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    BlockPos startPos = new BlockPos(
+                                            lesser.getBlockX(),
+                                            lesser.getBlockY(),
+                                            lesser.getBlockZ()
+                                    );
+
+                                    BlockPos endPos = new BlockPos(
+                                            greater.getBlockX(),
+                                            greater.getBlockY(),
+                                            greater.getBlockZ()
+                                    );
+                                    TiqualityWorld world = (TiqualityWorld) claim.getWorld();
+
+                                    GriefPreventionTracker newTracker = GriefPreventionHook.findOrGetTrackerByClaim(GriefPrevention.getApi().getClaimManager((World) world).getClaimAt(lesser));
+                                    newTracker.setBlockTrackers(null, null);
+                                }
+                            });
+
+                        }
+                    }
+                }
             }
         }
     }

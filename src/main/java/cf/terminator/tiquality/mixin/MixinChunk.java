@@ -143,9 +143,9 @@ public abstract class MixinChunk implements TiqualityChunk {
             byte id = getIDbyTracker(tracker);
             STORAGE.setAll(id);
             tracker.associateChunk(this);
+            trackerLookup.clear();
             trackerLookup.forcePut(id, tracker);
         }
-        tiquality_refresh();
         markDirty();
     }
 
@@ -172,6 +172,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
+        STORAGE.clearAll();
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
 
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
