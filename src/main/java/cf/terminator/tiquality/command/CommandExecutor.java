@@ -16,10 +16,12 @@ import net.minecraft.block.Block;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
@@ -244,6 +246,27 @@ public class CommandExecutor {
             for(Tracker e : set){
                 sender.sendMessage(new TextComponentString(TextFormatting.AQUA + e.toString()));
             }
+
+            if(sender instanceof Entity){
+                Entity entity = (Entity) sender;
+                BlockPos below = entity.getPosition().down();
+                String blockName = entity.getEntityWorld().getBlockState(below).getBlock().toString();
+                boolean isMarked = ((TiqualityWorld) entity.getEntityWorld()).tiquality_isMarkedThorough(below);
+                Tracker tracker = ((TiqualityWorld) entity.getEntityWorld()).getTiqualityTracker(below);
+                String trackerText;
+                if(tracker == null){
+                    trackerText = TextFormatting.AQUA + "NOT TRACKED";
+                }else{
+                    trackerText = TextFormatting.WHITE + tracker.getInfo().getText();
+                }
+                if(isMarked){
+                    sender.sendMessage(new TextComponentString("BLOCK: " + blockName + TextFormatting.RED + " MARKED " + trackerText));
+                }else{
+                    sender.sendMessage(new TextComponentString("BLOCK: " + blockName + TextFormatting.GREEN + " NOT MARKED " + trackerText));
+                }
+            }
+
+
         /*
 
                 GRIEFPREVENTION IMPORT

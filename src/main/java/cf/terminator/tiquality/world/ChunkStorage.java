@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
+/**
+ * Keep in mind the data in this class is treated as bytes, even during bitwise operations, I chose
+ * bytes over Integers because they take less RAM.
+ * It is known that these bytes are promoted to integers during the bitwise operations.
+ */
 public class ChunkStorage {
 
     private Element[] data = new Element[16];
@@ -40,11 +45,11 @@ public class ChunkStorage {
     /**
      * Gets the stored owner associated with the BlockPos.
      * @param pos the block pos
-     * @return the owner ID, or 0 if none is found
+     * @return the owner ID, or 1 if none is found
      */
     public byte get(BlockPos pos){
         int y_layer =  pos.getY() >> 4;
-        return data[y_layer] == null ? 0 : data[y_layer].get(pos);
+        return data[y_layer] == null ? 1 : data[y_layer].get(pos);
     }
 
     /**
@@ -60,12 +65,47 @@ public class ChunkStorage {
         data[y_layer].set(pos, owner_id);
     }
 
+    /**
+     * Marks a block position
+     * @param pos the pos
+     */
+    public void mark(BlockPos pos){
+        int y_layer =  pos.getY() >> 4;
+        if(data[y_layer] == null) {
+            data[y_layer] = new Element();
+        }
+        data[y_layer].mark(pos);
+    }
+
+    /**
+     * Unmarks a block position
+     * @param pos the pos
+     */
+    public void unMark(BlockPos pos){
+        int y_layer =  pos.getY() >> 4;
+        if(data[y_layer] == null) {
+            data[y_layer] = new Element();
+        }
+        data[y_layer].unmark(pos);
+    }
+
+    /**
+     * Checks if a position is marked.
+     * @param pos the position
+     * @return marked
+     */
+    public boolean isMarked(BlockPos pos){
+        int y_layer =  pos.getY() >> 4;
+        return data[y_layer] != null && data[y_layer].isMarked(pos);
+    }
+
+
     public ArrayList<byte[]> getAll(){
         ArrayList<byte[]> list = new ArrayList<>();
         for (Element e : data) {
             if (e != null) {
                 if (e.hasData()) {
-                    list.add(e.storage);
+                    list.add(e.getUnmarkedCopy());
                 }
             }
         }
@@ -108,7 +148,7 @@ public class ChunkStorage {
                     continue;
                 }
                 NBTTagCompound injectable = sections.getCompoundTagAt(i);
-                injectable.setByteArray("Tiquality",e.storage);
+                injectable.setByteArray("Tiquality",e.getUnmarkedCopy());
                 sections.set(i, injectable);
             }
         }
@@ -133,7 +173,7 @@ public class ChunkStorage {
 
         boolean hasData(){
             for(byte b : storage){
-                if(b != 0){
+                if(b >= -1 && b <= 1){
                     return true;
                 }
             }
@@ -162,12 +202,45 @@ public class ChunkStorage {
         }
 
 
-        public void replaceAll(byte old, byte new_) {
+        void replaceAll(byte old, byte new_) {
             for (int i = 0; i < storage.length; i++){
-                if(storage[i] == old){
+                if(storage[i] == old || (storage[i] ^ -128) == old){
                     storage[i] = new_;
                 }
             }
         }
+
+        byte[] getUnmarkedCopy(){
+            byte[] copy = new byte[storage.length];
+            for(int i_=0; i_<storage.length; i_++){
+                copy[i_] = (byte) (storage[i_] & 127);
+            }
+            return copy;
+        }
+
+        /**
+         * Marks a block position
+         * @param pos the block pos
+         */
+        void mark(BlockPos pos){
+            storage[getIndex(pos)] |= -128;
+        }
+
+        /**
+         * Unmarks a block position
+         * @param pos the block pos
+         */
+        void unmark(BlockPos pos){
+            storage[getIndex(pos)] &= 127;
+        }
+
+        /**
+         * Checks if a block position is marked.
+         * @param pos the block pos
+         */
+        boolean isMarked(BlockPos pos){
+            return storage[getIndex(pos)] < 0;
+        }
+
     }
 }

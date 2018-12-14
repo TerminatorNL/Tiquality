@@ -30,6 +30,7 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Shadow public double posZ;
     @Shadow public World world;
     private Tracker tracker = null;
+    private boolean isMarkedByTiquality = false;
 
     @Override
     public void doUpdateTick() {
@@ -92,5 +93,30 @@ public abstract class MixinEntity implements TiqualityEntity {
                 tracker = holder.getTracker();
             }
         }
+    }
+
+    /**
+     * Marks this entity
+     */
+    @Override
+    public void tiquality_mark(){
+        isMarkedByTiquality = true;
+    }
+
+    /**
+     * Unmarks this entity
+     */
+    @Override
+    public void tiquality_unMark(){
+        isMarkedByTiquality = false;
+    }
+
+    /**
+     * Checks if this entity is marked
+     * @return marked
+     */
+    @Override
+    public boolean tiquality_isMarked() {
+        return isMarkedByTiquality;
     }
 }

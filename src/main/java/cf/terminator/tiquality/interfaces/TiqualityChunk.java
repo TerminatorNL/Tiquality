@@ -33,4 +33,10 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
     void associateTrackers();
 
     void replaceTracker(Tracker oldTracker, Tracker newTracker);
+
+    void tiquality_mark(BlockPos pos);
+
+    void tiquality_unMark(BlockPos pos);
+
+    boolean tiquality_isMarked(BlockPos pos);
 }

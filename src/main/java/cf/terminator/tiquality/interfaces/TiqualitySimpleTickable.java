@@ -43,4 +43,20 @@ public interface TiqualitySimpleTickable {
         TILE_ENTITY,
         ENTITY
     }
+
+    /**
+     * Marks this tickable
+     */
+    void tiquality_mark();
+
+    /**
+     * Unmarks this tickable
+     */
+    void tiquality_unMark();
+
+    /**
+     * Checks if this tickable is marked
+     * @return marked
+     */
+    boolean tiquality_isMarked();
 }

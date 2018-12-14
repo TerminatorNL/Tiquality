@@ -43,24 +43,29 @@ public abstract class MixinChunk implements TiqualityChunk {
     private final BiMap<Byte, Tracker> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
+
     /**
      * Gets the first free index for a player.
-     * If Tiquality detects that there are too many owners assigned to this chunk, it wipes all data in this chunk.
+     * If Tiquality detects that there are too many owners assigned to this chunk, it wipes all tiquality data in this chunk.
      *
-     * There are 6 reserved values:
-     *           0: No owner
-     *          -1: Reserved for potentional future use-case
-     *          -2: Reserved for potentional future use-case
-     *          -3: Reserved for potentional future use-case
-     *          -4: Reserved for potentional future use-case
-     *          -5: Reserved for potentional future use-case
-     * @return the owner value
+     * All negative numbers are used as markers to mark blocks, and
+     * there are 6 reserved values:
+     *           0: Does not exists
+     *           1: No owner
+     *           2: Reserved for potentional future use-case
+     *           3: Reserved for potentional future use-case
+     *           4: Reserved for potentional future use-case
+     *           5: Reserved for potentional future use-case
+     *
+     *
+     * @return the owner value, always lies between 6 and 127 (inclusive)
      */
     private byte getFirstFreeIndex(){
-        byte i=1;
+        byte i=6;
         while(trackerLookup.containsKey(i)){
             ++i;
-            if(i == -5){
+            /* It overflowed, meaning our marker won't work. */
+            if(i < 0){
                 trackerLookup.clear();
                 STORAGE.clearAll();
                 Tiquality.LOGGER.warn("There are too many owners in this chunk: " + this.getWorld().provider.getDimension() + " X=" + this.x + " Z=" + this.z);
@@ -73,6 +78,14 @@ public abstract class MixinChunk implements TiqualityChunk {
         return i;
     }
 
+    /**
+     * Returns the tracker ID
+     * @param tracker The tracker
+     * @param create If true, it will create an entry for this chunk for that tracker if it does not
+     *               exist yet. If it does, we return it's ID.
+     *               If false, and the tracker does not exists, we return 1, indicating there's no tracker present
+     * @return
+     */
     private byte getIDbyTracker(Tracker tracker, boolean create){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
@@ -81,7 +94,7 @@ public abstract class MixinChunk implements TiqualityChunk {
                 trackerLookup.put(owner_id, tracker);
                 return owner_id;
             }else{
-                return 0;
+                return 1;
             }
         }else {
             return owner_id;
@@ -95,7 +108,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         Set<Byte> ownersToKeep = new TreeSet<>();
         for(byte[] data : STORAGE.getAll()){
             for(byte b : data){
-                if(b == 0){
+                if(b == 1){
                     continue;
                 }
                 if(ownersToKeep.contains(b) == false){
@@ -123,7 +136,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         tracker = event.getTracker();
 
         if(tracker == null){
-            STORAGE.set(pos, (byte) 0);
+            STORAGE.set(pos, (byte) 1);
         }else {
             byte id = getIDbyTracker(tracker, true);
             STORAGE.set(pos, id);
@@ -228,5 +241,31 @@ public abstract class MixinChunk implements TiqualityChunk {
         }
     }
 
+    /**
+     * Marks a block position
+     * @param pos the pos
+     */
+    @Override
+    public void tiquality_mark(BlockPos pos){
+        STORAGE.mark(pos);
+    }
 
+    /**
+     * Unmarks a block position
+     * @param pos the pos
+     */
+    @Override
+    public void tiquality_unMark(BlockPos pos){
+        STORAGE.unMark(pos);
+    }
+
+    /**
+     * Checks if a position is marked.
+     * @param pos the position
+     * @return marked
+     */
+    @Override
+    public boolean tiquality_isMarked(BlockPos pos){
+        return STORAGE.isMarked(pos);
+    }
 }

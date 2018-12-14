@@ -36,6 +36,30 @@ public interface TiqualityWorld {
     Tracker getTiqualityTracker(BlockPos pos);
 
     /**
+     * Marks a block position. note: TileEntities don't use this.
+     * @param pos the pos
+     */
+    void tiquality_mark(BlockPos pos);
+
+    /**
+     * Unmarks a block position. note: TileEntities don't use this.
+     * @param pos the pos
+     */
+    void tiquality_unMark(BlockPos pos);
+
+    /**
+     * Checks if a block position is marked. note: TileEntities don't use this.
+     * @param pos the pos
+     */
+    boolean tiquality_isMarked(BlockPos pos);
+
+    /**
+     * Checks if a block position is marked, also finds TileEntities.
+     * @param pos the pos
+     */
+    boolean tiquality_isMarkedThorough(BlockPos pos);
+
+    /**
      * Optimized way of setting the TrackerBase using a BlockPos.
      * Don't forget PlayerTrackers reside inside chunks, so it still has to grab the chunk.
      * If you need to use the chunk later on, this is not for you.

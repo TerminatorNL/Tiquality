@@ -3,17 +3,14 @@ package cf.terminator.tiquality.tracking;
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
-import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.memory.WeakReferencedTracker;
 import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
 import cf.terminator.tiquality.tracking.update.BlockUpdateHolder;
 import cf.terminator.tiquality.util.Constants;
-import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.SynchronizedAction;
+import cf.terminator.tiquality.util.TickQueue;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
@@ -35,7 +32,7 @@ public abstract class TrackerBase implements Tracker {
     protected boolean isUnloaded = false;
 
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
-    protected FiFoQueue<TiqualitySimpleTickable> untickedTickables = new FiFoQueue<>();
+    protected TickQueue untickedTickables = new TickQueue();
     protected final HashSet<WeakReferencedChunk> ASSOCIATED_CHUNKS = new HashSet<>();
     protected final HashSet<WeakReferencedTracker> DELEGATING_TRACKERS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
@@ -205,7 +202,7 @@ public abstract class TrackerBase implements Tracker {
     public void tickTileEntity(TiqualitySimpleTickable tickable){
         if (updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(tickable.getLocation().getBlock()) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            if (untickedTickables.containsRef(tickable) == false) {
+            if (untickedTickables.containsTileEntityUpdate(tickable) == false) {
                 untickedTickables.addToQueue(tickable);
             }
         }else{
@@ -239,7 +236,7 @@ public abstract class TrackerBase implements Tracker {
         }
         if (updateOld() == false){
             /* This TrackerBase ran out of time, we queue the entity update for another tick.*/
-            if (untickedTickables.containsRef(entity) == false) {
+            if (untickedTickables.containsEntityUpdate(entity) == false) {
                 untickedTickables.addToQueue(entity);
             }
         }else{
@@ -270,10 +267,8 @@ public abstract class TrackerBase implements Tracker {
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            BlockUpdateHolder holder = new BlockUpdateHolder(block, world, pos, state, rand);
-            if (untickedTickables.contains(holder) == false) {
-                untickedTickables.addToQueue(holder);
-
+            if (untickedTickables.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
+                untickedTickables.addToQueue(new BlockUpdateHolder(block, world, pos, state, rand));
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
@@ -304,9 +299,8 @@ public abstract class TrackerBase implements Tracker {
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            BlockRandomUpdateHolder holder = new BlockRandomUpdateHolder(block, world, pos, state, rand);
-            if (untickedTickables.contains(holder) == false) {
-                untickedTickables.addToQueue(holder);
+            if (untickedTickables.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
+                untickedTickables.addToQueue(new BlockRandomUpdateHolder(block, world, pos, state, rand));
 
 
 

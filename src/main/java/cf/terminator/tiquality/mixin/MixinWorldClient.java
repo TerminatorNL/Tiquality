@@ -1,15 +1,13 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.interfaces.TiqualityChunk;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.world.SpongeChunkLoader;
 import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.profiler.Profiler;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
@@ -44,6 +42,47 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
             return SpongeChunkLoader.getChunkForced(this, pos);
         }else {
             return (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+        }
+    }
+
+    /**
+     * Marks a block position
+     * @param pos the pos
+     */
+    public void tiquality_mark(BlockPos pos){
+        getTiqualityChunk(pos).tiquality_mark(pos);
+    }
+
+    /**
+     * Unmarks a block position
+     * @param pos the pos
+     */
+    public void tiquality_unMark(BlockPos pos){
+        getTiqualityChunk(pos).tiquality_unMark(pos);
+    }
+
+    /**
+     * Checks if a block position is marked
+     * @param pos the pos
+     */
+    public boolean tiquality_isMarked(BlockPos pos){
+        return getTiqualityChunk(pos).tiquality_isMarked(pos);
+    }
+
+    /**
+     * Checks if a block position is marked, also finds TileEntities.
+     * @param pos the pos
+     */
+    public boolean tiquality_isMarkedThorough(BlockPos pos){
+        boolean isBlockmarked = tiquality_isMarked(pos);
+        if(isBlockmarked){
+            return true;
+        }
+        TileEntity entity = getTileEntity(pos);
+        if(entity == null){
+            return false;
+        }else{
+            return ((TiqualitySimpleTickable) entity).tiquality_isMarked();
         }
     }
 

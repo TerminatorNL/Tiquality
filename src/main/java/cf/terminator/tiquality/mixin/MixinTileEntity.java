@@ -15,6 +15,7 @@ public class MixinTileEntity implements TiqualitySimpleTickable {
 
     @Shadow protected BlockPos pos;
     @Shadow protected World world;
+    private boolean isMarkedByTiquality = false;
 
     /**
      * Method to actually run the update on the tickable.
@@ -53,5 +54,20 @@ public class MixinTileEntity implements TiqualitySimpleTickable {
     @Override
     public TickType getType() {
         return TickType.TILE_ENTITY;
+    }
+
+    @Override
+    public void tiquality_mark() {
+        isMarkedByTiquality = true;
+    }
+
+    @Override
+    public void tiquality_unMark() {
+        isMarkedByTiquality = false;
+    }
+
+    @Override
+    public boolean tiquality_isMarked() {
+        return isMarkedByTiquality;
     }
 }

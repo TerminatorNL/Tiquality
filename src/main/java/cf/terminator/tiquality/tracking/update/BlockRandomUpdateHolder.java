@@ -60,6 +60,21 @@ public class BlockRandomUpdateHolder implements TiqualitySimpleTickable {
         return new TickLogger.Location(world, pos);
     }
 
+    @Override
+    public void tiquality_mark() {
+        ((TiqualityWorld) world).tiquality_mark(pos);
+    }
+
+    @Override
+    public void tiquality_unMark() {
+        ((TiqualityWorld) world).tiquality_unMark(pos);
+    }
+
+    @Override
+    public boolean tiquality_isMarked() {
+        return ((TiqualityWorld) world).tiquality_isMarked(pos);
+    }
+
     /**
      * Gets the type of this Tickable
      *
