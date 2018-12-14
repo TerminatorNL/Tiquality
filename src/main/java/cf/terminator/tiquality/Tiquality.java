@@ -54,6 +54,7 @@ public class Tiquality {
      */
     public static final TPSMonitor TPS_MONITOR = TPSMonitor.INSTANCE;
     public static final Scheduler SCHEDULER = Scheduler.INSTANCE;
+    public static TickMaster TICK_MASTER;
 
     @EventHandler
     public void preinit(FMLPreInitializationEvent e){
@@ -105,7 +106,8 @@ public class Tiquality {
             CommandHub.INSTANCE.initForge();
             TICK_EXECUTOR = new ForgeTickExecutor();
         }
-        MinecraftForge.EVENT_BUS.register(new TickMaster(e.getServer()));
+        TICK_MASTER = new TickMaster(e.getServer());
+        MinecraftForge.EVENT_BUS.register(TICK_MASTER);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
 

@@ -25,6 +25,8 @@ public class TickHub {
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
                 ForcedTracker.INSTANCE.doBlockTick(block, world, pos, state, rand);
+            }else{
+                ((TiqualityWorld) world).setTiqualityTracker(pos, DenyTracker.INSTANCE);
             }
         }
     }
@@ -36,6 +38,8 @@ public class TickHub {
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
                 ForcedTracker.INSTANCE.doRandomBlockTick(block, world, pos, state, rand);
+            }else{
+                ((TiqualityWorld) world).setTiqualityTracker(pos, DenyTracker.INSTANCE);
             }
         }
     }
@@ -48,6 +52,8 @@ public class TickHub {
         }else{
             if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(entity.getBlockType())){
                 ForcedTracker.INSTANCE.tickTileEntity((TiqualitySimpleTickable) tickable);
+            }else{
+                ((TiqualityWorld)entity.getWorld()).setTiqualityTracker(entity.getPos(), DenyTracker.INSTANCE);
             }
         }
     }

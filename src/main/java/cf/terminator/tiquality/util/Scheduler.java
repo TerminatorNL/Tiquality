@@ -63,12 +63,15 @@ public class Scheduler {
 
     @SubscribeEvent
     public synchronized void onServerTick(TickEvent.ServerTickEvent e){
-        while (queue.size() > 0){
-            try {
-                queue.remove(0).run();
-            }catch (Throwable t){
-                Tiquality.LOGGER.fatal("Scheduled action threw an error!");
-                throw t;
+        if (queue.size() > 0){
+            long maxTime = System.currentTimeMillis() + 5000;
+            while(queue.size() > 0 && System.currentTimeMillis() < maxTime){
+                try {
+                    queue.remove(0).run();
+                }catch (Throwable t){
+                    Tiquality.LOGGER.fatal("Scheduled action threw an error!");
+                    throw t;
+                }
             }
         }
     }

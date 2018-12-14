@@ -31,4 +31,6 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
     Chunk getMinecraftChunk();
 
     void associateTrackers();
+
+    void replaceTracker(Tracker oldTracker, Tracker newTracker);
 }

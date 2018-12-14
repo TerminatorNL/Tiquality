@@ -159,7 +159,6 @@ public class CommandExecutor {
 
                     TiqualityConfig.QuickConfig.saveToFile();
                     TiqualityConfig.QuickConfig.update();
-
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Added: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + " to the config!"));
                 }
             });

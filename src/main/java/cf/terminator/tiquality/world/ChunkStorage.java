@@ -72,6 +72,19 @@ public class ChunkStorage {
         return list;
     }
 
+    /**
+     * Replaces a tracker with another tracker
+     * @param old the old tracker
+     * @param new_ the new tracker
+     */
+    public void replaceAll(byte old, byte new_){
+        for (Element e : data) {
+            if (e != null) {
+                e.replaceAll(old, new_);
+            }
+        }
+    }
+
     public void loadFromNBT(NBTTagList sections){
         Iterator<NBTBase> iterator = sections.iterator();
         while(iterator.hasNext()){
@@ -149,5 +162,12 @@ public class ChunkStorage {
         }
 
 
+        public void replaceAll(byte old, byte new_) {
+            for (int i = 0; i < storage.length; i++){
+                if(storage[i] == old){
+                    storage[i] = new_;
+                }
+            }
+        }
     }
 }

@@ -1,6 +1,7 @@
 package cf.terminator.tiquality;
 
 import cf.terminator.tiquality.monitor.TickMaster;
+import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -163,6 +164,7 @@ public class TiqualityConfig {
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
             }
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(TICKFORCING_OBJECTS_FAST);
+            DenyTracker.unlinkAll();
         }
 
         private static ArrayList<Block> findBlocks(String regex){

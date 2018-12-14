@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public class TickMaster {
 
     private final MinecraftServer server;
+
     private long startTime = 0L;
     public static long TICK_DURATION = Constants.NS_IN_TICK_LONG; /* Is updated when reloading config. */
 
@@ -62,5 +63,9 @@ public class TickMaster {
             TrackerManager.tickUntil(startTime + TICK_DURATION);
             TrackerManager.removeInactiveTrackers();
         }
+    }
+
+    public long getThisTickEndTime() {
+        return startTime + TICK_DURATION;
     }
 }

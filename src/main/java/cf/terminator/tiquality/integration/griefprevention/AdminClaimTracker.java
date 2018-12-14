@@ -115,7 +115,7 @@ public class AdminClaimTracker extends GriefPreventionTracker {
             );
             TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-            world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, null, null);
+            world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, runnable, r2);
             for(Claim subClaim : claim.getChildren(false)){
                 if(GriefPreventionHook.isValidClaim(subClaim) == false){
                     continue;

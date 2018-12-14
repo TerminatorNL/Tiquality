@@ -2,6 +2,7 @@ package cf.terminator.tiquality.monitor;
 
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
@@ -81,7 +82,7 @@ public class InfoMonitor {
 
         Tracker tracker = ((TiqualityWorld) player.world).getTiqualityTracker(result.getBlockPos());
 
-        if(tracker != null){
+        if(tracker != null && tracker != DenyTracker.INSTANCE){
             Utils.sendStatusBarMessage(player,tracker.getInfo());
         }else{
             Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.AQUA + " Not tracked."));

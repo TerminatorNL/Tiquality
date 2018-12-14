@@ -73,13 +73,19 @@ public abstract class MixinChunk implements TiqualityChunk {
         return i;
     }
 
-    private byte getIDbyTracker(Tracker tracker){
+    private byte getIDbyTracker(Tracker tracker, boolean create){
         Byte owner_id = trackerLookup.inverse().get(tracker);
         if(owner_id == null){
-            owner_id = getFirstFreeIndex();
-            trackerLookup.put(owner_id, tracker);
+            if(create == true) {
+                owner_id = getFirstFreeIndex();
+                trackerLookup.put(owner_id, tracker);
+                return owner_id;
+            }else{
+                return 0;
+            }
+        }else {
+            return owner_id;
         }
-        return owner_id;
     }
 
     /**
@@ -119,7 +125,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         if(tracker == null){
             STORAGE.set(pos, (byte) 0);
         }else {
-            byte id = getIDbyTracker(tracker);
+            byte id = getIDbyTracker(tracker, true);
             STORAGE.set(pos, id);
             tracker.associateChunk(this);
             trackerLookup.forcePut(id, tracker);
@@ -140,7 +146,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         if(tracker == null){
             STORAGE.clearAll();
         }else {
-            byte id = getIDbyTracker(tracker);
+            byte id = getIDbyTracker(tracker, true);
             STORAGE.setAll(id);
             tracker.associateChunk(this);
             trackerLookup.clear();
@@ -212,5 +218,15 @@ public abstract class MixinChunk implements TiqualityChunk {
             tracker.associateChunk(this);
         }
     }
+
+    @Override
+    public void replaceTracker(Tracker oldTracker, Tracker newTracker) {
+        byte old = getIDbyTracker(oldTracker, false);
+        byte new_ = getIDbyTracker(newTracker, false);
+        if(old != new_){
+            STORAGE.replaceAll(old, new_);
+        }
+    }
+
 
 }
