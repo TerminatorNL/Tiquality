@@ -103,7 +103,7 @@ Block below: minecraft:piston tracked only Status: Tracked by: Terminator_NL
 ```
 We can break this down:
  - "minecraft:piston" is the block name
- - "tracked only" means that this block will only tick if a tracker has been assigned (See: [/tq track](#Commands and permissions))
+ - "tracked only" means that this block will only tick if a tracker has been assigned (See: [/tq track](#commands-and-permissions))
  - "Tracked by : XXX" tells us if a block is tracked or not, in this case: It is tracked by me.
  
 Another example of `tq info`:
