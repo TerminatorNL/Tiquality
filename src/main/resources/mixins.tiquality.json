@@ -7,7 +7,6 @@
   "mixins": [
     "MixinChunk",
     "MixinEntity",
-    "MixinHopperlag",
     "MixinMinecraftServer",
     "MixinSpongeTrackingUtil",
     "MixinTileEntity",

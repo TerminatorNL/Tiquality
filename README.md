@@ -31,6 +31,10 @@ If more players log in, the time will be divided more. If a player doesn't use u
 
 Logged out player's blocks have less tick time than players who are online (Config customizable)!
 
+## WARNING
+Removing Tiquality will **PERMANENTLY** remove it's existing data on chunk load on a per-chunk basis.
+
+If you are looking to permanently delete Tiquality, simply start the server without it, and all data will get lost over time.
 
 ## How it functions
 All calls to `Block.randomTickBlock()`, `Block.updateTickBlock()` and `ITickable.tickTileEntity()` are redirected to Tiquality, which in turn finds the owner of a block using a customized high performance lookup.
@@ -88,6 +92,8 @@ When the next tick comes around, all trackers get a granted amount of tracking t
 - [My fluids don't flow! What do I do?](#my-fluids-dont-flow-what-do-i-do)
 - [What is your code style?](#what-is-your-code-style)
 - [I just installed Tiquality, and the TPS is HORRIBLE!](#i-just-installed-tiquality-and-the-tps-is-horrible)
+- [Why store data in the chunk itself?](#why-store-data-in-the-chunk-itself)
+- [You suck!](#you-suck)
 
 ### Why don't you move to Sponge already!?
 It is my intention to make Tiquality as widely available to everyone. Not having to install Sponge, match the Forge version, find mods that are both compatible with Sponge and that specific Forge version makes it easier to install. Everyone should be able to use Tiquality, *even if you run a Sponge-free server.*
@@ -148,6 +154,20 @@ If you can't import because you have corrupted chunks, use: `/tq import_griefpre
 
 More alternatives to GriefPrevention are on the to-do list.
 
+---
+
+Keep in mind, that there are MANY other reasons the TPS can still not be 20. Chunkloading unloaded chunks is one of the big effectors: people exploring, or logging in. Another big effector is post-world-tick processing.
+Tiquality does **NOT** hook into world events, so any processing AFTER the world tick is completely outside of Tiquality's control.
+
+
+### Why store data in the chunk itself?
+Storing data in the chunk allows for easier resets and makes sure the data does not go out of sync with the chunk.
+Inspired by minecraft's own code, Tiquality also uses bitshifting to find the right identifier for a block, without having to iterate on anything. This means blazing fast performance, and this is needed because Tiquality has to **intercept and act on every ticked object**.
+
+### You suck!
+Hey, I am just trying to make the world a better place, I am sorry it did not work out for you.
+At the time of writing I have had serveral encounters where people flat out accuse me of doing everything wrong, and simply put: It hurts, lets not do this?
+
 ### What is your code style?
 
 I follow my own set of rules whilst coding, to keep intent as clear as possible.
@@ -163,3 +183,4 @@ I follow my own set of rules whilst coding, to keep intent as clear as possible.
  - AtomicInteger can double as object for synchronization signaling when waiting for *N* tasks to end, instead of sleeping for a set time.
 
 If you feel like you found something that needs to change, please follow the rules above before submitting a pull request.
+Another note: Please notify me beforehand if you intent to drop a big pull request, so I can give you some feedback if it will make it in the master branch before you waste alot of time on something I already considered.
