@@ -197,7 +197,9 @@ public class GriefPreventionTracker implements Tracker {
                 entity.setTracker(null);
             }
         }
-        CHUNKS.clear();
+        synchronized (CHUNKS){
+            CHUNKS.clear();
+        }
     }
 
     public void updatePlayers(){
@@ -376,7 +378,9 @@ public class GriefPreventionTracker implements Tracker {
                 for (int z = low_z; z <= high_z + 16; z = z + 16) {
                     TiqualityChunk chunk = (TiqualityChunk) provider.getLoadedChunk(x >> 4, z >> 4);
                     if(chunk != null) {
-                        CHUNKS.add(new WeakReferencedChunk(chunk));
+                        synchronized (CHUNKS) {
+                            CHUNKS.add(new WeakReferencedChunk(chunk));
+                        }
                     }
                 }
             }
@@ -418,7 +422,9 @@ public class GriefPreventionTracker implements Tracker {
 
     @Override
     public void associateChunk(TiqualityChunk chunk) {
-        CHUNKS.add(new WeakReferencedChunk(chunk));
+        synchronized (CHUNKS) {
+            CHUNKS.add(new WeakReferencedChunk(chunk));
+        }
     }
 
     @Override
