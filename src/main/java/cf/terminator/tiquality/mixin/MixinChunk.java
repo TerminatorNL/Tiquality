@@ -10,6 +10,7 @@ import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.world.ChunkStorage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -21,6 +22,9 @@ import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,6 +44,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract void markDirty();
 
+    @Shadow @Final private World world;
     private final BiMap<Byte, Tracker> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
@@ -144,6 +149,18 @@ public abstract class MixinChunk implements TiqualityChunk {
             trackerLookup.forcePut(id, tracker);
         }
         markDirty();
+    }
+
+    /*
+     * For sponge, see:
+     * cf.terminator.tiquality.mixin.MixinSpongePhaseTracker.onBlockTick
+     */
+    @Inject(method = "setBlockState", at = @At("HEAD"))
+    private void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> cir){
+        Tracker tracker = tiquality_findTrackerByBlockPos(pos);
+        if(tracker != null){
+            tracker.notifyBlockStateChange((TiqualityWorld) world, pos, state);
+        }
     }
 
     @Override

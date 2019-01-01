@@ -2,9 +2,12 @@ package cf.terminator.tiquality.util;
 
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.LinkedList;
+
+import static cf.terminator.tiquality.TiqualityConfig.UPDATE_ITEMS_FIRST;
 
 /**
  * Note: There is no actual implementation of contains on object level, but this is how this Queue is used.
@@ -34,7 +37,11 @@ public class TickQueue {
 
     public void addToQueue(TiqualitySimpleTickable obj){
         obj.tiquality_mark();
-        data.addLast(obj);
+        if(UPDATE_ITEMS_FIRST && obj instanceof EntityItem){
+            data.addFirst(obj);
+        }else{
+            data.addLast(obj);
+        }
     }
 
     public TiqualitySimpleTickable take(){

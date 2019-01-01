@@ -249,20 +249,39 @@ public class CommandExecutor {
 
             if(sender instanceof Entity){
                 Entity entity = (Entity) sender;
-                BlockPos below = entity.getPosition().down();
-                String blockName = entity.getEntityWorld().getBlockState(below).getBlock().toString();
-                boolean isMarked = ((TiqualityWorld) entity.getEntityWorld()).tiquality_isMarkedThorough(below);
-                Tracker tracker = ((TiqualityWorld) entity.getEntityWorld()).getTiqualityTracker(below);
-                String trackerText;
-                if(tracker == null){
-                    trackerText = TextFormatting.AQUA + "NOT TRACKED";
+
+                /* FEET */
+                BlockPos feet = entity.getPosition();
+                String blockNameFeet = entity.getEntityWorld().getBlockState(feet).getBlock().toString();
+                boolean isMarkedFeet = ((TiqualityWorld) entity.getEntityWorld()).tiquality_isMarkedThorough(feet);
+                Tracker trackerFeet = ((TiqualityWorld) entity.getEntityWorld()).getTiqualityTracker(feet);
+                String trackerTextFeet;
+                if(trackerFeet == null){
+                    trackerTextFeet = TextFormatting.AQUA + "NOT TRACKED";
                 }else{
-                    trackerText = TextFormatting.WHITE + tracker.getInfo().getText();
+                    trackerTextFeet = TextFormatting.WHITE + trackerFeet.getInfo().getText();
                 }
-                if(isMarked){
-                    sender.sendMessage(new TextComponentString("BLOCK: " + blockName + TextFormatting.RED + " MARKED " + trackerText));
+                if(isMarkedFeet){
+                    sender.sendMessage(new TextComponentString("FEET: " + blockNameFeet + TextFormatting.RED + " MARKED " + trackerTextFeet));
                 }else{
-                    sender.sendMessage(new TextComponentString("BLOCK: " + blockName + TextFormatting.GREEN + " NOT MARKED " + trackerText));
+                    sender.sendMessage(new TextComponentString("FEET: " + blockNameFeet + TextFormatting.GREEN + " NOT MARKED " + trackerTextFeet));
+                }
+
+                /* BELOW */
+                BlockPos below = entity.getPosition().down();
+                String blockNameBelow = entity.getEntityWorld().getBlockState(below).getBlock().toString();
+                boolean isMarkedBelow = ((TiqualityWorld) entity.getEntityWorld()).tiquality_isMarkedThorough(below);
+                Tracker trackerBelow = ((TiqualityWorld) entity.getEntityWorld()).getTiqualityTracker(below);
+                String trackerTextBelow;
+                if(trackerBelow == null){
+                    trackerTextBelow = TextFormatting.AQUA + "NOT TRACKED";
+                }else{
+                    trackerTextBelow = TextFormatting.WHITE + trackerBelow.getInfo().getText();
+                }
+                if(isMarkedBelow){
+                    sender.sendMessage(new TextComponentString("BELOW: " + blockNameBelow + TextFormatting.RED + " MARKED " + trackerTextBelow));
+                }else{
+                    sender.sendMessage(new TextComponentString("BELOW: " + blockNameBelow + TextFormatting.GREEN + " NOT MARKED " + trackerTextBelow));
                 }
             }
 

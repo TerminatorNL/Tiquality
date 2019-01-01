@@ -8,6 +8,7 @@
     "MixinChunk",
     "MixinEntity",
     "MixinMinecraftServer",
+    "MixinSpongePhaseTracker",
     "MixinSpongeTrackingUtil",
     "MixinTileEntity",
     "MixinWorldClient",

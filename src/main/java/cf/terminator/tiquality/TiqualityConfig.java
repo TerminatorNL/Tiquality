@@ -81,6 +81,13 @@ public class TiqualityConfig {
     @Config.RangeInt(min = 0)
     public static int TIME_BETWEEN_TICKS_IN_NS = 90000;
 
+    @Config.Comment({
+            "If someone has a large update queue, they can struggle to pick up their items.\n" +
+            "To fix this, we can make sure their items update first. However, this could lead to\n" +
+            "undesired/undefined behavior, since it's machines will tick slower than the items. Potential duping?"
+    })
+    public static boolean UPDATE_ITEMS_FIRST = false;
+
     public static class QuickConfig{
 
         public static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();

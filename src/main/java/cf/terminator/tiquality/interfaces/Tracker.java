@@ -111,4 +111,16 @@ public interface Tracker extends Comparable {
      * @return holder
      */
     TrackerHolder getHolder();
+
+    /**
+     * Fired whenever a block is changed that is owned by this tracker
+     * In general, you don't have to use this.
+     *
+     * @param world the world
+     * @param pos the position
+     * @param state the new block state
+     */
+    default void notifyBlockStateChange(TiqualityWorld world, BlockPos pos, IBlockState state){
+
+    }
 }

@@ -74,6 +74,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
         }else{
             switch (mixin){
                 case "cf.terminator.tiquality.mixin.MixinSpongeTrackingUtil":
+                case "cf.terminator.tiquality.mixin.MixinSpongePhaseTracker":
                     return false;
             }
         }

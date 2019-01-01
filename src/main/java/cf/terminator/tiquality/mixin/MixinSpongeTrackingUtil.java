@@ -20,7 +20,7 @@ import java.util.Random;
 import static cf.terminator.tiquality.tracking.tickexecutors.SpongeTickExecutor.IS_CONTROLLED_BY_TIQUALITY;
 
 /**
- * Converts sponge's calls through Tiquality, and then routes them back here when needed.
+ * Converts Sponges' calls through Tiquality, and then routes them back here when needed.
  */
 @Mixin(value = TrackingUtil.class, priority = 999, remap = false)
 public class MixinSpongeTrackingUtil {
