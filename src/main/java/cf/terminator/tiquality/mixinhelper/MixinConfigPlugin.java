@@ -85,6 +85,14 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
                     return false;
             }
         }
+        if(mixin.equals("cf.terminator.tiquality.mixin.MixinHopperlag")) {
+            if (isProductionEnvironment() == false) {
+                LOGGER.info("Hoppers now have an update time of 5 milliseconds! This is done on purpose, because you don't run in a production environment!");
+                return true;
+            }else{
+                return false;
+            }
+        }
         return true;
     }
 
