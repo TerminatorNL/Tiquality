@@ -268,7 +268,7 @@ public abstract class TrackerBase implements Tracker {
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockUpdateHolder(block, world, pos, state, rand));
+                untickedTickables.addToQueue(new BlockUpdateHolder(block, world, pos, rand));
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
@@ -300,7 +300,7 @@ public abstract class TrackerBase implements Tracker {
         if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockRandomUpdateHolder(block, world, pos, state, rand));
+                untickedTickables.addToQueue(new BlockRandomUpdateHolder(block, world, pos, rand));
 
 
 

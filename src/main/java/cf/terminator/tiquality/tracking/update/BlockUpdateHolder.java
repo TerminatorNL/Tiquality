@@ -6,7 +6,6 @@ import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.TickLogger;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -17,14 +16,12 @@ public class BlockUpdateHolder implements TiqualitySimpleTickable {
     private final Block block;
     private final World world;
     private final BlockPos pos;
-    private final IBlockState state;
     private final Random rand;
 
-    public BlockUpdateHolder(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
+    public BlockUpdateHolder(Block block, World world, BlockPos pos, Random rand) {
         this.block = block;
         this.world = world;
         this.pos = pos;
-        this.state = state;
         this.rand = rand;
     }
 
@@ -35,7 +32,7 @@ public class BlockUpdateHolder implements TiqualitySimpleTickable {
     public void doUpdateTick() {
         TiqualityChunk chunk = ((TiqualityWorld) world).getTiqualityChunk(pos);
         if(chunk.isChunkLoaded()) {
-            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
+            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, chunk.getMinecraftChunk().getBlockState(pos), rand);
         }
     }
 
