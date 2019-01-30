@@ -45,8 +45,6 @@ public class GriefPreventionHook {
     private static final UserRemoveTrustClaimEventHandler userRemoveTrustHandler = new UserRemoveTrustClaimEventHandler();
     private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
 
-
-
     public static void loadClaimsForcibly(ICommandSender sender){
         final AtomicInteger counter = new AtomicInteger(0);
         Tiquality.LOGGER.info("Importing griefprevention claims...");
@@ -254,6 +252,14 @@ public class GriefPreventionHook {
                         }
                     }
                 }
+            }else if(event instanceof ChangeClaimEvent.Resize){
+                GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(((ChangeClaimEvent.Resize) event).getResizedClaim());
+                Tiquality.SCHEDULER.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        tracker.setBlockTrackers(null, null);
+                    }
+                });
             }
         }
     }

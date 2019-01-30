@@ -209,8 +209,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     @Override
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.clearAll();
-        STORAGE.loadFromNBT(tag.getTagList("Sections", 10));
-
+        STORAGE.loadFromNBT(tag.getTagList("Sections", 10), getMinecraftChunk());
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
             TrackerHolder holder = TrackerManager.getTracker((TiqualityWorld) world, trackerData.getCompoundTag("tracker"));

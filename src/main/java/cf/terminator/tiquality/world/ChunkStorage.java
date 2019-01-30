@@ -1,9 +1,12 @@
 package cf.terminator.tiquality.world;
 
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.Chunk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -125,7 +128,7 @@ public class ChunkStorage {
         }
     }
 
-    public void loadFromNBT(NBTTagList sections){
+    public void loadFromNBT(NBTTagList sections, Chunk chunk){
         Iterator<NBTBase> iterator = sections.iterator();
         while(iterator.hasNext()){
             NBTTagCompound tag = (NBTTagCompound) iterator.next();
@@ -133,6 +136,7 @@ public class ChunkStorage {
                 byte y_level = tag.getByte("Y");
                 byte[] storage = tag.getByteArray("Tiquality");
                 data[y_level] = new Element(storage);
+                data[y_level].queueMarkedForUpdate(chunk, y_level);
             }
         }
     }
@@ -148,7 +152,7 @@ public class ChunkStorage {
                     continue;
                 }
                 NBTTagCompound injectable = sections.getCompoundTagAt(i);
-                injectable.setByteArray("Tiquality",e.getUnmarkedCopy());
+                injectable.setByteArray("Tiquality",e.getData());
                 sections.set(i, injectable);
             }
         }
@@ -184,13 +188,17 @@ public class ChunkStorage {
             return (pos.getY() & 15) << 8 | (pos.getZ() & 15) << 4 | (pos.getX() & 15);
         }
 
+        int getIndex(int x, int y, int z){
+            return (y & 15) << 8 | (z & 15) << 4 | (x & 15);
+        }
+
         /**
          * Gets the stored owner associated with the BlockPos.
          * @param pos the block pos
-         * @return the owner ID, or 0 if none is found
+         * @return the owner ID, or 1 if none is found
          */
         byte get(BlockPos pos){
-            return storage[getIndex(pos)];
+            return (byte) (storage[getIndex(pos)] & 127);
         }
 
         /**
@@ -218,6 +226,10 @@ public class ChunkStorage {
             return copy;
         }
 
+        byte[] getData(){
+            return storage;
+        }
+
         /**
          * Marks a block position
          * @param pos the block pos
@@ -242,5 +254,25 @@ public class ChunkStorage {
             return storage[getIndex(pos)] < 0;
         }
 
+        /**
+         * Tick all marked blocks for update.
+         */
+        public void queueMarkedForUpdate(Chunk chunk, int y_level) {
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            ChunkPos chunkPos = chunk.getPos();
+            for(int x=chunkPos.getXStart(); x < chunkPos.getXEnd() ; x++){
+                for(int y = y_level*16; y < y_level*16 + 16 ; y++){
+                    for(int z=chunkPos.getZStart(); z < chunkPos.getZEnd() ; z++){
+                        pos.setPos(x,y,z);
+                        if(isMarked(pos)){
+                            BlockPos realPos = pos.toImmutable();
+                            IBlockState state = chunk.getBlockState(realPos);
+                            unmark(realPos);
+                            chunk.getWorld().scheduleBlockUpdate(realPos, state.getBlock(), 1, 0);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

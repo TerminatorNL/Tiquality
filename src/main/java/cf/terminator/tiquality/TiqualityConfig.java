@@ -1,7 +1,9 @@
 package cf.terminator.tiquality;
 
+import cf.terminator.tiquality.interfaces.TiqualityBlock;
 import cf.terminator.tiquality.monitor.TickMaster;
 import cf.terminator.tiquality.tracking.DenyTracker;
+import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -65,7 +67,7 @@ public class TiqualityConfig {
     };
 
     @Config.Comment({
-            "Some blocks, you simple don't want to be throttled, ever. For example: piston extensions.",
+            "Some blocks, you simply don't want to be throttled, ever. For example: piston extensions.",
             "Tiquality will still attempt to tick them per player, but if the player runs out of tick time, it will still tick these blocks.",
             "Items in this list are also appended to AUTO_WORLD_ASSIGNED_OBJECTS through code, there is no need to define blocks twice."
     })
@@ -90,8 +92,9 @@ public class TiqualityConfig {
 
     public static class QuickConfig{
 
-        public static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();
-        public static HashSet<Block> TICKFORCING_OBJECTS_FAST = new HashSet<>();
+        private static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();
+        private static HashSet<Block> TICKFORCING_OBJECTS_FAST = new HashSet<>();
+        private static HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
 
         public static void saveToFile(){
             ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
@@ -116,6 +119,12 @@ public class TiqualityConfig {
 
         public static void update(){
             TickMaster.TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
+            for(Block b : MODIFIED_BLOCKS){
+                Tiquality.LOGGER.info("Unlinking: " + Block.REGISTRY.getNameForObject(b).toString());
+                ((TiqualityBlock) b).setUpdateType(UpdateType.DEFAULT);
+            }
+            MODIFIED_BLOCKS.clear();
+
             Tiquality.LOGGER.info("SCANNING BLOCKS...");
             Tiquality.LOGGER.info("Unownable blocks:");
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.clear();
@@ -142,6 +151,7 @@ public class TiqualityConfig {
             }
             for(Block b : AUTO_WORLD_ASSIGNED_OBJECTS_FAST){
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
+                ((TiqualityBlock) b).setUpdateType(UpdateType.NATURAL);
             }
 
             Tiquality.LOGGER.info("Force ticked blocks:");
@@ -159,7 +169,7 @@ public class TiqualityConfig {
                     if (block == Blocks.AIR) {
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
-                        Tiquality.LOGGER.warn("AUTO_WORLD_ASSIGNED_OBJECTS: " + block);
+                        Tiquality.LOGGER.warn("TICKFORCING: " + block);
                         Tiquality.LOGGER.warn("This block has been skipped!");
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         continue;
@@ -169,8 +179,10 @@ public class TiqualityConfig {
             }
             for(Block b : TICKFORCING_OBJECTS_FAST){
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
+                ((TiqualityBlock) b).setUpdateType(UpdateType.ALWAYS_TICK);
             }
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(TICKFORCING_OBJECTS_FAST);
+            MODIFIED_BLOCKS.addAll(AUTO_WORLD_ASSIGNED_OBJECTS_FAST);
             DenyTracker.unlinkAll();
         }
 

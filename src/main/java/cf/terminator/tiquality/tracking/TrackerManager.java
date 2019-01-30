@@ -169,15 +169,12 @@ public class TrackerManager {
     /**
      * There's a theoretical maximum of 1.8446744e+19 different Trackers per server. This should suffice.
      */
-    static long NEXT_TRACKER_ID;
-    static {
+    public static long generateUniqueTrackerID(){
         if(PersistentData.NEXT_FREE_TRACKER_ID.isSet() == false){
             PersistentData.NEXT_FREE_TRACKER_ID.setLong(Long.MIN_VALUE);
         }
-        NEXT_TRACKER_ID = PersistentData.NEXT_FREE_TRACKER_ID.getLong();
-    }
+        long NEXT_TRACKER_ID = PersistentData.NEXT_FREE_TRACKER_ID.getLong();
 
-    public static long generateUniqueTrackerID(){
         synchronized (PersistentData.NEXT_FREE_TRACKER_ID) {
             long granted = NEXT_TRACKER_ID++;
             PersistentData.NEXT_FREE_TRACKER_ID.setLong(NEXT_TRACKER_ID);

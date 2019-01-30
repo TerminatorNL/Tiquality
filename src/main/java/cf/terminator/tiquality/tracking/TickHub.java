@@ -1,9 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
-import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.interfaces.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -14,8 +11,6 @@ import net.minecraft.world.World;
 
 import java.util.Random;
 
-import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASSIGNED_OBJECTS_FAST;
-
 public class TickHub {
 
     public static void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
@@ -23,7 +18,7 @@ public class TickHub {
         if(tracker != null) {
             tracker.doBlockTick(block,world, pos, state, rand);
         }else{
-            if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
+            if(((TiqualityBlock) block).getUpdateType().mustTick(null)){
                 ForcedTracker.INSTANCE.doBlockTick(block, world, pos, state, rand);
             }else{
                 ((TiqualityWorld) world).setTiqualityTracker(pos, DenyTracker.INSTANCE);
@@ -36,7 +31,7 @@ public class TickHub {
         if(tracker != null) {
             tracker.doRandomBlockTick(block,world, pos, state, rand);
         }else{
-            if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(block)){
+            if(((TiqualityBlock) block).getUpdateType().mustTick(null)){
                 ForcedTracker.INSTANCE.doRandomBlockTick(block, world, pos, state, rand);
             }else{
                 ((TiqualityWorld) world).setTiqualityTracker(pos, DenyTracker.INSTANCE);
@@ -50,7 +45,7 @@ public class TickHub {
         if(tracker != null) {
             tracker.tickTileEntity((TiqualitySimpleTickable) entity);
         }else{
-            if(AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(entity.getBlockType())){
+            if(((TiqualityBlock) entity.getBlockType()).getUpdateType().mustTick(null)){
                 ForcedTracker.INSTANCE.tickTileEntity((TiqualitySimpleTickable) tickable);
             }else{
                 ((TiqualityWorld)entity.getWorld()).setTiqualityTracker(entity.getPos(), DenyTracker.INSTANCE);

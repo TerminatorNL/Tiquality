@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
@@ -200,7 +199,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void tickTileEntity(TiqualitySimpleTickable tickable){
-        if (updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(tickable.getLocation().getBlock()) == false){
+        if(updateOld() == false && ((TiqualityBlock) tickable.getLocation().getBlock()).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsTileEntityUpdate(tickable) == false) {
                 untickedTickables.addToQueue(tickable);
@@ -265,10 +264,10 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
+        if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockUpdateHolder(block, world, pos, rand));
+                untickedTickables.addToQueue(new BlockUpdateHolder(world, pos, rand));
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
@@ -297,10 +296,10 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false && TiqualityConfig.QuickConfig.TICKFORCING_OBJECTS_FAST.contains(block) == false){
+        if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (untickedTickables.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockRandomUpdateHolder(block, world, pos, rand));
+                untickedTickables.addToQueue(new BlockRandomUpdateHolder(world, pos, rand));
 
 
 

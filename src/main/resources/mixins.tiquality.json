@@ -5,6 +5,7 @@
   "minVersion": "0.6.0",
   "plugin": "cf.terminator.tiquality.mixinhelper.MixinConfigPlugin",
   "mixins": [
+    "MixinBlock",
     "MixinChunk",
     "MixinEntity",
     "MixinHopperlag",

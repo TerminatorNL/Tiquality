@@ -3,15 +3,10 @@ package cf.terminator.tiquality.util;
 import cf.terminator.tiquality.Tiquality;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraft.world.World;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Used to tracking and access persistent data quickly using enums as keys.
@@ -23,15 +18,16 @@ public enum PersistentData {
 
 
 
-    private static final File persistentFile;
-    private static final NBTTagCompound storage;
+    private static File persistentFile;
+    private static NBTTagCompound storage;
 
-    static {
+    public static void updatePersistentFileAndStorage(World world){
         try {
-            persistentFile = new File(FMLCommonHandler.instance().getMinecraftServerInstance().getFile(extractLevelName()), "TiqualityStorage.nbt");
+            persistentFile = new File(world.getSaveHandler().getWorldDirectory(), "TiqualityStorage.nbt");
             Tiquality.LOGGER.info("Persistent data is inside: " + persistentFile.getCanonicalPath());
             NBTTagCompound read_tag = CompressedStreamTools.read(persistentFile);
             storage = read_tag == null ? new NBTTagCompound() : read_tag;
+            save();
         } catch (IOException e) {
             throw new RuntimeException("Unable to read persistent data file.", e);
         }
@@ -73,30 +69,6 @@ public enum PersistentData {
 
     public NBTTagCompound getCompoundTag(){
         return storage.getCompoundTag(name());
-    }
-
-    private static String extractLevelName(){
-        try {
-            File serverProperties = FMLCommonHandler.instance().getMinecraftServerInstance().getFile("server.properties");
-            BufferedReader reader = new BufferedReader(new FileReader(serverProperties));
-            while(true){
-                String line = reader.readLine();
-                if(line == null){
-                    break;
-                }
-                if(line.toLowerCase().startsWith("level-name=")){
-                    Pattern pattern = Pattern.compile("level-name=(.+)", Pattern.CASE_INSENSITIVE);
-                    Matcher matcher = pattern.matcher(line);
-                    if(matcher.find() == false){
-                        throw new RuntimeException("Unable to parse the 'level-name' in server.properties! Attempted to parse: '" + line + "' -> " + Arrays.toString(line.getBytes()));
-                    }
-                    return matcher.group(1);
-                }
-            }
-            throw new RuntimeException("Unable to find the 'level-name' in server.properties!");
-        }catch (IOException e){
-            throw new RuntimeException(e);
-        }
     }
 
 }

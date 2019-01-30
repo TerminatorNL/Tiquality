@@ -4,11 +4,13 @@ import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
+import cf.terminator.tiquality.interfaces.TiqualityBlock;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
 import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.ForgeData;
 import cf.terminator.tiquality.util.SimpleProfiler;
 import com.mojang.authlib.GameProfile;
@@ -29,7 +31,6 @@ import javax.annotation.Nonnull;
 import java.util.*;
 
 import static cf.terminator.tiquality.Tiquality.SCHEDULER;
-import static cf.terminator.tiquality.TiqualityConfig.QuickConfig.AUTO_WORLD_ASSIGNED_OBJECTS_FAST;
 
 @SuppressWarnings({"NoTranslation", "WeakerAccess"})
 public class CommandExecutor {
@@ -84,8 +85,8 @@ public class CommandExecutor {
             Block blockAtFeet = player.getEntityWorld().getBlockState(player.getPosition()).getBlock();
             Block blockBelowFeet = player.getEntityWorld().getBlockState(player.getPosition().down()).getBlock();
 
-            boolean feetAllowed = AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(blockAtFeet);
-            boolean belowAllowed = AUTO_WORLD_ASSIGNED_OBJECTS_FAST.contains(blockBelowFeet);
+            UpdateType feetUpdateType = ((TiqualityBlock) blockAtFeet).getUpdateType();
+            UpdateType belowUpdateType = ((TiqualityBlock) blockBelowFeet).getUpdateType();
 
             player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Info:"));
             if (blockAtFeet == Blocks.AIR && blockBelowFeet == Blocks.AIR) {
@@ -95,13 +96,13 @@ public class CommandExecutor {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (belowAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: " + belowUpdateType.getText().getFormattedText() + TextFormatting.WHITE + " Status: " + message.getText()));
             }
             if (blockAtFeet != Blocks.AIR) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " " + (feetAllowed ? TextFormatting.GREEN + "whitelisted" : TextFormatting.AQUA + "tracked only") + TextFormatting.WHITE + " Status: " + message.getText()));
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " TickType: " + feetUpdateType.getText().getFormattedText() + TextFormatting.WHITE + " Status: " + message.getText()));
             }
         /*
 
