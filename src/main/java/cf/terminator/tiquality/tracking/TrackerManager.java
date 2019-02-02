@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.concurrent.ThreadSafeSet;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
@@ -89,25 +88,17 @@ public class TrackerManager {
 
     /**
      * Checks if a Tracker already exists with the same unique ID, if it does: Return the old one and discard the new.
-     * If not, return the new one and tracking it.
+     * If not, return the new one and add the tracker.
      * @param input the new Tracker
      * @return input
-     * @throws TrackerAlreadyExistsException if the tracker already exists, indicative of a programming error.
      */
-    public static <T extends Tracker> TrackerHolder<T> addTracker(@Nonnull TrackerHolder<T> input) throws TrackerAlreadyExistsException {
+    public static <T extends Tracker> TrackerHolder<T> addOrGetTracker(@Nonnull TrackerHolder<T> input) {
         TRACKER_LIST.lock();
         try{
             for (TrackerHolder holder : TRACKER_LIST) {
-                try {
-                    holder.getTracker().checkCollision(input.getTracker());
-                }catch (TrackerAlreadyExistsException e){
-                    Tiquality.LOGGER.warn("TRACKER ALREADY EXISTS: " + e.getNewTracker().toString() + " and: " + e.getOldTracker().toString());
-                    e.printStackTrace();
-                }catch (Throwable e){
-                    Tiquality.LOGGER.warn("TRACKER CAUSED AN ERROR! We caught it to prevent a crash, but it should still be reported!");
-                    Tiquality.LOGGER.warn("Trackers involved 1/2: " + input.getTracker().toString());
-                    Tiquality.LOGGER.warn("Trackers involved 2/2: " + holder.getTracker().toString());
-                    e.printStackTrace();
+                if(holder.getTracker().equals(input.getTracker())){
+                    //noinspection unchecked
+                    return holder;
                 }
             }
             TRACKER_LIST.add(input);
@@ -147,13 +138,21 @@ public class TrackerManager {
                 return null;
             }
             try {
-                // Depreciated
-                // newTracker =  clazz.getDeclaredConstructor(TiqualityWorld.class, NBTTagCompound.class).newInstance(world, tagCompound.getCompoundTag("data"));
                 Tracker newTracker = clazz.newInstance().load(world, tagCompound.getCompoundTag("data"));
                 if(newTracker == null){
                     return null;
                 }else {
-                    return addTracker(new TrackerHolder<>(newTracker, id));
+                    TRACKER_LIST.lock();
+                    try{
+                        for (TrackerHolder holder : TRACKER_LIST) {
+                            if(holder.getTracker().equals(newTracker)){
+                                return holder;
+                            }
+                        }
+                    }finally {
+                        TRACKER_LIST.unlock();
+                    }
+                    return addOrGetTracker(new TrackerHolder<>(newTracker, id));
                 }
             } catch (Exception e) {
                 Tiquality.LOGGER.warn("An exception has occurred whilst creating a tracker:");

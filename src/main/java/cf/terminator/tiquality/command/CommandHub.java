@@ -19,7 +19,8 @@ public class CommandHub {
     public static RegisterType registerType = RegisterType.NONE;
 
     public static final String[] ALIASES = {"tiquality","tq"};
-    public static final String DESCRIPTION = "Allows use of Tiquality commands.";
+    public static final String DESCRIPTION_USE = "Allows use of Tiquality commands.";
+    public static final String DESCRIPTION_CLAIM = "Allows claiming areas using commands.";
     public static final String DESCRIPTION_ADMIN = "Allows use of Tiquality admin commands.";
 
     /**
@@ -33,7 +34,8 @@ public class CommandHub {
         registerType = RegisterType.FORGE_ONLY;
         cf.terminator.tiquality.Tiquality.LOGGER.info("Registering command using Forge!");
 
-        PermissionAPI.registerNode(PermissionHolder.Permission.USE.getNode(), DefaultPermissionLevel.ALL, DESCRIPTION);
+        PermissionAPI.registerNode(PermissionHolder.Permission.USE.getNode(), DefaultPermissionLevel.ALL, DESCRIPTION_USE);
+        PermissionAPI.registerNode(PermissionHolder.Permission.CLAIM.getNode(), DefaultPermissionLevel.ALL, DESCRIPTION_CLAIM);
         PermissionAPI.registerNode(PermissionHolder.Permission.ADMIN.getNode(), DefaultPermissionLevel.OP, DESCRIPTION_ADMIN);
         CommandHandler ch = (CommandHandler) FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager();
         ch.registerCommand(new ForgeCommand());

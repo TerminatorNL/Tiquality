@@ -1,6 +1,5 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.tracking.TickLogger;
 import cf.terminator.tiquality.tracking.TrackerHolder;
 import com.mojang.authlib.GameProfile;
@@ -17,7 +16,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.List;
 import java.util.Random;
 
-public interface Tracker extends Comparable {
+public interface Tracker {
 
     /**
      * Use this to determine if you need to read NBT data.
@@ -35,11 +34,13 @@ public interface Tracker extends Comparable {
      */
     NBTTagCompound getNBT();
 
-    TickLogger getTickLogger();
-
     void setProfileEnabled(boolean shouldProfile);
 
     @Nullable TickLogger stopProfiler();
+
+    boolean canProfile();
+
+    boolean isProfiling();
 
     void setNextTickTime(long granted_ns);
 
@@ -52,9 +53,10 @@ public interface Tracker extends Comparable {
     double getMultiplier(GameProfile[] cache);
 
     long getRemainingTime();
+
     boolean needsTick();
 
-    void tickTileEntity(TiqualitySimpleTickable tickable);
+    void tickTileEntity(TiqualitySimpleTickable tileEntity);
 
     void tickEntity(TiqualityEntity entity);
 
@@ -90,15 +92,6 @@ public interface Tracker extends Comparable {
 
     @OverridingMethodsMustInvokeSuper
     void onUnload();
-
-    @Override
-    int compareTo(@Nonnull Object o);
-
-    /**
-     * Use this to throw an error if the tracker already exists, indicative of programming errors.
-     * In most cases, if you have implemented the equals method properly, use that.
-     */
-    void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException;
 
     /**
      * This is called when a holder has been assigned to this tracker.

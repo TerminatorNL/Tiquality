@@ -84,11 +84,17 @@ public class TiqualityConfig {
     public static int TIME_BETWEEN_TICKS_IN_NS = 90000;
 
     @Config.Comment({
-            "If someone has a large update queue, they can struggle to pick up their items.\n" +
-            "To fix this, we can make sure their items update first. However, this could lead to\n" +
+            "If someone has a large update queue, they can struggle to pick up their items.",
+            "To fix this, we can make sure their items update first. However, this could lead to",
             "undesired/undefined behavior, since it's machines will tick slower than the items. Potential duping?"
     })
     public static boolean UPDATE_ITEMS_FIRST = false;
+
+    @Config.Comment({
+            "Define a maximum square range someone can claim using /tq claim [range].",
+            "This will also be the default value for usage of /tq claim [range] without the range argument"
+    })
+    public static int MAX_CLAIM_RADIUS = 50;
 
     public static class QuickConfig{
 

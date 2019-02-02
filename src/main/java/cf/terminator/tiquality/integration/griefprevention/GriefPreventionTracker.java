@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.tracking.PlayerTracker;
@@ -236,16 +235,6 @@ public class GriefPreventionTracker implements Tracker {
         }
     }
 
-    @Override
-    public int compareTo(@Nonnull Object o) {
-        return ownerTracker.compareTo(o);
-    }
-
-    @Override
-    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-
-    }
-
     private TrackerHolder holder = null;
 
     @Override
@@ -297,11 +286,6 @@ public class GriefPreventionTracker implements Tracker {
         tag.setLong("uuidLeast", claim_uuid.getLeastSignificantBits());
         tag.setLong("uuidMost", claim_uuid.getMostSignificantBits());
         return tag;
-    }
-
-    @Override
-    public TickLogger getTickLogger() {
-        return null;
     }
 
     /**
@@ -359,6 +343,16 @@ public class GriefPreventionTracker implements Tracker {
     }
 
     @Override
+    public boolean canProfile() {
+        return false;
+    }
+
+    @Override
+    public boolean isProfiling() {
+        return false;
+    }
+
+    @Override
     public void setNextTickTime(long granted_ns) {
         if(unloadCooldown > 0){
             unloadCooldown--;
@@ -388,9 +382,9 @@ public class GriefPreventionTracker implements Tracker {
     }
 
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable t){
+    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
         if(ownerTracker != null) {
-            ownerTracker.tickTileEntity(t);
+            ownerTracker.tickTileEntity(tileEntity);
         }
     }
 

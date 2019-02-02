@@ -8,6 +8,7 @@ public interface PermissionHolder {
 
     enum Permission{
         USE("tiquality.use"),
+        CLAIM("tiquality.claim"),
         ADMIN("tiquality.admin");
 
         final String node;

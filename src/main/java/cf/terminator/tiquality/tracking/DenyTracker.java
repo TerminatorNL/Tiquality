@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.interfaces.*;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
@@ -18,6 +17,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -82,11 +82,6 @@ public class DenyTracker implements Tracker {
     }
 
     @Override
-    public TickLogger getTickLogger() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void setProfileEnabled(boolean shouldProfile) {
         throw new UnsupportedOperationException();
     }
@@ -113,16 +108,26 @@ public class DenyTracker implements Tracker {
     }
 
     @Override
+    public boolean canProfile() {
+        return false;
+    }
+
+    @Override
+    public boolean isProfiling() {
+        return false;
+    }
+
+    @Override
     public boolean needsTick() {
         return false;
     }
 
     /**
      * Void the tick
-     * @param tickable t
+     * @param tileEntity t
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tickable) {
+    public void tickTileEntity(TiqualitySimpleTickable tileEntity) {
 
     }
 
@@ -184,7 +189,7 @@ public class DenyTracker implements Tracker {
     @Nonnull
     @Override
     public List<GameProfile> getAssociatedPlayers() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Nonnull
@@ -207,16 +212,6 @@ public class DenyTracker implements Tracker {
     @Override
     public void onUnload() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int compareTo(@Nonnull Object o) {
-        return 0;
-    }
-
-    @Override
-    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-
     }
 
     @Override

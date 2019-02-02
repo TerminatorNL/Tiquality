@@ -9,6 +9,7 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
+import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.ForgeData;
@@ -31,6 +32,7 @@ import javax.annotation.Nonnull;
 import java.util.*;
 
 import static cf.terminator.tiquality.Tiquality.SCHEDULER;
+import static cf.terminator.tiquality.TiqualityConfig.MAX_CLAIM_RADIUS;
 
 @SuppressWarnings({"NoTranslation", "WeakerAccess"})
 public class CommandExecutor {
@@ -43,16 +45,22 @@ public class CommandExecutor {
     }
 
     public static String getUsage(PermissionHolder holder){
-        if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-            return "Usage: /tiquality <info [point]|track|profile <secs> [target]|reload|add>";
-        }else if (holder.hasPermission(PermissionHolder.Permission.USE)) {
-            return "Usage: /tiquality <info [point]|track|profile <secs>>";
-        }else{
-            return "";
+        StringBuilder builder = new StringBuilder();
+
+        if (holder.hasPermission(PermissionHolder.Permission.USE)) {
+            builder.append("Usage: /tiquality <info [point] | track | profile <secs>");
         }
+        if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+            builder.append(" [target] | reload | add");
+        }
+        if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
+            builder.append(" | claim");
+        }
+        return builder.toString();
     }
 
     public static void execute(ICommandSender sender, String[] args, PermissionHolder holder) throws CommandException{
+        holder.checkPermission(PermissionHolder.Permission.USE);
         if(args.length == 0){
             incorrectUsageError(sender, holder);
         }
@@ -167,12 +175,40 @@ public class CommandExecutor {
             });
         /*
 
+            CLAIM
+
+         */
+        }else if(args[0].equalsIgnoreCase("claim")){
+            holder.checkPermission(PermissionHolder.Permission.CLAIM);
+            int range = MAX_CLAIM_RADIUS;
+            if(args.length > 1){
+                range = CommandBase.parseInt(args[1],1, MAX_CLAIM_RADIUS);
+            }
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("You must be a player to use this command.");
+            }
+            EntityPlayer player = (EntityPlayer) sender;
+            BlockPos leastPos = player.getPosition().add(range * -1, 0, range * -1);
+            BlockPos mostPos = player.getPosition().add(range, 0, range);
+
+            leastPos = new BlockPos(leastPos.getX(), 0, leastPos.getZ());
+            mostPos = new BlockPos(mostPos.getX(), 255, mostPos.getZ());
+
+            player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Claiming area: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
+            Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile());
+            ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
+                @Override
+                public void run() {
+                    player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Done."));
+                }
+            });
+        /*
+
             PROFILE
 
          */
         }else if(args[0].equalsIgnoreCase("profile")){
             holder.checkPermission(PermissionHolder.Permission.USE);
-            final Tracker tracker;
             if(args.length == 1) {
                 incorrectUsageError(sender, holder);
             }
@@ -197,15 +233,11 @@ public class CommandExecutor {
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
                 public void each(Tracker tracker) {
-                    if(tracker.getAssociatedPlayers().contains(target_player)){
+                    if(tracker.canProfile() && tracker.getAssociatedPlayers().contains(target_player)){
                         trackersToProfile.add(tracker);
                     }
                 }
             });
-
-
-
-
 
             if(trackersToProfile.size() == 0){
                 throw new CommandException("Player is found, but there are no trackers associated.");

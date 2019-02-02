@@ -17,6 +17,8 @@ import java.util.UUID;
  */
 public class ForgeData {
 
+    public static final GameProfile GAME_PROFILE_NOBODY = new GameProfile(new UUID(9223372036854775800L, Long.MAX_VALUE), "[Unknown]");
+
     public static final MinecraftServer SERVER = FMLCommonHandler.instance().getMinecraftServerInstance();
 
     /**
@@ -27,7 +29,7 @@ public class ForgeData {
      * @param uuid uuid
      * @return GameProfile
      */
-    public static @Nonnull GameProfile getGameProfileByUUID(UUID uuid){
+    public static @Nonnull GameProfile getGameProfileByUUID(@Nonnull UUID uuid){
         /*
                 This works 99% of the time
          */
@@ -80,6 +82,13 @@ public class ForgeData {
             SERVER.getMinecraftSessionService().fillProfileProperties(profile, true);
         }
 
+
+        /*
+                If it still did not, we give up, and return a dummy GameProfile.
+         */
+        if(profile.getName() == null){
+            profile = GAME_PROFILE_NOBODY;
+        }
 
         /*
                 We save the result, making sure we don't have to ever do this again for this profile

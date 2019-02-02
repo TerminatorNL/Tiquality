@@ -8,7 +8,7 @@ public class Tracking {
 
     /**
      * Registers the TrackerBase to the registry, YOU MUST CALL THIS METHOD IN YOUR MOD TO MAKE SURE IT REGISTERS BEFORE THE WORLD IS LOADED!
-     * You can use any dummy tracker to initialize, it will only be used to extract the identifier, none of the other methods are called.
+     * Make sure that your class returns the exact same identifier you provide here.
      */
     public static void registerCustomTracker(String identifier, Class<? extends Tracker> clazz){
         try {

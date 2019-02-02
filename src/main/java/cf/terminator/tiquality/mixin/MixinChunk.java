@@ -45,6 +45,9 @@ public abstract class MixinChunk implements TiqualityChunk {
     @Shadow public abstract void markDirty();
 
     @Shadow @Final private World world;
+
+    @Shadow public abstract ChunkPos getPos();
+
     private final BiMap<Byte, Tracker> trackerLookup = HashBiMap.create();
     private final ChunkStorage STORAGE = new ChunkStorage();
 
@@ -171,6 +174,24 @@ public abstract class MixinChunk implements TiqualityChunk {
         if(MinecraftForge.EVENT_BUS.post(event) /* if cancelled */){
             return;
         }
+        if(event.isPerBlockMode()){
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            int low_x = getPos().getXStart();
+            int low_z = getPos().getZStart();
+            int high_x = getPos().getXEnd();
+            int high_z = getPos().getZEnd();
+
+            for (int x = low_x; x <= high_x; x++) {
+                for (int y = 0; y <= 255; y++) {
+                    for (int z = low_z; z <= high_z; z++) {
+                        pos.setPos(x, y, z);
+                        tiquality_setTrackedPosition(pos, tracker);
+                    }
+                }
+            }
+            return;
+        }
+
         tracker = event.getTracker();
 
         if(tracker == null){

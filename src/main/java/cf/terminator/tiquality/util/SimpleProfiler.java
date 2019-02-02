@@ -23,17 +23,21 @@ public class SimpleProfiler {
 
     public void start(){
         for(Tracker tracker : trackers){
-            tracker.setProfileEnabled(true);
+            if(tracker.canProfile()) {
+                tracker.setProfileEnabled(true);
+            }
         }
     }
 
     public void stop(){
         for(Tracker tracker : trackers){
-            TickLogger logger = tracker.stopProfiler();
-            if(logger != null) {
-                consumedNanos += logger.getConsumedNanos();
-                grantedNanos += logger.getGrantedNanos();
-                loggers.put(tracker, logger);
+            if(tracker.isProfiling()) {
+                TickLogger logger = tracker.stopProfiler();
+                if (logger != null) {
+                    consumedNanos += logger.getConsumedNanos();
+                    grantedNanos += logger.getGrantedNanos();
+                    loggers.put(tracker, logger);
+                }
             }
         }
     }

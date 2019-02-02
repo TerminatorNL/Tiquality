@@ -101,7 +101,7 @@ public class SpongeCommand implements CommandCallable {
      */
     @Override
     public Optional<Text> getShortDescription(CommandSource source) {
-        return Optional.of(Text.of(CommandHub.DESCRIPTION));
+        return Optional.of(Text.of(CommandHub.DESCRIPTION_USE));
     }
 
     /**

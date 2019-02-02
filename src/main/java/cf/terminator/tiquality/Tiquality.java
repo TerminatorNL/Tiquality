@@ -110,7 +110,6 @@ public class Tiquality {
         TiqualityConfig.QuickConfig.reloadFromFile();
         Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
         Tracking.registerCustomTracker("Forced", ForcedTracker.class);
-
     }
 
     @EventHandler

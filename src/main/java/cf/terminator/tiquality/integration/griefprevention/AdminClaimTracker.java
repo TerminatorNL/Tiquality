@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.tracking.TickLogger;
@@ -51,11 +50,6 @@ public class AdminClaimTracker extends GriefPreventionTracker {
     }
 
     @Override
-    public TickLogger getTickLogger() {
-        return tickLogger;
-    }
-
-    @Override
     public void setProfileEnabled(boolean shouldProfile) {
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
@@ -63,7 +57,9 @@ public class AdminClaimTracker extends GriefPreventionTracker {
                 if(isProfiling != shouldProfile) {
                     isProfiling = shouldProfile;
                     if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, getTickLogger()));
+                        if(tickLogger != null) {
+                            MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, tickLogger));
+                        }
                     }else{
                         tickLogger.reset();
                     }
@@ -80,8 +76,8 @@ public class AdminClaimTracker extends GriefPreventionTracker {
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
                 if(isProfiling == true) {
                     isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, getTickLogger()));
-                    variable.set(getTickLogger());
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, tickLogger));
+                    variable.set(tickLogger);
                 }
             }
         });
@@ -143,17 +139,17 @@ public class AdminClaimTracker extends GriefPreventionTracker {
 
     /**
      * Ticks the tile entity, and optionally profiles it.
-     * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
+     * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tickable){
+    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
         if(isProfiling) {
             long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+            tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
         }else{
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
         }
     }
 
@@ -303,16 +299,6 @@ public class AdminClaimTracker extends GriefPreventionTracker {
     @Override
     public void onUnload() {
         throw new UnsupportedOperationException("Unloading AdminClaimTracker is never allowed.");
-    }
-
-    @Override
-    public int compareTo(@Nonnull Object o) {
-        return 0;
-    }
-
-    @Override
-    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-
     }
 
     @Override

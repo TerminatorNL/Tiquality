@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.TiqualityConfig;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.ForgeData;
@@ -29,7 +28,7 @@ public class PlayerTracker extends TrackerBase {
 
     @Override
     public Tracker load(TiqualityWorld world, NBTTagCompound tag) {
-        return new PlayerTracker(ForgeData.getGameProfileByUUID(new UUID(tag.getLong("uuidMost"), tag.getLong("uuidLeast"))));
+        return getOrCreatePlayerTrackerByProfile(ForgeData.getGameProfileByUUID(new UUID(tag.getLong("uuidMost"), tag.getLong("uuidLeast"))));
     }
 
     /**
@@ -67,7 +66,7 @@ public class PlayerTracker extends TrackerBase {
         if(tracker != null){
             return tracker;
         }else {
-            return TrackerManager.addTracker(TrackerHolder.getHolder(new PlayerTracker(profile))).getTracker();
+            return TrackerManager.addOrGetTracker(TrackerHolder.getHolder(new PlayerTracker(profile))).getTracker();
         }
     }
 
@@ -154,13 +153,6 @@ public class PlayerTracker extends TrackerBase {
     @Nonnull
     public String getIdentifier() {
         return "PlayerTracker";
-    }
-
-    @Override
-    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-        if(this.equals(tracker)){
-            throw new TrackerAlreadyExistsException(this, tracker);
-        }
     }
 
     @Override

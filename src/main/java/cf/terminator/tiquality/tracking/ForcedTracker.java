@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.TrackerAlreadyExistsException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.util.SynchronizedAction;
@@ -19,6 +18,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -44,11 +44,6 @@ public class ForcedTracker implements Tracker {
     }
 
     @Override
-    public TickLogger getTickLogger() {
-        return tickLogger;
-    }
-
-    @Override
     public void setProfileEnabled(boolean shouldProfile) {
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
@@ -56,7 +51,9 @@ public class ForcedTracker implements Tracker {
                 if(isProfiling != shouldProfile) {
                     isProfiling = shouldProfile;
                     if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
+                        if(tickLogger != null) {
+                            MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, tickLogger));
+                        }
                     }else{
                         tickLogger.reset();
                     }
@@ -73,11 +70,21 @@ public class ForcedTracker implements Tracker {
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
                 if(isProfiling == true) {
                     isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, getTickLogger()));
-                    variable.set(getTickLogger());
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, tickLogger));
+                    variable.set(tickLogger);
                 }
             }
         });
+    }
+
+    @Override
+    public boolean canProfile() {
+        return true;
+    }
+
+    @Override
+    public boolean isProfiling() {
+        return isProfiling;
     }
 
     @Override
@@ -102,17 +109,17 @@ public class ForcedTracker implements Tracker {
 
     /**
      * Ticks the tile entity, and optionally profiles it.
-     * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
+     * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tickable){
+    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
         if(isProfiling) {
             long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+            tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
         }else{
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tickable);
+            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
         }
     }
 
@@ -184,7 +191,7 @@ public class ForcedTracker implements Tracker {
     @Nonnull
     @Override
     public List<GameProfile> getAssociatedPlayers() {
-        throw new UnsupportedOperationException("Tried to get the associatedPlayers for a ForcedTracker");
+        return Collections.emptyList();
     }
 
     /**
@@ -258,18 +265,6 @@ public class ForcedTracker implements Tracker {
     @Override
     public void onUnload() {
         throw new UnsupportedOperationException("Unloading ForcedTracker is never allowed.");
-    }
-
-    @Override
-    public int compareTo(@Nonnull Object o) {
-        return 0;
-    }
-
-    @Override
-    public void checkCollision(@Nonnull Tracker tracker) throws TrackerAlreadyExistsException {
-        if(this.equals(tracker)){
-            throw new TrackerAlreadyExistsException(this, tracker);
-        }
     }
 
     private TrackerHolder holder = null;

@@ -16,7 +16,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashSet;
@@ -60,6 +59,11 @@ public abstract class TrackerBase implements Tracker {
     public TrackerBase(){
     }
 
+    @Override
+    public boolean canProfile(){
+        return true;
+    }
+
     /**
      * Internal use only. Used to determine when to unload.
      */
@@ -68,15 +72,11 @@ public abstract class TrackerBase implements Tracker {
     /**
      * Only changes between ticks
      */
-    protected boolean isProfiling = false;
+    private boolean isProfiling = false;
 
-    /**
-     * Gets the TickLogger.
-     * @return a copy of the TickLogger
-     */
     @Override
-    public TickLogger getTickLogger(){
-        return tickLogger.copy();
+    public boolean isProfiling() {
+        return isProfiling;
     }
 
     /**
@@ -99,7 +99,7 @@ public abstract class TrackerBase implements Tracker {
                 if(TrackerBase.this.isProfiling != shouldProfile) {
                     TrackerBase.this.isProfiling = shouldProfile;
                     if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, getTickLogger()));
+                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
                     }else{
                         tickLogger.reset();
                     }
@@ -127,8 +127,8 @@ public abstract class TrackerBase implements Tracker {
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
                 if(TrackerBase.this.isProfiling == true) {
                     TrackerBase.this.isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, getTickLogger()));
-                    variable.set(getTickLogger());
+                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
+                    variable.set(tickLogger);
                 }
             }
         });
@@ -195,26 +195,26 @@ public abstract class TrackerBase implements Tracker {
     /**
      * Decides whether or not to tick, based on
      * the time the tracker has already consumed.
-     * @param tickable the TiqualitySimpleTickable object (Tile Entities are castable.)
+     * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tickable){
-        if(updateOld() == false && ((TiqualityBlock) tickable.getLocation().getBlock()).getUpdateType().mustTick(this) == false){
+    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
+        if(updateOld() == false && ((TiqualityBlock) tileEntity.getLocation().getBlock()).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            if (untickedTickables.containsTileEntityUpdate(tickable) == false) {
-                untickedTickables.addToQueue(tickable);
+            if (untickedTickables.containsTileEntityUpdate(tileEntity) == false) {
+                untickedTickables.addToQueue(tileEntity);
             }
         }else{
             /* Either We still have time, or the tile entity is on the forced-tick list. We update the tile entity.*/
             if(isProfiling) {
                 long start = System.nanoTime();
-                tickable.doUpdateTick();
+                tileEntity.doUpdateTick();
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+                tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                tickable.doUpdateTick();
+                tileEntity.doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }
@@ -439,13 +439,5 @@ public abstract class TrackerBase implements Tracker {
         while(untickedTickables.size() > 0){
             untickedTickables.take().doUpdateTick();
         }
-    }
-
-    @Override
-    public int compareTo(@Nonnull Object o) {
-        if(o instanceof TrackerBase == false){
-            return -1;
-        }
-        return Long.compare(this.getHolder().getId(), ((TrackerBase) o).getHolder().getId());
     }
 }

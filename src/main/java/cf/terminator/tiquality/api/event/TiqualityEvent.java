@@ -22,7 +22,7 @@ public class TiqualityEvent extends Event {
         private final Tracker tracker;
 
         public ProfileCompletedEvent(Tracker tracker, TickLogger logger) {
-            this.logger = logger;
+            this.logger = logger.copy();
             this.tracker = tracker;
         }
 
@@ -101,6 +101,7 @@ public class TiqualityEvent extends Event {
 
         private Tracker tracker;
         private final TiqualityChunk chunk;
+        private boolean perBlockMode = false;
 
         public SetChunkTrackerEvent(TiqualityChunk chunk, Tracker tracker){
             this.tracker = tracker;
@@ -125,6 +126,14 @@ public class TiqualityEvent extends Event {
 
         public void setTracker(Tracker tracker){
             this.tracker = tracker;
+        }
+
+        public void setPerBlockMode(){
+            perBlockMode = true;
+        }
+
+        public boolean isPerBlockMode(){
+            return perBlockMode;
         }
 
     }

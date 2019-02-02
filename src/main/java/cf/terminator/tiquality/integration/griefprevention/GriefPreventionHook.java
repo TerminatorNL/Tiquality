@@ -140,7 +140,7 @@ public class GriefPreventionHook {
         if(tracker != null){
             return tracker;
         }else {
-            return TrackerManager.addTracker(TrackerHolder.getHolder(new GriefPreventionTracker(claim))).getTracker();
+            return TrackerManager.addOrGetTracker(TrackerHolder.getHolder(new GriefPreventionTracker(claim))).getTracker();
         }
     }
 
@@ -315,13 +315,8 @@ public class GriefPreventionHook {
         @Override
         public void handle(@Nonnull BorderClaimEvent event) {
             TiqualityEntity entity = (TiqualityEntity) event.getTargetEntity();
-
             Claim claim = event.getEnterClaim();
-            boolean isValidClaim = GriefPreventionHook.isValidClaim(claim);
-
-            if(isValidClaim == false && entity.getTracker() instanceof GriefPreventionTracker){
-                entity.setTracker(null);
-            }else if(isValidClaim){
+            if(GriefPreventionHook.isValidClaim(claim) && (entity.getTracker() instanceof GriefPreventionTracker == false)){
                 entity.setTracker(findOrGetTrackerByClaim(claim));
             }
         }

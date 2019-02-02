@@ -6,10 +6,14 @@ import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+
+import java.util.Set;
 
 public class EventHandler {
 
@@ -42,6 +46,30 @@ public class EventHandler {
         }
         GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
         e.setTracker(tracker);
+    }
+
+    @SubscribeEvent
+    public void onSetTracker(TiqualityEvent.SetChunkTrackerEvent e){
+        if(e.getTracker() instanceof GriefPreventionTracker){
+            return;
+        }
+        Chunk chunk = (Chunk) e.getChunk();
+        ClaimManager claimManager = GriefPrevention.getApi().getClaimManager((World) chunk.getWorld());
+
+        long chunkLong = ChunkPos.asLong(chunk.x, chunk.z);
+
+        Set<Claim> claimSet = claimManager.getChunksToClaimsMap().get(chunkLong);
+        if(claimSet == null){
+            /* There are no claims in this chunk. */
+            return;
+        }
+        for(Claim claim : claimSet){
+            if(GriefPreventionHook.isValidClaim(claim)){
+                e.setPerBlockMode();
+                return;
+            }
+        }
+
     }
 
     @SubscribeEvent
