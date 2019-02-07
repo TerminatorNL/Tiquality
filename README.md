@@ -86,12 +86,11 @@ When the next tick comes around, all trackers get a granted amount of tracking t
  * /tq set &lt;feet|below&gt; &lt;DEFAULT|NATURAL|ALWAYS_TICK&gt;
    * Sets all the blocks of the specified type to change tick behavior.<br>
    Valid types are:<br>
-     * DEFAULT: Only ticks when a tracker has been assigned AND there's tick time left.
-     * NATURAL: Ticks when either:
+     * `DEFAULT`: Only ticks when a tracker has been assigned AND there's tick time left.
+     * `NATURAL`: Ticks when either:
        * No tracker is assigned
        * A tracker is assigned AND there's tick time left.
-     * ALWAYS_TICK
-       * Always ticks, does not check for trackers.
+     * `ALWAYS_TICK`: always ticks, does not check for trackers.
    * tiquality.admin
   
  * /tq reload
@@ -179,7 +178,7 @@ Inspired by minecraft's own code, Tiquality also uses bitshifting to find the ri
 
 ### You suck!
 Hey, I am just trying to make the world a better place, I am sorry it did not work out for you.
-At the time of writing I have had serveral encounters where people flat out accuse me of doing everything wrong, and simply put: It hurts, lets not do this?
+At the time of writing I have had several encounters where people flat out accuse me of doing everything wrong, and simply put: It hurts, lets not do this?
 
 ### What is your code style?
 
