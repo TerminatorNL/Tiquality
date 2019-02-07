@@ -155,7 +155,7 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
         if(trackersOnly){
             //noinspection unchecked
             List<TiqualityEntity> list = (List<TiqualityEntity>) (Object)  new ArrayList<>(loadedEntityList);
-            list.removeIf(entity -> entity.getTracker() == null);
+            list.removeIf(entity -> entity.getTrackerHolder() == null);
             return list;
         }else{
             //noinspection unchecked

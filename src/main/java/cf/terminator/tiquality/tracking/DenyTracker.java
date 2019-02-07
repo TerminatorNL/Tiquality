@@ -67,7 +67,24 @@ public class DenyTracker implements Tracker {
     }
 
     @Override
-    public Tracker load(TiqualityWorld world, NBTTagCompound nbt) {
+    public boolean isLoaded() {
+        return true;
+    }
+
+    /**
+     * Checks if the tracker is equal to one already in the database.
+     * Allows for flexibility for loading.
+     *
+     * @param tag tag
+     * @return equals
+     */
+    @Override
+    public boolean equalsSaved(NBTTagCompound tag) {
+        return true;
+    }
+
+    @Override
+    public Tracker load(TiqualityWorld world, NBTTagCompound trackerTag) {
         throw new UnsupportedOperationException();
     }
 
@@ -76,9 +93,10 @@ public class DenyTracker implements Tracker {
         return false;
     }
 
+    @Nonnull
     @Override
     public NBTTagCompound getNBT() {
-        throw new UnsupportedOperationException();
+        return new NBTTagCompound();
     }
 
     @Override
@@ -202,6 +220,16 @@ public class DenyTracker implements Tracker {
     @Override
     public String getIdentifier() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Required to check for colission with unloaded trackers.
+     *
+     * @return int the hash code, just like Object#hashCode().
+     */
+    @Override
+    public int getHashCode() {
+        return 0;
     }
 
     @Override

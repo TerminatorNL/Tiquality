@@ -175,7 +175,7 @@ public abstract class TrackerBase implements Tracker {
      * @return true if everything was updated, and there is more time left.
      */
     public boolean updateOld(){
-        while(untickedTickables.size() > 0 && tick_time_remaining_ns > 0) {
+        while(untickedTickables.size() > 0 && getRemainingTime() > 0) {
             if(isProfiling) {
                 TiqualitySimpleTickable tickable = untickedTickables.take();
                 long start = System.nanoTime();
@@ -189,7 +189,7 @@ public abstract class TrackerBase implements Tracker {
                 consume(System.nanoTime() - start);
             }
         }
-        return tick_time_remaining_ns > 0;
+        return getRemainingTime() > 0;
     }
 
     /**
@@ -230,7 +230,7 @@ public abstract class TrackerBase implements Tracker {
     public void tickEntity(TiqualityEntity entity){
         if(isUnloaded){
             entity.doUpdateTick();
-            entity.setTracker(null);
+            entity.setTrackerHolder(null);
             return;
         }
         if (updateOld() == false){
@@ -408,7 +408,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public String toString(){
-        return this.getClass() + ":{nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
+        return this.getClass() + ":{nsleft: " + getRemainingTime() + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
     /**

@@ -24,7 +24,7 @@ public class EventHandler {
     private EventHandler(){
 
     }
-    
+
     @SubscribeEvent
     public void onSpawn(EntityJoinWorldEvent e){
         if(ClaimedChunks.isActive() == false){
@@ -35,7 +35,7 @@ public class EventHandler {
         if(team == null){
             return;
         }
-        ((TiqualityEntity) e.getEntity()).setTracker(FTBUtilitiesHook.getTrackerForTeam(team));
+        ((TiqualityEntity) e.getEntity()).setTracker(FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) e.getWorld(), team));
     }
 
     @SubscribeEvent
@@ -49,8 +49,8 @@ public class EventHandler {
             return;
         }
         TiqualityEntity entity = (TiqualityEntity) e.getEntity();
-        if(entity.getTracker() == null){
-            PlayerTracker newTracker = FTBUtilitiesHook.getTrackerForTeam(team);
+        if(entity.getTrackerHolder() == null){
+            PlayerTracker newTracker = FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) entity.getWorld(),team);
             if(newTracker != null){
                 entity.setTracker(newTracker);
             }
@@ -65,7 +65,7 @@ public class EventHandler {
         if(world == null){
             return;
         }
-        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam(e.getChunk().getTeam());
+        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) world,e.getChunk().getTeam());
         if(tracker == null){
             return;
         }
@@ -85,11 +85,11 @@ public class EventHandler {
             return;
         }
         ChunkPos pos = e.getChunk().getMinecraftChunk().getPos();
-        ForgeTeam team = ClaimedChunks.instance.getChunkTeam(new ChunkDimPos(e.getChunk().getMinecraftChunk().getWorld().provider.getDimension(), pos.x, pos.z));
+        ForgeTeam team = ClaimedChunks.instance.getChunkTeam(new ChunkDimPos(pos.x, pos.z, e.getChunk().getMinecraftChunk().getWorld().provider.getDimension()));
         if(team == null){
             return;
         }
-        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam(team);
+        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam(e.getTiqualityWorld(), team);
         if(tracker != null) {
             e.setTracker(tracker);
         }
@@ -101,11 +101,11 @@ public class EventHandler {
             return;
         }
         ChunkPos pos = e.getChunk().getMinecraftChunk().getPos();
-        ForgeTeam team = ClaimedChunks.instance.getChunkTeam(new ChunkDimPos(e.getChunk().getMinecraftChunk().getWorld().provider.getDimension(), pos.x, pos.z));
+        ForgeTeam team = ClaimedChunks.instance.getChunkTeam(new ChunkDimPos(pos.x, pos.z, e.getChunk().getMinecraftChunk().getWorld().provider.getDimension()));
         if(team == null){
             return;
         }
-        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam(team);
+        PlayerTracker tracker = FTBUtilitiesHook.getTrackerForTeam(e.getTiqualityWorld(), team);
         if(tracker != null) {
             e.setTracker(tracker);
         }

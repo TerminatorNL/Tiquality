@@ -104,7 +104,7 @@ public class TrackingTool {
         }
         if(step == COLORSCALE.length){
             --step;
-            ((TiqualityWorld) player.world).setTiqualityTracker(selectedPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
+            ((TiqualityWorld) player.world).setTiqualityTracker(selectedPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(((TiqualityWorld) player.world), player.getGameProfile()));
             return;
         }
         Block block = player.world.getBlockState(selectedPos).getBlock();

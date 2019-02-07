@@ -29,7 +29,7 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Shadow public double posY;
     @Shadow public double posZ;
     @Shadow public World world;
-    private Tracker tracker = null;
+    private TrackerHolder trackerHolder = null;
     private boolean isMarkedByTiquality = false;
 
     @Override
@@ -62,36 +62,42 @@ public abstract class MixinEntity implements TiqualityEntity {
     }
 
     @Override
-    public @Nullable
-    Tracker getTracker() {
-        return tracker;
+    @Nullable
+    public TrackerHolder getTrackerHolder() {
+        return trackerHolder;
+    }
+
+    @Override
+    @Nullable
+    public Tracker getTracker() {
+        return trackerHolder == null ? null : trackerHolder.getTracker();
+    }
+
+    @Override
+    public void setTrackerHolder(@Nullable TrackerHolder trackerHolder) {
+        TiqualityEvent.SetEntityTrackerEvent event = new TiqualityEvent.SetEntityTrackerEvent(this, trackerHolder);
+        if(MinecraftForge.EVENT_BUS.post(event) /* is cancelled */){
+            return;
+        }
+        this.trackerHolder = event.getHolder();
     }
 
     @Override
     public void setTracker(@Nullable Tracker tracker) {
-        TiqualityEvent.SetEntityTrackerEvent event = new TiqualityEvent.SetEntityTrackerEvent(this, tracker);
-        if(MinecraftForge.EVENT_BUS.post(event) /* is cancelled */){
-            return;
-        }
-        this.tracker = event.getTracker();
+        this.setTrackerHolder(tracker == null ? null : tracker.getHolder());
     }
 
     @Inject(method = "writeToNBT", at = @At("HEAD"))
     private void TiqualityOnWrite(NBTTagCompound compound, CallbackInfoReturnable<NBTTagCompound> cir){
-        if(tracker != null && tracker.shouldSaveToDisk() == true) {
-            compound.setTag("Tiquality", TrackerManager.getTrackerTag(tracker.getHolder()));
+        if(trackerHolder != null && trackerHolder.getTracker().shouldSaveToDisk() == true) {
+            compound.setTag("Tiquality", trackerHolder.getHolderTag());
         }
     }
 
     @Inject(method = "readFromNBT", at = @At("HEAD"))
     private void TiqualityOnRead(NBTTagCompound compound, CallbackInfo ci){
         if(compound.hasKey("Tiquality")) {
-            TrackerHolder holder = TrackerManager.getTracker((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));
-            if(holder == null){
-                tracker = null;
-            }else {
-                tracker = holder.getTracker();
-            }
+            trackerHolder = TrackerManager.readHolder((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));
         }
     }
 

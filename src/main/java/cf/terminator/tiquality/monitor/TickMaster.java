@@ -33,7 +33,7 @@ public class TickMaster {
                 @Override
                 public void each(Tracker tracker) {
                     if(value == null){
-                        value = 0D;
+                        value = tracker.getMultiplier(cache);
                     }else{
                         value += tracker.getMultiplier(cache);
                     }
@@ -44,20 +44,21 @@ public class TickMaster {
                 We divide the tick time amongst users, based on whether they are online or not and config multiplier.
                 Source for formula: https://math.stackexchange.com/questions/253392/weighted-division
             */
-            double totalWeight = totalWeight_1 != null ? Math.max(1, totalWeight_1) : 1;
+            final double totalWeight = totalWeight_1 != null ? Math.max(1, totalWeight_1) : 1;
 
             TrackerManager.foreach(new TrackerManager.Action<Object>() {
                 @Override
                 public void each(Tracker tracker) {
                     long time = Math.round(TICK_DURATION * (tracker.getMultiplier(cache)/totalWeight));
-
-                    //Tiquality.LOGGER.info("GRANTED: " + time + " ns. (" + ((double) time/(double) TICK_DURATION*100d) + "%) -> " + tracker.toString());
                     tracker.setNextTickTime(time);
                 }
             });
-
-
-
+            TrackerManager.foreach(new TrackerManager.Action<Object>() {
+                @Override
+                public void each(Tracker tracker) {
+                    tracker.tick();
+                }
+            });
 
         }else if(e.phase == TickEvent.Phase.END){
             TrackerManager.tickUntil(startTime + TICK_DURATION);

@@ -48,10 +48,10 @@ public class CommandExecutor {
         StringBuilder builder = new StringBuilder();
 
         if (holder.hasPermission(PermissionHolder.Permission.USE)) {
-            builder.append("Usage: /tiquality <info [point] | track | profile <secs>");
+            builder.append("Usage: /tiquality <info [point] | track | share | profile <secs>");
         }
         if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-            builder.append(" [target] | reload | add");
+            builder.append(" [target] | reload | set");
         }
         if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
             builder.append(" | claim");
@@ -74,6 +74,44 @@ public class CommandExecutor {
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Reloading..."));
             TiqualityConfig.QuickConfig.reloadFromFile();
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Done!"));
+        /*
+
+                SHARE
+
+         */
+        }else if(args[0].equalsIgnoreCase("share")) {
+            if (sender instanceof EntityPlayer == false) {
+                throw new CommandException("Only players can use the 'share' command.");
+            }
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            PlayerTracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) sender.getEntityWorld(), ((EntityPlayer) sender).getGameProfile());
+
+            if(args.length != 2){
+                List<TextComponentString> list = tracker.getSharedToTextual((TiqualityWorld) sender.getEntityWorld());
+                if(list.size() > 0) {
+                    sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "You are currently sharing your tick time with: "));
+                    for (TextComponentString t : list) {
+                        sender.sendMessage(t);
+                    }
+                }
+                throw new CommandException("Usage: /tiquality share [name]");
+            }
+            String name = args[1];
+            GameProfile targetPlayer = ForgeData.getGameProfileByName(name);
+            if(targetPlayer == null){
+                throw new CommandException("Sorry, the user '" + name + "' was not found.");
+            }
+            PlayerTracker targetTracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) sender.getEntityWorld(), targetPlayer);
+
+            boolean newState = tracker.switchSharedTo(targetTracker.getHolder().getId());
+
+            if(newState == true) {
+                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "You are now sharing your tick time with: " + targetPlayer.getName()));
+                sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "If you want to stop sharing your time, run this command again!"));
+            }else{
+                sender.sendMessage(new TextComponentString(TextFormatting.GOLD + "You are no longer sharing your tick time with: " + targetPlayer.getName()));
+                sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "If you want to share your time again, run this command again!"));
+            }
         /*
 
                 INFO
@@ -130,17 +168,17 @@ public class CommandExecutor {
             new TrackingTool((EntityPlayerMP) sender).start(time * 1000);
         /*
 
-                ADD
+                SET
 
          */
-        }else if(args[0].equalsIgnoreCase("add")) {
+        }else if(args[0].equalsIgnoreCase("set")) {
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
             if (sender instanceof EntityPlayer == false) {
-                throw new CommandException("Only players can use the 'add' command.");
+                throw new CommandException("Only players can use the 'set' command.");
             }
             EntityPlayer player = (EntityPlayer) sender;
-            if (args.length != 2) {
-                throw new CommandException("Usage: add <feet|below>");
+            if (args.length != 3) {
+                throw new CommandException("Usage: set <feet|below> <DEFAULT|NATURAL|ALWAYS_TICK>");
             }
             String mode = args[1];
             Block blockToAdd;
@@ -156,21 +194,49 @@ public class CommandExecutor {
                 }
             } else {
                 sender.sendMessage(new TextComponentString("Invalid input: '" + mode + "'. Expected 'feet' or 'below'"));
-                throw new CommandException("Usage: add <feet|below>");
+                throw new CommandException("Usage: add <feet|below> <DEFAULT|NATURAL|ALWAYS_TICK>");
             }
+
+            String type = args[2].toUpperCase();
+            UpdateType updateType;
+            try{
+                updateType = UpdateType.valueOf(type);
+            }catch (IllegalArgumentException e){
+                throw new CommandException("Invalid update type! Valid types: " + Arrays.toString(UpdateType.values()));
+            }
+
             SCHEDULER.schedule(new Runnable() {
                 @Override
                 public void run() {
                     ResourceLocation resourceLocation = Block.REGISTRY.getNameForObject(blockToAdd);
                     String identifier = resourceLocation.getResourceDomain() + ":" + resourceLocation.getResourcePath();
 
-                    ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS));
-                    list.add(identifier);
-                    TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS = list.toArray(new String[0]);
+                    /* Clear current status */
+                    {
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS));
+                        list.remove(identifier);
+                        TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS = list.toArray(new String[0]);
+                    }
+                    {
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.TICKFORCING));
+                        list.remove(identifier);
+                        TiqualityConfig.TICKFORCING = list.toArray(new String[0]);
+
+                    }
+                    /* Recalculate inheritance */
+                    if(updateType == UpdateType.NATURAL) {
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS));
+                        list.add(identifier);
+                        TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS = list.toArray(new String[0]);
+                    }else if(updateType == UpdateType.ALWAYS_TICK){
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.TICKFORCING));
+                        list.add(identifier);
+                        TiqualityConfig.TICKFORCING = list.toArray(new String[0]);
+                    }
 
                     TiqualityConfig.QuickConfig.saveToFile();
                     TiqualityConfig.QuickConfig.update();
-                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Added: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + " to the config!"));
+                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + ". New tick type: " + updateType.getText().getFormattedText()));
                 }
             });
         /*
@@ -195,7 +261,7 @@ public class CommandExecutor {
             mostPos = new BlockPos(mostPos.getX(), 255, mostPos.getZ());
 
             player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Claiming area: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
-            Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile());
+            Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world,player.getGameProfile());
             ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
                 @Override
                 public void run() {

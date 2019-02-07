@@ -8,6 +8,7 @@ import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.UUID;
@@ -97,6 +98,7 @@ public class ForgeData {
         return profile;
     }
 
+    @Nullable
     public static GameProfile getGameProfileByName(String name){
         return SERVER.getPlayerProfileCache().getGameProfileForUsername(name);
     }

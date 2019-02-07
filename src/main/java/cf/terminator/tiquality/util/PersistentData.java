@@ -7,16 +7,17 @@ import net.minecraft.world.World;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Used to tracking and access persistent data quickly using enums as keys.
  */
 public enum PersistentData {
     NEXT_FREE_TRACKER_ID,
-    TRACKER_TO_ID;
+    ID_TO_TRACKER,
+    TRACKER_LOOKUP;
 
-
-
+    private ReentrantLock LOCK = new ReentrantLock();
 
     private static File persistentFile;
     private static NBTTagCompound storage;
@@ -47,6 +48,14 @@ public enum PersistentData {
         } catch (IOException e) {
             throw new RuntimeException("Unable to write persistent data file.", e);
         }
+    }
+
+    public void lock(){
+        LOCK.lock();
+    }
+
+    public void unlock(){
+        LOCK.unlock();
     }
 
     public boolean isSet(){

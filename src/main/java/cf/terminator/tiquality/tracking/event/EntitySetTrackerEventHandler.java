@@ -19,7 +19,7 @@ public class EntitySetTrackerEventHandler {
     public void onSet(TiqualityEvent.SetEntityTrackerEvent e){
         TiqualityEntity entity = e.getEntity();
         if(entity instanceof EntityPlayer){
-            e.setTracker(ForcedTracker.INSTANCE);
+            e.setHolder(ForcedTracker.INSTANCE.getHolder());
         }
     }
 }

@@ -32,15 +32,16 @@ public class ForcedTracker implements Tracker {
     private boolean isProfiling = false;
     private TickLogger tickLogger = new TickLogger();
 
-    private ForcedTracker() {
+    protected ForcedTracker() {
     }
 
     /**
      * Gets the NBT data from this object, is called when the tracker is saved to disk.
      */
+    @Nonnull
     @Override
     public NBTTagCompound getNBT() {
-        throw new UnsupportedOperationException("Tried to save ForcedTracker!");
+        return new NBTTagCompound();
     }
 
     @Override
@@ -93,7 +94,7 @@ public class ForcedTracker implements Tracker {
     }
 
     @Override
-    public Tracker load(TiqualityWorld world, NBTTagCompound nbt) {
+    public Tracker load(TiqualityWorld world, NBTTagCompound trackerTag) {
         throw new UnsupportedOperationException("How can ForcedTracker be loaded, when it is never saved?");
     }
 
@@ -257,6 +258,16 @@ public class ForcedTracker implements Tracker {
         throw new UnsupportedOperationException("Attempt to get the identifier for ForcedTracker.");
     }
 
+    /**
+     * Required to check for colission with unloaded trackers.
+     *
+     * @return int the hash code, just like Object#hashCode().
+     */
+    @Override
+    public int getHashCode() {
+        return 0;
+    }
+
     @Override
     public boolean shouldUnload() {
         return false;
@@ -272,6 +283,23 @@ public class ForcedTracker implements Tracker {
     @Override
     public void setHolder(TrackerHolder holder) {
         this.holder = holder;
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return true;
+    }
+
+    /**
+     * Checks if the tracker is equal to one already in the database.
+     * Allows for flexibility for loading.
+     *
+     * @param tag tag
+     * @return equals
+     */
+    @Override
+    public boolean equalsSaved(NBTTagCompound tag) {
+        return true;
     }
 
     @Override

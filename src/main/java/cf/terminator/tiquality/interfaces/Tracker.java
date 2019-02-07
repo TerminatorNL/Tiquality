@@ -25,14 +25,24 @@ public interface Tracker {
      * However, if you do return an existing tracker, update checkColission accordingly.
      * @return Tracker
      */
-    Tracker load(TiqualityWorld world, NBTTagCompound nbt);
+    Tracker load(TiqualityWorld world, NBTTagCompound trackerTag);
+
+    /**
+     * Consume tick time
+     * @param time
+     */
+    default void consume(long time){
+        if(canProfile()){
+            throw new RuntimeException("You must override the consume method!");
+        }
+    }
 
     boolean shouldSaveToDisk();
 
     /**
      * Gets the NBT data from this object, is called when the tracker is saved to disk.
      */
-    NBTTagCompound getNBT();
+    @Nonnull NBTTagCompound getNBT();
 
     void setProfileEnabled(boolean shouldProfile);
 
@@ -43,6 +53,14 @@ public interface Tracker {
     boolean isProfiling();
 
     void setNextTickTime(long granted_ns);
+
+    /**
+     * Tick this tracker every tick, right after every tracker has been assigned
+     * tick time. This can be used for inter-communication between trackers.
+     */
+    default void tick() {
+
+    }
 
     /**
      * Gets the tick time multiplier for the TrackerBase.
@@ -88,6 +106,12 @@ public interface Tracker {
     @Nonnull
     String getIdentifier();
 
+    /**
+     * Required to check for colission with unloaded trackers.
+     * @return int the hash code, just like Object#hashCode().
+     */
+    int getHashCode();
+
     boolean shouldUnload();
 
     @OverridingMethodsMustInvokeSuper
@@ -95,15 +119,17 @@ public interface Tracker {
 
     /**
      * This is called when a holder has been assigned to this tracker.
+     * You only need to do this if you want your tracker to be written to disk.
      * @param holder holder
      */
     void setHolder(TrackerHolder holder);
 
     /**
      * Simply return the holder you've received in setHolder.
+     * You only need to do this if you want your tracker to be written to disk.
      * @return holder
      */
-    TrackerHolder getHolder();
+    <T extends Tracker> TrackerHolder<T> getHolder();
 
     /**
      * Fired whenever a block is changed that is owned by this tracker
@@ -116,4 +142,14 @@ public interface Tracker {
     default void notifyBlockStateChange(TiqualityWorld world, BlockPos pos, IBlockState state){
 
     }
+
+    boolean isLoaded();
+
+    /**
+     * Checks if the tracker is equal to one already in the database.
+     * Allows for flexibility for loading.
+     * @param tag tag
+     * @return equals
+     */
+    boolean equalsSaved(NBTTagCompound tag);
 }

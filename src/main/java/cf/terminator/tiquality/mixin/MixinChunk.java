@@ -6,7 +6,6 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TrackerHolder;
-import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.world.ChunkStorage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -219,7 +218,7 @@ public abstract class MixinChunk implements TiqualityChunk {
             }
             NBTTagCompound trackerData = new NBTTagCompound();
             trackerData.setByte("chunk_id", e.getKey());
-            trackerData.setTag("tracker", TrackerManager.getTrackerTag(e.getValue().getHolder()));
+            trackerData.setLong("tracker", e.getValue().getHolder().getId());
             trackerList.appendTag(trackerData);
         }
         if(trackerList.tagCount() > 0) {
@@ -233,11 +232,17 @@ public abstract class MixinChunk implements TiqualityChunk {
         STORAGE.loadFromNBT(tag.getTagList("Sections", 10), getMinecraftChunk());
         for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
-            TrackerHolder holder = TrackerManager.getTracker((TiqualityWorld) world, trackerData.getCompoundTag("tracker"));
+            long id = trackerData.getLong("tracker");
+            if(id == 0){
+                Tiquality.LOGGER.debug("Failed to load tracker in chunk: ", this);
+                continue;
+            }
+            TrackerHolder holder = TrackerHolder.getTrackerHolder((TiqualityWorld) world, id);
             if(holder != null){
+                holder.getTracker().associateChunk(this);
                 trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
             }else{
-                Tiquality.LOGGER.debug("Failed to load tracker in chunk: ", this);
+                Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: ", this);
             }
         }
     }

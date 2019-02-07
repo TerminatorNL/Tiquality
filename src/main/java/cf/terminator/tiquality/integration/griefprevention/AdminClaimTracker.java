@@ -1,134 +1,39 @@
 package cf.terminator.tiquality.integration.griefprevention;
 
-import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.*;
-import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.TrackerHolder;
-import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
-import me.ryanhamshire.griefprevention.GriefPrevention;
-import me.ryanhamshire.griefprevention.api.claim.Claim;
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ITickable;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.world.World;
-import net.minecraftforge.common.MinecraftForge;
-import org.spongepowered.api.Sponge;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 
-public class AdminClaimTracker extends GriefPreventionTracker {
+public class AdminClaimTracker extends ForcedTracker {
 
     public static final AdminClaimTracker INSTANCE = new AdminClaimTracker();
-    private static TrackerHolder HOLDER = TrackerHolder.getHolder(INSTANCE);
-    private boolean isProfiling = false;
-    private TickLogger tickLogger = new TickLogger();
+    private static TrackerHolder HOLDER = null;
 
     /**
      * Required
      */
-    public AdminClaimTracker() {
+    protected AdminClaimTracker() {
+        super();
     }
 
     /**
      * Gets the NBT data from this object, is called when the tracker is saved to disk.
      */
+    @Nonnull
     @Override
     public NBTTagCompound getNBT() {
         return new NBTTagCompound();
     }
 
     @Override
-    public void setProfileEnabled(boolean shouldProfile) {
-        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
-            @Override
-            public void run() {
-                if(isProfiling != shouldProfile) {
-                    isProfiling = shouldProfile;
-                    if(shouldProfile == false){
-                        if(tickLogger != null) {
-                            MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, tickLogger));
-                        }
-                    }else{
-                        tickLogger.reset();
-                    }
-                }
-            }
-        });
-    }
-
-    @Nullable
-    @Override
-    public TickLogger stopProfiler() {
-        return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
-            @Override
-            public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
-                if(isProfiling == true) {
-                    isProfiling = false;
-                    MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(AdminClaimTracker.this, tickLogger));
-                    variable.set(tickLogger);
-                }
-            }
-        });
-    }
-
-    private boolean IMPORTING = false;
-    @Override
-    public void setBlockTrackers(Runnable runnable, Runnable r2){
-        if(IMPORTING == true){
-            return;
-        }
-        IMPORTING = true;
-        List<Claim> list = new ArrayList<>();
-        for (org.spongepowered.api.world.World world : Sponge.getServer().getWorlds()) {
-            list.addAll(GriefPrevention.getApi().getClaimManager(world).getWorldClaims());
-        }
-        for(Claim claim : list) {
-            if(claim.isAdminClaim() == false){
-                continue;
-            }
-            BlockPos startPos = new BlockPos(
-                    claim.getLesserBoundaryCorner().getBlockX(),
-                    claim.getLesserBoundaryCorner().getBlockY(),
-                    claim.getLesserBoundaryCorner().getBlockZ()
-            );
-
-            BlockPos endPos = new BlockPos(
-                    claim.getGreaterBoundaryCorner().getBlockX(),
-                    claim.getGreaterBoundaryCorner().getBlockY(),
-                    claim.getGreaterBoundaryCorner().getBlockZ()
-            );
-            TiqualityWorld world = (TiqualityWorld) claim.getWorld();
-
-            world.setTiqualityTrackerCuboidAsync(startPos, endPos, this, runnable, r2);
-            for(Claim subClaim : claim.getChildren(false)){
-                if(GriefPreventionHook.isValidClaim(subClaim) == false){
-                    continue;
-                }
-                GriefPreventionHook.findOrGetTrackerByClaim(subClaim).setBlockTrackers(null, null);
-            }
-        }
-        IMPORTING = false;
-    }
-
-    @Override
-    public void setNextTickTime(long granted_ns) {
-        tickLogger.addTick(granted_ns);
-    }
-
-    @Override
-    public Tracker load(TiqualityWorld world, NBTTagCompound nbt) {
+    public Tracker load(TiqualityWorld world, NBTTagCompound trackerTag) {
         return INSTANCE;
     }
 
@@ -137,107 +42,9 @@ public class AdminClaimTracker extends GriefPreventionTracker {
         return true;
     }
 
-    /**
-     * Ticks the tile entity, and optionally profiles it.
-     * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
-     */
-    @Override
-    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
-        if(isProfiling) {
-            long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
-            long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
-        }else{
-            Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
-        }
-    }
-
-    /**
-     * Performs block tick, and optionally profiles it
-     * @param block the block
-     * @param world the world
-     * @param pos the block position
-     * @param state the block's state
-     * @param rand a Random
-     */
-    @Override
-    public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(isProfiling) {
-            long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
-            long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
-        }else{
-            Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
-        }
-    }
-
-    /**
-     * Performs a random block tick, and optionally profiles it.
-     * @param block the block
-     * @param world the world
-     * @param pos the block position
-     * @param state the block's state
-     * @param rand a Random
-     */
-    @Override
-    public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(isProfiling) {
-            long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
-            long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
-        }else{
-            Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
-        }
-    }
-
     @Override
     public void grantTick() {
         throw new UnsupportedOperationException("AdminClaimTracker does not need ticks");
-    }
-
-    @Override
-    public void associateChunk(TiqualityChunk chunk) {
-
-    }
-
-    @Override
-    public void associateDelegatingTracker(Tracker tracker) {
-        throw new UnsupportedOperationException("AdminClaimTracker should not be delegated");
-    }
-
-    @Override
-    public void removeDelegatingTracker(Tracker tracker) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Gets the associated players for this tracker
-     *
-     * @return an empty list
-     */
-    @Nonnull
-    @Override
-    public List<GameProfile> getAssociatedPlayers() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Ticks the entity, and optionally profiles it
-     * @param entity the Entity to tick
-     */
-    @Override
-    public void tickEntity(TiqualityEntity entity){
-        if(isProfiling) {
-            long start = System.nanoTime();
-            Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
-            long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
-        }else{
-            Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
-        }
     }
 
     /**

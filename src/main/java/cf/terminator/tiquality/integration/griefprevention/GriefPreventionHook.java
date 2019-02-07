@@ -7,14 +7,17 @@ import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
-import cf.terminator.tiquality.tracking.TrackerHolder;
-import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.util.ForgeData;
 import cf.terminator.tiquality.util.Scheduler;
 import cf.terminator.tiquality.world.WorldHelper;
+import com.mojang.authlib.GameProfile;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
-import me.ryanhamshire.griefprevention.api.event.*;
+import me.ryanhamshire.griefprevention.api.event.BorderClaimEvent;
+import me.ryanhamshire.griefprevention.api.event.ChangeClaimEvent;
+import me.ryanhamshire.griefprevention.api.event.CreateClaimEvent;
+import me.ryanhamshire.griefprevention.api.event.TransferClaimEvent;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
@@ -29,9 +32,9 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressWarnings("NoTranslation")
@@ -40,10 +43,19 @@ public class GriefPreventionHook {
     private static final CreateClaimEventHandler createClaimHandler = new CreateClaimEventHandler();
     private static final ChangeClaimEventHandler claimChangeHandler = new ChangeClaimEventHandler();
     private static final TransferClaimEventHandler transferClaimHandler = new TransferClaimEventHandler();
-    private static final DeleteClaimEventHandler deleteClaimHandler = new DeleteClaimEventHandler();
-    private static final UserAddTrustClaimEventHandler userAddTrustHandler = new UserAddTrustClaimEventHandler();
-    private static final UserRemoveTrustClaimEventHandler userRemoveTrustHandler = new UserRemoveTrustClaimEventHandler();
     private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
+
+    public static void setClaimTrackers(Claim claim, Tracker tracker, Runnable callback, Runnable beforeRun){
+        Location<World> least = claim.getLesserBoundaryCorner();
+        Location<World> most = claim.getGreaterBoundaryCorner();
+        if(least == null || most == null){
+            return;
+        }
+        TiqualityWorld world = (TiqualityWorld) least.getExtent();
+        BlockPos leastPos = new BlockPos(least.getBlockX(), least.getBlockY(), least.getBlockZ());
+        BlockPos mostPos = new BlockPos(most.getBlockX(), most.getBlockY(), most.getBlockZ());
+        world.setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker,callback, beforeRun);
+    }
 
     public static void loadClaimsForcibly(ICommandSender sender){
         final AtomicInteger counter = new AtomicInteger(0);
@@ -68,12 +80,8 @@ public class GriefPreventionHook {
                             (world != null ? String.valueOf(world.provider.getDimension()) : "Unknown") + " "
                             + (pos != null ? "X: " + pos.getBlockX() + " Z: " + pos.getBlockZ() : "unknown");
 
-            findOrGetTrackerByClaim(claim).setBlockTrackers(new Runnable() {
-                @Override
-                public void run() {
-                    Tiquality.LOGGER.info("Importing: " + identifier);
-                }
-            },new Runnable() {
+
+            setClaimTrackers(claim, PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) world, ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId())), new Runnable() {
                 @Override
                 public void run() {
                     String message = "[Tiquality] Remaining claims: " + (counter.getAndDecrement() - 1);
@@ -82,6 +90,11 @@ public class GriefPreventionHook {
                     synchronized (counter) {
                         counter.notifyAll();
                     }
+                }
+            }, new Runnable() {
+                @Override
+                public void run() {
+                    Tiquality.LOGGER.info("Importing: " + identifier);
                 }
             });
         }
@@ -114,34 +127,17 @@ public class GriefPreventionHook {
         return isInvalid == false;
     }
 
-    public static GriefPreventionTracker findOrGetTrackerByClaim(@Nonnull Claim claim){
+    @Nullable
+    public static Tracker findOrGetTrackerByClaim(@Nonnull Claim claim){
         if(claim.isWilderness()){
-            throw new IllegalArgumentException("Cannot add trackers to wilderness claims.");
+            return null;
         }else if(claim.isAdminClaim()){
             return AdminClaimTracker.INSTANCE;
         }else if(claim.getOwnerUniqueId() == null){
             throw new IllegalArgumentException("Claim owner is null!");
         }
-
-        GriefPreventionTracker tracker = TrackerManager.foreach(new TrackerManager.Action<GriefPreventionTracker>() {
-            @Override
-            public void each(Tracker tracker) {
-                if(tracker instanceof GriefPreventionTracker){
-                    GriefPreventionTracker gpTracker = (GriefPreventionTracker) tracker;
-                    if(gpTracker.doesClaimExists()){
-                        if(gpTracker.claim.getUniqueId().equals(claim.getUniqueId())){
-                            stop(gpTracker);
-                        }
-                    }
-                }
-            }
-        });
-
-        if(tracker != null){
-            return tracker;
-        }else {
-            return TrackerManager.addOrGetTracker(TrackerHolder.getHolder(new GriefPreventionTracker(claim))).getTracker();
-        }
+        GameProfile profile = ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId());
+        return PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) claim.getWorld(), profile);
     }
 
 
@@ -158,12 +154,25 @@ public class GriefPreventionHook {
             throw new CommandException("Claim is found, but it is not of a valid type.");
         }
 
-        Tracker existingTracker = ((TiqualityWorld) sender.getEntityWorld()).getTiqualityTracker(pos);
+        TiqualityWorld world = (TiqualityWorld) sender.getEntityWorld();
+
+        Tracker existingTracker = world.getTiqualityTracker(pos);
         if(existingTracker != null){
             throw new CommandException("There's already a tracker present: " + existingTracker.getInfo().getText());
         }
         sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import queued."));
-        findOrGetTrackerByClaim(claim).setBlockTrackers(new Runnable() {
+
+        Location<World> least = claim.getLesserBoundaryCorner();
+        Location<World> most = claim.getGreaterBoundaryCorner();
+
+        if(least == null || most == null){
+            return;
+        }
+
+        BlockPos leastPos = new BlockPos(least.getBlockX(), least.getBlockY(), least.getBlockZ());
+        BlockPos mostPos = new BlockPos(most.getBlockX(), most.getBlockY(), most.getBlockZ());
+
+        world.setTiqualityTrackerCuboidAsync(leastPos, mostPos, PlayerTracker.getOrCreatePlayerTrackerByProfile(world, ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId())), new Runnable() {
             @Override
             public void run() {
                 sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Importing your claim..."));
@@ -180,12 +189,8 @@ public class GriefPreventionHook {
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, CreateClaimEvent.class, createClaimHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, ChangeClaimEvent.class, claimChangeHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, TransferClaimEvent.class, transferClaimHandler);
-        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, DeleteClaimEvent.class, deleteClaimHandler);
-        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UserTrustClaimEvent.Add.class, userAddTrustHandler);
-        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, UserTrustClaimEvent.Remove.class, userRemoveTrustHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
 
-        Tracking.registerCustomTracker("GPClaim", GriefPreventionTracker.class);
         Tracking.registerCustomTracker("GPAdmin", AdminClaimTracker.class);
         MinecraftForge.EVENT_BUS.register(EventHandler.INSTANCE);
     }
@@ -214,38 +219,25 @@ public class GriefPreventionHook {
             if(event instanceof ChangeClaimEvent.Type){
                 ChangeClaimEvent.Type typeChangeEvent = (ChangeClaimEvent.Type) event;
                 for(Claim claim : event.getClaims()){
-                    GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
                     ClaimType originalType = typeChangeEvent.getOriginalType();
                     ClaimType newType = typeChangeEvent.getType();
                     if(originalType == ClaimType.BASIC || originalType == ClaimType.TOWN || originalType == ClaimType.SUBDIVISION){
                         if(newType == ClaimType.ADMIN){
-                            tracker.replaceTracker(AdminClaimTracker.INSTANCE);
+                            setClaimTrackers(claim, AdminClaimTracker.INSTANCE, null, null);
                         }
                     }else if(originalType == ClaimType.ADMIN){
                         if(newType == ClaimType.BASIC || newType == ClaimType.TOWN || newType == ClaimType.SUBDIVISION) {
-
                             Location<World> lesser = claim.getLesserBoundaryCorner();
-                            Location<World> greater = claim.getGreaterBoundaryCorner();
-
                             Scheduler.INSTANCE.schedule(new Runnable() {
                                 @Override
                                 public void run() {
-
-                                    BlockPos startPos = new BlockPos(
-                                            lesser.getBlockX(),
-                                            lesser.getBlockY(),
-                                            lesser.getBlockZ()
-                                    );
-
-                                    BlockPos endPos = new BlockPos(
-                                            greater.getBlockX(),
-                                            greater.getBlockY(),
-                                            greater.getBlockZ()
-                                    );
                                     TiqualityWorld world = (TiqualityWorld) claim.getWorld();
 
-                                    GriefPreventionTracker newTracker = GriefPreventionHook.findOrGetTrackerByClaim(GriefPrevention.getApi().getClaimManager((World) world).getClaimAt(lesser));
-                                    newTracker.setBlockTrackers(null, null);
+                                    Tracker newTracker = GriefPreventionHook.findOrGetTrackerByClaim(GriefPrevention.getApi().getClaimManager((World) world).getClaimAt(lesser));
+                                    if(newTracker == null){
+                                        return;
+                                    }
+                                    setClaimTrackers(claim, newTracker, null, null);
                                 }
                             });
 
@@ -253,11 +245,15 @@ public class GriefPreventionHook {
                     }
                 }
             }else if(event instanceof ChangeClaimEvent.Resize){
-                GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(((ChangeClaimEvent.Resize) event).getResizedClaim());
+                Claim resizedClaim = ((ChangeClaimEvent.Resize) event).getResizedClaim();
+                Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(resizedClaim);
+                if(tracker == null){
+                    return;
+                }
                 Tiquality.SCHEDULER.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        tracker.setBlockTrackers(null, null);
+                        setClaimTrackers(resizedClaim, tracker, null,null);
                     }
                 });
             }
@@ -267,46 +263,12 @@ public class GriefPreventionHook {
     private static class TransferClaimEventHandler implements EventListener<TransferClaimEvent>{
         @Override
         public void handle(@Nonnull TransferClaimEvent event) {
-            UUID newUUID = event.getNewOwner();
             for(Claim claim : event.getClaims()){
-                GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.setOwner(newUUID);
-            }
-        }
-    }
-
-    private static class DeleteClaimEventHandler implements EventListener<DeleteClaimEvent>{
-        @Override
-        public void handle(@Nonnull DeleteClaimEvent event) {
-            Object source = event.getSource();
-            if(source instanceof EntityPlayer){
-                EntityPlayer player = (EntityPlayer) source;
-                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] Claim removal detected, updating trackers..."));
-
-                for(Claim claim : event.getClaims()){
-                    GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                    tracker.replaceTracker(PlayerTracker.getOrCreatePlayerTrackerByProfile(player.getGameProfile()));
+                Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
+                if(tracker == null){
+                    continue;
                 }
-            }
-        }
-    }
-
-    private static class UserAddTrustClaimEventHandler implements EventListener<UserTrustClaimEvent.Add>{
-        @Override
-        public void handle(@Nonnull UserTrustClaimEvent.Add event) {
-            for(Claim claim : event.getClaims()){
-                GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.updatePlayers();
-            }
-        }
-    }
-
-    private static class UserRemoveTrustClaimEventHandler implements EventListener<UserTrustClaimEvent.Remove>{
-        @Override
-        public void handle(@Nonnull UserTrustClaimEvent.Remove event) {
-            for(Claim claim : event.getClaims()){
-                GriefPreventionTracker tracker = findOrGetTrackerByClaim(claim);
-                tracker.updatePlayers();
+                setClaimTrackers(claim, tracker, null, null);
             }
         }
     }
@@ -314,10 +276,10 @@ public class GriefPreventionHook {
     private static class BorderClaimEventHandler implements EventListener<BorderClaimEvent>{
         @Override
         public void handle(@Nonnull BorderClaimEvent event) {
-            TiqualityEntity entity = (TiqualityEntity) event.getTargetEntity();
-            Claim claim = event.getEnterClaim();
-            if(GriefPreventionHook.isValidClaim(claim) && (entity.getTracker() instanceof GriefPreventionTracker == false)){
-                entity.setTracker(findOrGetTrackerByClaim(claim));
+            Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(event.getEnterClaim());
+            if(tracker != null){
+                TiqualityEntity entity = (TiqualityEntity) event.getTargetEntity();
+                entity.setTrackerHolder(tracker.getHolder());
             }
         }
     }

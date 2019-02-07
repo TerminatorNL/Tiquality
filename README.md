@@ -25,7 +25,7 @@ This encourages server friendly build behavior, and attempts to not ruin gamepla
 ## Behavior
 Blocks without an owner which are not specified in the config cannot update. This includes freshly generated areas. To keep functionality like leaf decay and grass growth, you can **whitelist** blocks in the config. Whitelisted blocks do not need an owner in order to tick.
 
-If a player places a block, Tiquality will assign that block to that player's personal tracker. This tracker will perform future updates for that block, using the time constraint of the player that placed the block.
+If a player places a block, Tiquality will assign that block to that player's personal trackerHolder. This trackerHolder will perform future updates for that block, using the time constraint of the player that placed the block.
 
 If more players log in, the time will be divided more. If a player doesn't use up all of his tick time, other's will receive the remaining time.
 
@@ -81,7 +81,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * tiquality.admin
    
  * /tq import_griefprevention_claim
-   * Will update the GriefPrevention claim (where you are currently standing) existing before Tiquality was installed with TiqualityTrackers. You must use this command if the command above loaded a corrupt chunk you do not intend to fix. You only need to run this once for each claim that existed before Tiquality was installed! This command is hidden from TAB autocompletion. Abuse is prevented by only updating if no tracker yet exists.
+   * Will update the GriefPrevention claim (where you are currently standing) existing before Tiquality was installed with TiqualityTrackers. You must use this command if the command above loaded a corrupt chunk you do not intend to fix. You only need to run this once for each claim that existed before Tiquality was installed! This command is hidden from TAB autocompletion. Abuse is prevented by only updating if no trackerHolder yet exists.
    * tiquality.use
 
 ## Frequently asked questions
@@ -109,7 +109,7 @@ Block below: minecraft:piston tracked only Status: Tracked by: Terminator_NL
 ```
 We can break this down:
  - "minecraft:piston" is the block name
- - "tracked only" means that this block will only tick if a tracker has been assigned (See: [/tq track](#commands-and-permissions))
+ - "tracked only" means that this block will only tick if a trackerHolder has been assigned (See: [/tq track](#commands-and-permissions))
  - "Tracked by : XXX" tells us if a block is tracked or not, in this case: It is tracked by me.
  
 Another example of `tq info`:
@@ -119,7 +119,7 @@ Block below: minecraft:sand whitelisted Status: Not tracked
 We can break this down:
  - "minecraft:sand" is the block name
  - "whitelisted" means that this block **type** will tick, regardless of it being tracked or not.
- - "Not tracked" tells us that no tracker has been assigned to this block.
+ - "Not tracked" tells us that no trackerHolder has been assigned to this block.
 
 Recommended usage:
  - `tq info point` which allows you to see what blocks are tracked simply by looking at them, and sneaking.
@@ -128,9 +128,9 @@ Recommended usage:
 ### My blocks don't tick! What do I do?
 
 A block will tick if at least one of the following statements is true:
- - There's a Tracker assigned and the tracker has enough time to tick the block
- - The block is defined in the config (`AUTO_WORLD_ASSIGNED_OBJECTS`) and the tracker has enough time to tick the block
- - The block is defined in the config (`TICKFORCING`) It will tick even if a tracker has been assigned that ran out of time.
+ - There's a Tracker assigned and the trackerHolder has enough time to tick the block
+ - The block is defined in the config (`AUTO_WORLD_ASSIGNED_OBJECTS`) and the trackerHolder has enough time to tick the block
+ - The block is defined in the config (`TICKFORCING`) It will tick even if a trackerHolder has been assigned that ran out of time.
  
 The fastest way to solve this is simply by standing on the block and running `/tq add below`. It will add the block to the config under `AUTO_WORLD_ASSIGNED_OBJECTS`.
 
@@ -147,7 +147,7 @@ Protip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actuall
 
 
 ### I just installed Tiquality, and the TPS is HORRIBLE!
-This is because blocks are trying to tick, but have no tracker assigned. If you don't have GriefPrevention installed, you have to reset your world to fully enjoy Tiquality.
+This is because blocks are trying to tick, but have no trackerHolder assigned. If you don't have GriefPrevention installed, you have to reset your world to fully enjoy Tiquality.
 
 If you do have GriefPrevention installed: try to use the `/tq import_griefprevention` command. Be wary, as most servers contain corrupted chunks, and this command will load them.
 If you can't import because you have corrupted chunks, use: `/tq import_griefprevention_claim`. It will only import the claim you are currently standing in, but after everyone runs that command everything should be running smooth.

@@ -1,18 +1,14 @@
 package cf.terminator.tiquality.tracking;
 
-import cf.terminator.tiquality.Tiquality;
-import cf.terminator.tiquality.concurrent.ThreadSafeSet;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
-import cf.terminator.tiquality.util.PersistentData;
 import net.minecraft.nbt.NBTTagCompound;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @SuppressWarnings("WeakerAccess")
 public class TrackerManager {
@@ -24,25 +20,39 @@ public class TrackerManager {
     public static final HashMap<String, Class<? extends Tracker>> REGISTERED_TRACKER_TYPES = new HashMap<>();
 
     /**
-     * Variable holding all PlayerTrackers.
+     * Variable holding all TrackerHolders, and thus: trackers.
      */
-    private static final ThreadSafeSet<TrackerHolder> TRACKER_LIST = new ThreadSafeSet<>(new CopyOnWriteArraySet<>());
-
+    private static final TreeMap<Long, TrackerHolder> TRACKER_LIST = new TreeMap<>();
+    private static final ReentrantLock TRACKER_LIST_LOCK = new ReentrantLock();
     /**
      * Loop over the protected set.
      */
     public static <T> T foreach(Action<T> foreach){
-        TRACKER_LIST.lock();
+        TRACKER_LIST_LOCK.lock();
         try {
-            for (TrackerHolder tracker : TRACKER_LIST) {
-                foreach.each(tracker.getTracker());
+            for (TrackerHolder holder : TRACKER_LIST.values()) {
+                foreach.each(holder.getTracker());
                 if (foreach.stop) {
                     return foreach.value;
                 }
             }
             return foreach.value;
         }finally {
-            TRACKER_LIST.unlock();
+            TRACKER_LIST_LOCK.unlock();
+        }
+    }
+
+    /**
+     * Gets a tracker by ID, but ONLY if it's currently loaded.
+     */
+    @Nullable
+    public static Tracker getTrackerByID(long id){
+        TRACKER_LIST_LOCK.lock();
+        try{
+            TrackerHolder holder = TRACKER_LIST.get(id);
+            return holder == null ? null : holder.getTracker();
+        }finally {
+            TRACKER_LIST_LOCK.unlock();
         }
     }
 
@@ -52,11 +62,11 @@ public class TrackerManager {
      * @param time the time (System.nanoTime()) when the ticking should stop.
      */
     public static void tickUntil(long time){
-        TRACKER_LIST.lock();
+        TRACKER_LIST_LOCK.lock();
         boolean hasWork = true;
         while(System.nanoTime() < time && hasWork) {
             hasWork = false;
-            for(TrackerHolder holder : TRACKER_LIST){
+            for(TrackerHolder holder : TRACKER_LIST.values()){
                 Tracker tracker = holder.getTracker();
                 if(tracker.needsTick()){
                     hasWork = true;
@@ -64,48 +74,24 @@ public class TrackerManager {
                 }
             }
         }
-        TRACKER_LIST.unlock();
+        TRACKER_LIST_LOCK.unlock();
     }
 
     /**
      * Removes trackers which do not tick anymore due to their tickables being unloaded
      */
     public static void removeInactiveTrackers(){
-        TRACKER_LIST.lock();
-
-        Set<TrackerHolder> removables = new HashSet<>();
-
-        for (TrackerHolder holder : TRACKER_LIST){
-            Tracker tracker = holder.getTracker();
-            if (tracker.shouldUnload()) {
+        TRACKER_LIST_LOCK.lock();
+        TRACKER_LIST.entrySet().removeIf(entry -> {
+            Tracker tracker = entry.getValue().getTracker();
+            if(tracker.shouldUnload()){
                 tracker.onUnload();
-                removables.add(holder);
+                return true;
+            }else{
+                return false;
             }
-        }
-        TRACKER_LIST.removeAll(removables);
-        TRACKER_LIST.unlock();
-    }
-
-    /**
-     * Checks if a Tracker already exists with the same unique ID, if it does: Return the old one and discard the new.
-     * If not, return the new one and add the tracker.
-     * @param input the new Tracker
-     * @return input
-     */
-    public static <T extends Tracker> TrackerHolder<T> addOrGetTracker(@Nonnull TrackerHolder<T> input) {
-        TRACKER_LIST.lock();
-        try{
-            for (TrackerHolder holder : TRACKER_LIST) {
-                if(holder.getTracker().equals(input.getTracker())){
-                    //noinspection unchecked
-                    return holder;
-                }
-            }
-            TRACKER_LIST.add(input);
-        }finally {
-            TRACKER_LIST.unlock();
-        }
-        return input;
+        });
+        TRACKER_LIST_LOCK.unlock();
     }
 
     /**
@@ -115,78 +101,53 @@ public class TrackerManager {
      * @return the tracker
      */
     @Nullable
-    public static TrackerHolder getTracker(TiqualityWorld world, NBTTagCompound tagCompound){
+    public static TrackerHolder readHolder(TiqualityWorld world, NBTTagCompound tagCompound){
         String type = tagCompound.getString("type");
         if(type.equals("")){
             return null;
         }
         long id = tagCompound.getLong("id");
-        TRACKER_LIST.lock();
+        TRACKER_LIST_LOCK.lock();
         try {
-            for (TrackerHolder holder : TRACKER_LIST) {
-                if (holder.getId() == id) {
-                    return holder;
-                }
+            TrackerHolder holder = TRACKER_LIST.get(id);
+            if (holder != null) {
+                return holder;
             }
-
-            Class<? extends Tracker> clazz = REGISTERED_TRACKER_TYPES.get(type);
-            if(clazz == null){
-            /*
-                Either a mod author completely forgot to call cf.terminator.tiquality.api.Tracking.registerCustomTracker(),
-                or a mod providing a tracker has been removed since last load.
-             */
+            holder = TrackerHolder.readHolder(world, tagCompound);
+            if (holder == null) {
                 return null;
             }
-            try {
-                Tracker newTracker = clazz.newInstance().load(world, tagCompound.getCompoundTag("data"));
-                if(newTracker == null){
-                    return null;
-                }else {
-                    TRACKER_LIST.lock();
-                    try{
-                        for (TrackerHolder holder : TRACKER_LIST) {
-                            if(holder.getTracker().equals(newTracker)){
-                                return holder;
-                            }
-                        }
-                    }finally {
-                        TRACKER_LIST.unlock();
-                    }
-                    return addOrGetTracker(new TrackerHolder<>(newTracker, id));
-                }
-            } catch (Exception e) {
-                Tiquality.LOGGER.warn("An exception has occurred whilst creating a tracker:");
-                e.printStackTrace();
-                return null;
-            }
+            return holder;
         }finally {
-            TRACKER_LIST.unlock();
+            TRACKER_LIST_LOCK.unlock();
         }
     }
-
 
     /**
-     * There's a theoretical maximum of 1.8446744e+19 different Trackers per server. This should suffice.
+     * Creates a new tracker, and saves it to disk.
+     * @param tracker The tracker, it must be a newly created tracker!
+     * @param <T> The tracker.
+     * @throws IllegalStateException if the tracker already has a holder assigned, indicative of a programming error.
+     * @return the tracker holder
      */
-    public static long generateUniqueTrackerID(){
-        if(PersistentData.NEXT_FREE_TRACKER_ID.isSet() == false){
-            PersistentData.NEXT_FREE_TRACKER_ID.setLong(Long.MIN_VALUE);
+    @Nonnull
+    public static <T extends Tracker> TrackerHolder<T> createNewTrackerHolder(TiqualityWorld world, T tracker){
+        TrackerHolder<T> holder = tracker.getHolder();
+        if(holder != null){
+            throw new IllegalStateException("This tracker wants to be saved as if it was new, but it's not! : " + tracker.toString());
         }
-        long NEXT_TRACKER_ID = PersistentData.NEXT_FREE_TRACKER_ID.getLong();
-
-        synchronized (PersistentData.NEXT_FREE_TRACKER_ID) {
-            long granted = NEXT_TRACKER_ID++;
-            PersistentData.NEXT_FREE_TRACKER_ID.setLong(NEXT_TRACKER_ID);
-            return granted;
-        }
+        return TrackerHolder.createNewTrackerHolder(world, tracker);
     }
 
-    public static NBTTagCompound getTrackerTag(TrackerHolder holder){
-        NBTTagCompound tag = new NBTTagCompound();
-        tag.setString("type", holder.getTracker().getIdentifier());
-        tag.setLong("id", holder.getId());
-        tag.setTag("data", holder.getTracker().getNBT());
-        return tag;
+    public static void addTrackerHolder(TrackerHolder holder){
+        TRACKER_LIST_LOCK.lock();
+        try{
+            if(TRACKER_LIST.put(holder.getId(), holder) != null){
+                throw new IllegalStateException("Attempted to save two different trackerholder instances!");
+            }
+        }finally {
+            TRACKER_LIST_LOCK.unlock();
+        }
     }
 
     public static abstract class Action<T>{

@@ -5,6 +5,7 @@ import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.tracking.TrackerHolder;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.eventhandler.Cancelable;
@@ -27,7 +28,7 @@ public class TiqualityEvent extends Event {
         }
 
         /**
-         * Gets the associated tracker
+         * Gets the associated holder
          *
          * To prevent memory leaks, DO NOT KEEP THIS VARIABLE IN MEMORY!
          */
@@ -46,8 +47,8 @@ public class TiqualityEvent extends Event {
     }
 
     /**
-     * Fired when a tracker is assigned to a blockpos.
-     * Canceling this event will cause no tracker to be assigned.
+     * Fired when a holder is assigned to a blockpos.
+     * Canceling this event will cause no holder to be assigned.
      *
      * Remember: This can be called ASYNC. if you need to access the world, make sure it runs in the main thread.
      */
@@ -91,8 +92,8 @@ public class TiqualityEvent extends Event {
     }
 
     /**
-     * Fired when a tracker is assigned to an entire chunk at once.
-     * Canceling this event will cause no tracker to be assigned.
+     * Fired when a holder is assigned to an entire chunk at once.
+     * Canceling this event will cause no holder to be assigned.
      *
      * Remember: This can be called ASYNC. if you need to access the world, make sure it runs in the main thread.
      */
@@ -139,19 +140,19 @@ public class TiqualityEvent extends Event {
     }
 
     /**
-     * Fired when a tracker is assigned to an entity.
-     * Canceling this event will cause no tracker to be assigned.
+     * Fired when a holder is assigned to an entity.
+     * Canceling this event will cause no holder to be assigned.
      *
      * Remember: This can be called ASYNC. if you need to access the world, make sure it runs in the main thread.
      */
     @Cancelable
     public static class SetEntityTrackerEvent extends TiqualityEvent{
 
-        private Tracker tracker;
+        private TrackerHolder holder;
         private final TiqualityEntity entity;
 
-        public SetEntityTrackerEvent(TiqualityEntity entity, @Nullable Tracker tracker){
-            this.tracker = tracker;
+        public SetEntityTrackerEvent(TiqualityEntity entity, @Nullable TrackerHolder holder){
+            this.holder = holder;
             this.entity = entity;
         }
 
@@ -167,12 +168,13 @@ public class TiqualityEvent extends Event {
             return entity.getWorld();
         }
 
-        public Tracker getTracker(){
-            return tracker;
+        @Nullable
+        public TrackerHolder getHolder(){
+            return holder;
         }
 
-        public void setTracker(Tracker tracker){
-            this.tracker = tracker;
+        public void setHolder(@Nullable TrackerHolder holder){
+            this.holder = holder;
         }
 
     }

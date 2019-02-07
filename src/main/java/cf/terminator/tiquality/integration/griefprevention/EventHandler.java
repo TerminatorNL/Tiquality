@@ -3,6 +3,7 @@ package cf.terminator.tiquality.integration.griefprevention;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
+import cf.terminator.tiquality.interfaces.Tracker;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
@@ -25,34 +26,26 @@ public class EventHandler {
 
     @SubscribeEvent
     public void onClaimCreate(GPClaimCreatedFullyEvent e){
-        if(GriefPreventionHook.isValidClaim(e.getClaim()) == false){
-            return;
+        Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(e.getClaim());
+        if(tracker != null) {
+            GriefPreventionHook.setClaimTrackers(e.getClaim(), tracker, null, null);
         }
-        GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(e.getClaim());
-        tracker.setBlockTrackers(null,null);
     }
 
     @SubscribeEvent
     public void onSetTracker(TiqualityEvent.SetBlockTrackerEvent e){
-        if(e.getTracker() instanceof GriefPreventionTracker){
-            return;
-        }
         ClaimManager claimManager = GriefPrevention.getApi().getClaimManager((World) e.getMinecraftWorld());
         Location<World> pos = new Location<>((World) e.getMinecraftWorld(), e.getPos().getX(), e.getPos().getY(), e.getPos().getZ());
-
         Claim claim = claimManager.getClaimAt(pos);
         if(GriefPreventionHook.isValidClaim(claim) == false){
             return;
         }
-        GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
+        Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
         e.setTracker(tracker);
     }
 
     @SubscribeEvent
     public void onSetTracker(TiqualityEvent.SetChunkTrackerEvent e){
-        if(e.getTracker() instanceof GriefPreventionTracker){
-            return;
-        }
         Chunk chunk = (Chunk) e.getChunk();
         ClaimManager claimManager = GriefPrevention.getApi().getClaimManager((World) chunk.getWorld());
 
@@ -69,20 +62,16 @@ public class EventHandler {
                 return;
             }
         }
-
     }
 
     @SubscribeEvent
     public void onSpawn(EntityJoinWorldEvent e){
         ClaimManager manager = GriefPrevention.getApi().getClaimManager((World) e.getWorld());
         Location<World> pos = new Location<>((World) e.getWorld(), e.getEntity().posX, e.getEntity().posY, e.getEntity().posZ);
-
         Claim claim = manager.getClaimAt(pos);
-        if(GriefPreventionHook.isValidClaim(claim) == false){
-            return;
+        Tracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
+        if(tracker != null) {
+            ((TiqualityEntity) e.getEntity()).setTracker(tracker);
         }
-
-        GriefPreventionTracker tracker = GriefPreventionHook.findOrGetTrackerByClaim(claim);
-        ((TiqualityEntity) e.getEntity()).setTracker(tracker);
     }
 }

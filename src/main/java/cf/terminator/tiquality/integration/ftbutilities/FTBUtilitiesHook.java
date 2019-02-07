@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.integration.ftbutilities;
 
+import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.util.ForgeData;
 import com.feed_the_beast.ftblib.lib.data.ForgeTeam;
@@ -17,14 +18,14 @@ public class FTBUtilitiesHook {
     }
 
     @Nullable
-    public static PlayerTracker getTrackerForTeam(@Nonnull ForgeTeam team){
+    public static PlayerTracker getTrackerForTeam(TiqualityWorld world, @Nonnull ForgeTeam team){
         UUID uuid = team.owner.getId();
         GameProfile profile = ForgeData.getGameProfileByUUID(uuid);
         PlayerTracker tracker;
         if(profile.equals(ForgeData.GAME_PROFILE_NOBODY)){
             tracker = null;
         }else {
-            tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(profile);
+            tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile(world, profile);
         }
         return tracker;
     }

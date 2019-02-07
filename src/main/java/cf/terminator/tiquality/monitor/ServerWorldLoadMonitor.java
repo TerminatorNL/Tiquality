@@ -3,7 +3,6 @@ package cf.terminator.tiquality.monitor;
 import cf.terminator.tiquality.util.PersistentData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -14,7 +13,7 @@ public class ServerWorldLoadMonitor {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onLoad(ChunkEvent.Load e){
-        PersistentData.updatePersistentFileAndStorage(FMLCommonHandler.instance().getMinecraftServerInstance().getEntityWorld());
+        PersistentData.updatePersistentFileAndStorage(e.getWorld());
         MinecraftForge.EVENT_BUS.unregister(this);
     }
 }
