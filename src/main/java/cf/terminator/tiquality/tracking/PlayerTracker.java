@@ -20,7 +20,6 @@ public class PlayerTracker extends TrackerBase {
 
     private final GameProfile profile;
     private final Set<Long> sharedTo = new HashSet<>();
-    private final LinkedList<PlayerTracker> AFFECTED_TRACKERS_CACHE = new LinkedList<>();
     private TickWallet wallet = new TickWallet();
 
     /**
@@ -35,7 +34,8 @@ public class PlayerTracker extends TrackerBase {
         for(long id : sharedTo){
             TrackerHolder holder = TrackerHolder.getTrackerHolder(world, id);
             if(holder == null || holder.getTracker() instanceof PlayerTracker == false){
-                list.add(new TextComponentString(TextFormatting.RED + "Tracker ID: " + id));
+                switchSharedTo(id);
+                list.add(new TextComponentString(TextFormatting.RED + "Tracker ID: " + id + " removed!"));
             }else{
                 list.add(new TextComponentString(TextFormatting.WHITE + ((PlayerTracker) holder.getTracker()).getOwner().getName()));
             }
@@ -171,7 +171,9 @@ public class PlayerTracker extends TrackerBase {
             }
             tag.setTag("shared", sharedToTag);
         }
-        tag.setString("info_name", profile.getName());
+        /* Human readable names and UUID's. These are not accessed.*/
+        tag.setString("name", profile.getName());
+        tag.setString("uuid", profile.getId().toString());
         return tag;
     }
 

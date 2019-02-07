@@ -206,14 +206,17 @@ public abstract class MixinChunk implements TiqualityChunk {
     }
 
     @Override
-    public void tiquality_writeToNBT(NBTTagCompound tag) {
+    @Nullable
+    public NBTTagCompound tiquality_getNBT() {
         tiquality_refresh();
-        NBTTagList list = tag.getTagList("Sections", 10);
-        STORAGE.injectNBTAfter(list);
-        tag.setTag("Sections", list);
+        NBTTagCompound tag = new NBTTagCompound();
+        NBTTagCompound storageTag = STORAGE.getNBT();
+        if(storageTag != null) {
+            tag.setTag("Storage", storageTag);
+        }
         NBTTagList trackerList = new NBTTagList();
-        for(Map.Entry<Byte, Tracker> e : trackerLookup.entrySet()){
-            if(e.getValue().shouldSaveToDisk() == false){
+        for (Map.Entry<Byte, Tracker> e : trackerLookup.entrySet()) {
+            if (e.getValue().shouldSaveToDisk() == false) {
                 continue;
             }
             NBTTagCompound trackerData = new NBTTagCompound();
@@ -221,16 +224,17 @@ public abstract class MixinChunk implements TiqualityChunk {
             trackerData.setLong("tracker", e.getValue().getHolder().getId());
             trackerList.appendTag(trackerData);
         }
-        if(trackerList.tagCount() > 0) {
-            tag.setTag("Tiquality", trackerList);
+        if (trackerList.tagCount() > 0) {
+            tag.setTag("Trackers", trackerList);
         }
+        return tag.hasNoTags() ? null : tag;
     }
 
     @Override
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
         STORAGE.clearAll();
-        STORAGE.loadFromNBT(tag.getTagList("Sections", 10), getMinecraftChunk());
-        for (NBTBase nbtBase : tag.getTagList("Tiquality", 10)) {
+        STORAGE.loadFromNBT(tag.getCompoundTag("Storage"), getMinecraftChunk());
+        for (NBTBase nbtBase : tag.getTagList("Trackers", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
             long id = trackerData.getLong("tracker");
             if(id == 0){
@@ -242,7 +246,7 @@ public abstract class MixinChunk implements TiqualityChunk {
                 holder.getTracker().associateChunk(this);
                 trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
             }else{
-                Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: ", this);
+                Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: " + this);
             }
         }
     }

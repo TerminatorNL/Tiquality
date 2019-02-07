@@ -4,6 +4,7 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.TrackerHolder;
+import cf.terminator.tiquality.tracking.TrackerManager;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.text.TextComponentString;
@@ -14,12 +15,13 @@ import javax.annotation.Nonnull;
 public class AdminClaimTracker extends ForcedTracker {
 
     public static final AdminClaimTracker INSTANCE = new AdminClaimTracker();
-    private static TrackerHolder HOLDER = null;
+    private TrackerHolder<AdminClaimTracker> HOLDER;
+    private boolean isGeneratingHolder = false;
 
     /**
      * Required
      */
-    protected AdminClaimTracker() {
+    public AdminClaimTracker() {
         super();
     }
 
@@ -115,6 +117,11 @@ public class AdminClaimTracker extends ForcedTracker {
 
     @Override
     public TrackerHolder getHolder() {
+        if(HOLDER == null && isGeneratingHolder == false) {
+            isGeneratingHolder = true;
+            HOLDER = TrackerManager.createNewTrackerHolder(null, this);
+            isGeneratingHolder = false;
+        }
         return HOLDER;
     }
 

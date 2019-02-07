@@ -171,7 +171,7 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void associateChunk(TiqualityChunk chunk) {
-        throw new UnsupportedOperationException("ForcedTracker should not be associated to chunks");
+
     }
 
     @Override

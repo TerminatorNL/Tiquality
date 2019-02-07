@@ -5,9 +5,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
+import javax.annotation.Nullable;
+
 public interface TiqualityChunk extends Comparable<TiqualityChunk> {
 
-    void tiquality_writeToNBT(NBTTagCompound tag);
+    @Nullable NBTTagCompound tiquality_getNBT();
 
     void tiquality_loadNBT(World world, NBTTagCompound tag);
 

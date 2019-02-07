@@ -9,6 +9,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ChunkLoadMonitor {
 
     public static final ChunkLoadMonitor INSTANCE = new ChunkLoadMonitor();
+    public static final String TIQUALITY_TAG = "Tiquality1";
 
     private ChunkLoadMonitor(){
 
@@ -24,15 +25,18 @@ public class ChunkLoadMonitor {
     @SubscribeEvent
     public void onNBTLoad(ChunkDataEvent.Load event){
         NBTTagCompound tag = event.getData();
-        NBTTagCompound level = tag.getCompoundTag("Level");
-        ((TiqualityChunk) event.getChunk()).tiquality_loadNBT(event.getWorld(), level);
+        if(tag.hasKey(TIQUALITY_TAG)){
+            NBTTagCompound tiqualityData = tag.getCompoundTag(TIQUALITY_TAG);
+            ((TiqualityChunk) event.getChunk()).tiquality_loadNBT(event.getWorld(), tiqualityData);
+        }
     }
 
     @SubscribeEvent
     public void onNBTSave(ChunkDataEvent.Save event){
         NBTTagCompound tag = event.getData();
-        NBTTagCompound level = tag.getCompoundTag("Level");
-        ((TiqualityChunk) event.getChunk()).tiquality_writeToNBT(level);
-        tag.setTag("Level", level);
+        NBTTagCompound tiqualityData = ((TiqualityChunk) event.getChunk()).tiquality_getNBT();
+        if(tiqualityData != null) {
+            tag.setTag(TIQUALITY_TAG, tiqualityData);
+        }
     }
 }

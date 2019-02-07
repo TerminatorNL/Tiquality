@@ -1,16 +1,15 @@
 package cf.terminator.tiquality.world;
 
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  * Keep in mind the data in this class is treated as bytes, even during bitwise operations, I chose
@@ -128,34 +127,25 @@ public class ChunkStorage {
         }
     }
 
-    public void loadFromNBT(NBTTagList sections, Chunk chunk){
-        Iterator<NBTBase> iterator = sections.iterator();
-        while(iterator.hasNext()){
-            NBTTagCompound tag = (NBTTagCompound) iterator.next();
-            if(tag.hasKey("Tiquality")){
-                byte y_level = tag.getByte("Y");
-                byte[] storage = tag.getByteArray("Tiquality");
-                data[y_level] = new Element(storage);
-                data[y_level].queueMarkedForUpdate(chunk, y_level);
-            }
+    public void loadFromNBT(@Nonnull NBTTagCompound list, @Nonnull Chunk chunk){
+        for(String key : list.getKeySet()){
+            int y = Integer.valueOf(key);
+            byte[] storage = list.getByteArray(key);
+            data[y] = new Element(storage);
+            data[y].queueMarkedForUpdate(chunk, y);
         }
     }
 
-    public void injectNBTAfter(NBTTagList sections){
+    @Nullable
+    public NBTTagCompound getNBT(){
+        NBTTagCompound list = new NBTTagCompound();
         for(int i=0;i<data.length;++i){
             Element e = data[i];
-            if(e != null){
-                if(e.hasData() == false){
-                    continue;
-                }
-                if(i >= sections.tagCount()){
-                    continue;
-                }
-                NBTTagCompound injectable = sections.getCompoundTagAt(i);
-                injectable.setByteArray("Tiquality",e.getData());
-                sections.set(i, injectable);
+            if(e != null && e.hasData()){
+                list.setByteArray(Integer.toString(i),e.getData());
             }
         }
+        return list.getSize() == 0 ? null : list;
     }
 
     public static class Element{
@@ -177,7 +167,7 @@ public class ChunkStorage {
 
         boolean hasData(){
             for(byte b : storage){
-                if(b <= -1 || b >= 1){
+                if(b != 0){
                     return true;
                 }
             }
