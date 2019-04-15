@@ -16,17 +16,18 @@ import cf.terminator.tiquality.util.ForgeData;
 import cf.terminator.tiquality.util.SimpleProfiler;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -48,7 +49,7 @@ public class CommandExecutor {
         StringBuilder builder = new StringBuilder();
 
         if (holder.hasPermission(PermissionHolder.Permission.USE)) {
-            builder.append("Usage: /tiquality <info [point] | track | share | profile <secs>");
+            builder.append("Usage: /tiquality <info [point] | track | share | notify | profile <secs>");
         }
         if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
             builder.append(" [target] | reload | set");
@@ -128,23 +129,34 @@ public class CommandExecutor {
                 return;
             }
 
-            Block blockAtFeet = player.getEntityWorld().getBlockState(player.getPosition()).getBlock();
-            Block blockBelowFeet = player.getEntityWorld().getBlockState(player.getPosition().down()).getBlock();
+            World world = player.getEntityWorld();
+
+            BlockPos blockPosAtFeet = player.getPosition();
+            BlockPos blockPosBelowFeet = player.getPosition().down();
+
+            IBlockState stateAtFeet = player.getEntityWorld().getBlockState(blockPosAtFeet);
+            IBlockState stateBelowFeet = player.getEntityWorld().getBlockState(blockPosBelowFeet);
+
+            Block blockAtFeet = stateAtFeet.getBlock();
+            Block blockBelowFeet = stateBelowFeet.getBlock();
 
             UpdateType feetUpdateType = ((TiqualityBlock) blockAtFeet).getUpdateType();
             UpdateType belowUpdateType = ((TiqualityBlock) blockBelowFeet).getUpdateType();
 
+            boolean isBlockAtFeetAir = blockAtFeet.isAir(stateAtFeet, world, blockPosAtFeet);
+            boolean isBlockBelowFeetAir = blockBelowFeet.isAir(stateBelowFeet, world, blockPosBelowFeet);
+
             player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Info:"));
-            if (blockAtFeet == Blocks.AIR && blockBelowFeet == Blocks.AIR) {
+            if (isBlockAtFeetAir && isBlockBelowFeetAir) {
                 throw new CommandException("Please stand on top of a block and run this command again.");
             }
-            if (blockBelowFeet != Blocks.AIR) {
+            if (isBlockBelowFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
                         TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: " + belowUpdateType.getText().getFormattedText() + TextFormatting.WHITE + " Status: " + message.getText()));
             }
-            if (blockAtFeet != Blocks.AIR) {
+            if (isBlockAtFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
                 player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
@@ -184,12 +196,12 @@ public class CommandExecutor {
             Block blockToAdd;
             if (mode.equalsIgnoreCase("feet")) {
                 blockToAdd = player.getEntityWorld().getBlockState(player.getPosition()).getBlock();
-                if (blockToAdd == Blocks.AIR) {
+                if (player.getEntityWorld().isAirBlock(player.getPosition())) {
                     throw new CommandException("Please stand with your feet in a block (like water) and run this command again.");
                 }
             } else if (mode.equalsIgnoreCase("below")) {
                 blockToAdd = player.getEntityWorld().getBlockState(player.getPosition().down()).getBlock();
-                if (blockToAdd == Blocks.AIR) {
+                if (player.getEntityWorld().isAirBlock(player.getPosition().down())) {
                     throw new CommandException("Please stand on top of a block and run this command again.");
                 }
             } else {
@@ -209,7 +221,7 @@ public class CommandExecutor {
                 @Override
                 public void run() {
                     ResourceLocation resourceLocation = Block.REGISTRY.getNameForObject(blockToAdd);
-                    String identifier = resourceLocation.getResourceDomain() + ":" + resourceLocation.getResourcePath();
+                    String identifier = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
 
                     /* Clear current status */
                     {
@@ -268,6 +280,29 @@ public class CommandExecutor {
                     player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Done."));
                 }
             });
+        /*
+
+            NOTIFY
+
+         */
+        }else if(args[0].equalsIgnoreCase("notify")){
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("Only players can use the notify command!");
+            }
+            EntityPlayer player = (EntityPlayer) sender;
+            boolean newNotifySetting = TrackerManager.foreach(new TrackerManager.Action<PlayerTracker>() {
+                @Override
+                public void each(Tracker tracker) {
+                    if(tracker instanceof PlayerTracker){
+                        if(((PlayerTracker) tracker).getOwner().getId().equals(player.getGameProfile().getId())){
+                            stop((PlayerTracker) tracker);
+                        }
+                    }
+                }
+            }).switchNotify();
+
+            sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "Notifications " + (newNotifySetting ? "enabled" : "disabled") + "."));
         /*
 
             PROFILE
@@ -429,6 +464,7 @@ public class CommandExecutor {
             addIfStartsWith(list, start, "track");
             addIfStartsWith(list, start, "info");
             addIfStartsWith(list, start, "profile");
+            addIfStartsWith(list, start, "notify");
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)){
                 addIfStartsWith(list, start, "add");
                 addIfStartsWith(list, start, "reload");

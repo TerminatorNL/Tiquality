@@ -113,7 +113,7 @@ public class ForcedTracker implements Tracker {
      * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
+    public void tickSimpleTickable(TiqualitySimpleTickable tileEntity){
         if(isProfiling) {
             long start = System.nanoTime();
             Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
@@ -167,6 +167,11 @@ public class ForcedTracker implements Tracker {
     @Override
     public void grantTick() {
         throw new UnsupportedOperationException("ForcedTracker does not need ticks");
+    }
+
+    @Override
+    public void addTickableToQueue(TiqualitySimpleTickable tickable) {
+        tickable.doUpdateTick();
     }
 
     @Override

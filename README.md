@@ -22,7 +22,7 @@ This encourages server friendly build behavior, and attempts to not ruin gamepla
 ## Behavior
 Blocks without an owner which are not specified in the config cannot update. This includes freshly generated areas. To keep functionality like leaf decay and grass growth, you can **whitelist** blocks in the config. Whitelisted blocks do not need an owner in order to tick.
 
-If a player places a block, Tiquality will assign that block to that player's personal trackerHolder. This trackerHolder will perform future updates for that block, using the time constraint of the player that placed the block.
+If a player places a block, Tiquality will assign that block to that player's personal tracker. This tracker will perform future updates for that block, using the time constraint of the player that placed the block.
 
 If more players log in, the time will be divided more. If a player doesn't use up all of his tick time, other's will receive the remaining time.
 
@@ -102,7 +102,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * tiquality.admin
    
  * /tq import_griefprevention_claim
-   * Will update the GriefPrevention claim (where you are currently standing) existing before Tiquality was installed with TiqualityTrackers. You must use this command if the command above loaded a corrupt chunk you do not intend to fix. You only need to run this once for each claim that existed before Tiquality was installed! This command is hidden from TAB autocompletion. Abuse is prevented by only updating if no trackerHolder yet exists.
+   * Will update the GriefPrevention claim (where you are currently standing) existing before Tiquality was installed with TiqualityTrackers. You must use this command if the command above loaded a corrupt chunk you do not intend to fix. You only need to run this once for each claim that existed before Tiquality was installed! This command is hidden from TAB autocompletion. Abuse is prevented by only updating if no tracker yet exists.
    * tiquality.use
 
 ## Frequently asked questions
@@ -149,9 +149,9 @@ Recommended usage:
 ### My blocks don't tick! What do I do?
 
 A block will tick if at least one of the following statements is true:
- - There's a Tracker assigned and the trackerHolder has enough time to tick the block
- - The block is defined in the config (`AUTO_WORLD_ASSIGNED_OBJECTS`) and the trackerHolder has enough time to tick the block
- - The block is defined in the config (`TICKFORCING`) It will tick even if a trackerHolder has been assigned that ran out of time.
+ - There's a Tracker assigned and the tracker has enough time to tick the block
+ - The block is defined in the config (`AUTO_WORLD_ASSIGNED_OBJECTS`) and the tracker has enough time to tick the block
+ - The block is defined in the config (`TICKFORCING`) It will tick even if a tracker has been assigned that ran out of time.
  
 The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under `AUTO_WORLD_ASSIGNED_OBJECTS`.
 

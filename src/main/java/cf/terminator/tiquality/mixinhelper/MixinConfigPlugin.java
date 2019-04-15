@@ -32,13 +32,27 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
             File thisJar = new File(Tiquality.class.getProtectionDomain().getCodeSource().getLocation().getFile());
             LOGGER.info("I am located here: " + thisJar);
             MIXIN_CONFIG_PLUGIN_WAS_LOADED = true;
+
+            for(StackTraceElement element : Thread.currentThread().getStackTrace()){
+                if(element.getClassName().equals("net.minecraftforge.fml.relauncher.ServerLaunchWrapper")){
+                    hasClientClasses = false;
+                    break;
+                }else if(element.getClassName().equals("GradleStartServer")){
+                    hasClientClasses = false;
+                    break;
+                }
+            }
+
             if(getClass().getClassLoader().getResource("net/minecraft/client/main/Main.class") == null){
                 hasClientClasses = false;
-                LOGGER.info("Loading server classes");
-            }else{
-                hasClientClasses = true;
-                LOGGER.info("Loading client classes");
             }
+
+            if(hasClientClasses){
+                LOGGER.info("Loading client classes");
+            }else{
+                LOGGER.info("Loading server classes");
+            }
+
             try {
                 Class.forName("org.spongepowered.mod.SpongeCoremod", false, getClass().getClassLoader());
                 LOGGER.info("Sponge is present!");
@@ -60,8 +74,6 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
                 LOGGER.info("We're running in a deobfuscated environment.");
             }
         }
-
-
     }
 
     private boolean shouldApplyMixin(String mixin){
@@ -79,7 +91,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
             }
         }
         if(hasClientClasses == false){
-            switch (mixin){
+            switch (mixin) {
                 case "cf.terminator.tiquality.mixin.MixinChunkProviderClient":
                 case "cf.terminator.tiquality.mixin.MixinWorldClient":
                     return false;
@@ -87,7 +99,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
         }
         if(mixin.equals("cf.terminator.tiquality.mixin.MixinHopperlag")) {
             if (isProductionEnvironment() == false) {
-                LOGGER.info("Hoppers now have an update time of 5 milliseconds! This is done on purpose, because you don't run in a production environment!");
+                LOGGER.warn("Hoppers now have an update time of 5 milliseconds! This is done on purpose, because you don't run in a production environment!");
                 return true;
             }else{
                 return false;

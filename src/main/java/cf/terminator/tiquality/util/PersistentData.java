@@ -3,7 +3,7 @@ package cf.terminator.tiquality.util;
 import cf.terminator.tiquality.Tiquality;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,9 +22,9 @@ public enum PersistentData {
     private static File persistentFile;
     private static NBTTagCompound storage;
 
-    public static void updatePersistentFileAndStorage(World world){
+    public static void updatePersistentFileAndStorage(){
         try {
-            persistentFile = new File(world.getSaveHandler().getWorldDirectory(), "TiqualityStorage.nbt");
+            persistentFile = new File(DimensionManager.getCurrentSaveRootDirectory(), "TiqualityStorage.nbt");
             Tiquality.LOGGER.info("Persistent data is inside: " + persistentFile.getCanonicalPath());
             NBTTagCompound read_tag = CompressedStreamTools.read(persistentFile);
             storage = read_tag == null ? new NBTTagCompound() : read_tag;

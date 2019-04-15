@@ -6,11 +6,14 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 
+import java.text.DecimalFormat;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
+
+    public static DecimalFormat TWO_DECIMAL_FORMATTER = new DecimalFormat("#0.00");
 
     public static class BlockPos{
         public static net.minecraft.util.math.BlockPos getMax(net.minecraft.util.math.BlockPos a, net.minecraft.util.math.BlockPos b){

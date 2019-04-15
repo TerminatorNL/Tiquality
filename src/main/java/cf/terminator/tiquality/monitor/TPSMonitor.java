@@ -42,7 +42,7 @@ public class TPSMonitor {
 
     /**
      * Gets the average time in nanoseconds per tick.
-     * This variable will fluctuate between 0 and 1000000000, but
+     * This variable will fluctuate between 1 and 1000000000, but
      * values above 1000000000 are possible as well.
      * @return the average time in nanoseconds.
      */
@@ -52,7 +52,7 @@ public class TPSMonitor {
             total = total.add(BigInteger.valueOf(duration));
         }
 
-        return total.divide(BigInteger.valueOf(measure_ticks)).longValue();
+        return Math.max(1L, total.divide(BigInteger.valueOf(measure_ticks)).longValue());
     }
 
     /**

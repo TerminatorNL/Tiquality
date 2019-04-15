@@ -96,6 +96,32 @@ public class TiqualityConfig {
     })
     public static int MAX_CLAIM_RADIUS = 50;
 
+    @Config.Comment({
+            "When a tracker is being throttled, we can send a notification to the user.",
+            "Throttling is measured by comparing the full tick cycles within ticking queues and comparing that to the server ticks.",
+            "Every 50 server ticks the amount of completed full ticks of the tracker is compared.",
+            "",
+            "If the tracker is falling behind (actively throttling) the value for this tracker gets closer to zero. In",
+            "comparison, a tracker that runs at full speed will have a value of 1",
+            "Whenever the value falls below the value specified here, a warning will be sent to the tracker",
+            "",
+            "Set to 0 to disable",
+            "",
+            "Note: If the server is ticking at 18 TPS, the tracker can still have a value of 1. Server tick speed does not impact this value."
+    })
+    @Config.RangeDouble(min = 0, max = 1)
+    public static double DEFAULT_THROTTLE_WARNING_LEVEL = 0.8;
+
+
+    @Config.Comment({
+            "When a tracker is being throttled, we can send a notification to the user.",
+            "How often do you want the user to receive a message about his/her personal tick speed?",
+            "",
+            "Note: If you don't want to send a message at all, set DEFAULT_THROTTLE_WARNING_LEVEL to 0."
+    })
+    @Config.RangeInt(min = 0)
+    public static int DEFAULT_THROTTLE_WARNING_INTERVAL_SECONDS = 600;
+
     public static class QuickConfig{
 
         private static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();

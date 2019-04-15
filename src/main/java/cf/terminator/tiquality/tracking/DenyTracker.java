@@ -145,7 +145,7 @@ public class DenyTracker implements Tracker {
      * @param tileEntity t
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tileEntity) {
+    public void tickSimpleTickable(TiqualitySimpleTickable tileEntity) {
 
     }
 
@@ -187,6 +187,11 @@ public class DenyTracker implements Tracker {
     @Override
     public void grantTick() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addTickableToQueue(TiqualitySimpleTickable tickable) {
+
     }
 
     @Override

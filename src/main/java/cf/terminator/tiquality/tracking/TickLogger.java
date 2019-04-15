@@ -42,6 +42,9 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
      * @param nanos nanoseconds the block just consumed.
      */
     public void addNanosAndIncrementCalls(Location location, long nanos){
+        if(location == null){
+            return;
+        }
         Metrics metrics = data.get(location);
         if(metrics == null){
             metrics = new Metrics();

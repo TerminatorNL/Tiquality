@@ -80,6 +80,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
 
 
@@ -106,7 +107,7 @@ public class Tiquality {
         TICK_MASTER = new TickMaster(e.getServer());
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(new ServerWorldLoadMonitor());
+        MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
         Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
         Tracking.registerCustomTracker("Forced", ForcedTracker.class);

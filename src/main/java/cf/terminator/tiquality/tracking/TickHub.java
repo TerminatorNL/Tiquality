@@ -43,10 +43,10 @@ public class TickHub {
         TileEntity entity = (TileEntity) tickable;
         Tracker tracker = ((TiqualityWorld)entity.getWorld()).getTiqualityTracker(entity.getPos());
         if(tracker != null) {
-            tracker.tickTileEntity((TiqualitySimpleTickable) entity);
+            tracker.tickSimpleTickable((TiqualitySimpleTickable) entity);
         }else{
             if(((TiqualityBlock) entity.getBlockType()).getUpdateType().mustTick(null)){
-                ForcedTracker.INSTANCE.tickTileEntity((TiqualitySimpleTickable) tickable);
+                ForcedTracker.INSTANCE.tickSimpleTickable((TiqualitySimpleTickable) tickable);
             }else{
                 ((TiqualityWorld)entity.getWorld()).setTiqualityTracker(entity.getPos(), DenyTracker.INSTANCE);
             }

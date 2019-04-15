@@ -1,7 +1,9 @@
-package cf.terminator.tiquality.util;
+package cf.terminator.tiquality.tracking.tickqueue;
 
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
+import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.memory.WeakReferencedTracker;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.util.math.BlockPos;
 
@@ -17,7 +19,18 @@ import static cf.terminator.tiquality.TiqualityConfig.UPDATE_ITEMS_FIRST;
  */
 public class TickQueue {
 
-    private LinkedList<TiqualitySimpleTickable> data = new LinkedList<>();
+    private final LinkedList<TiqualitySimpleTickable> data = new LinkedList<>();
+    public final WeakReferencedTracker tracker;
+    public final RelativeTPSTracker relativeTPSTracker;
+
+    public TickQueue(Tracker tracker){
+        this.tracker = new WeakReferencedTracker(tracker);
+        this.relativeTPSTracker = new RelativeTPSTracker(this);
+    }
+
+    public void notifyNextTick(){
+        relativeTPSTracker.notifyNextTick();
+    }
 
     public boolean containsBlockUpdate(TiqualityWorld world, BlockPos pos){
         return world.tiquality_isMarked(pos);
@@ -35,12 +48,20 @@ public class TickQueue {
         return entity.tiquality_isMarked();
     }
 
-    public void addToQueue(TiqualitySimpleTickable obj){
-        obj.tiquality_mark();
-        if(UPDATE_ITEMS_FIRST && obj instanceof EntityItem){
-            data.addFirst(obj);
+    public boolean containsSimpleUpdate(TiqualitySimpleTickable update){
+        return update.tiquality_isMarked();
+    }
+
+    /**
+     * Add this tickable to the queue, which can be executed in the current tick.
+     * @param tickable the tickable
+     */
+    public void addToQueue(TiqualitySimpleTickable tickable){
+        tickable.tiquality_mark();
+        if(UPDATE_ITEMS_FIRST && tickable instanceof EntityItem){
+            data.addFirst(tickable);
         }else{
-            data.addLast(obj);
+            data.addLast(tickable);
         }
     }
 
@@ -48,6 +69,12 @@ public class TickQueue {
         TiqualitySimpleTickable t = data.removeFirst();
         t.tiquality_unMark();
         return t;
+    }
+
+    public void tickAll(){
+        while(data.size() > 0){
+            take().doUpdateTick();
+        }
     }
 
     public int size(){

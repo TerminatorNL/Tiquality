@@ -1,24 +1,32 @@
 package cf.terminator.tiquality.tracking;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.ForgeData;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
 import java.util.*;
+
+import static cf.terminator.tiquality.util.Utils.TWO_DECIMAL_FORMATTER;
 
 @SuppressWarnings("WeakerAccess")
 public class PlayerTracker extends TrackerBase {
 
     private final GameProfile profile;
+    private boolean notifyUser = true;
+    private long nextMessageMillis = 0L;
     private final Set<Long> sharedTo = new HashSet<>();
     private TickWallet wallet = new TickWallet();
 
@@ -41,6 +49,11 @@ public class PlayerTracker extends TrackerBase {
             }
         }
         return list;
+    }
+
+    public boolean switchNotify(){
+        notifyUser = notifyUser == false;
+        return notifyUser;
     }
 
     public boolean switchSharedTo(long id){
@@ -67,10 +80,34 @@ public class PlayerTracker extends TrackerBase {
 
     @Override
     public void tick(){
+        super.tick();
         for(Long id : sharedTo){
             Tracker tracker = TrackerManager.getTrackerByID(id);
             if(tracker instanceof PlayerTracker){
                 ((PlayerTracker) tracker).addWallet(this.wallet);
+            }
+        }
+    }
+
+    /**
+     * Notify this tracker about it's performance falling behind.
+     * @param ratio the tracker's speed compared to the server tick time.
+     */
+    public void notifyFallingBehind(double ratio) {
+        if(notifyUser && System.currentTimeMillis() > nextMessageMillis){
+            nextMessageMillis = System.currentTimeMillis() + (TiqualityConfig.DEFAULT_THROTTLE_WARNING_INTERVAL_SECONDS * 1000);
+            Entity e = FMLCommonHandler.instance().getMinecraftServerInstance().getEntityFromUuid(getOwner().getId());
+            if(e instanceof EntityPlayer){
+                EntityPlayer player = (EntityPlayer) e;
+                player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Warning: " + TextFormatting.GRAY + "Your blocks tick at " + (Math.round(ratio * 10000D)/100D) + "% speed. (See: /tq notify)"), true);
+                double serverTPS_raw = Tiquality.TPS_MONITOR.getAverageTPS();
+
+                String serverTPS = TWO_DECIMAL_FORMATTER.format(Math.round(serverTPS_raw * 100D) / 100D);
+                String playerTPS = TWO_DECIMAL_FORMATTER.format(Math.round(serverTPS_raw * ratio * 100D)/100D);
+
+
+
+                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "]" + TextFormatting.GRAY + " Server TPS: " + TextFormatting.WHITE + serverTPS + TextFormatting.GRAY + " Your TPS: " + TextFormatting.WHITE + playerTPS + TextFormatting.DARK_GRAY + "         (/tq notify)"));
             }
         }
     }
@@ -98,6 +135,7 @@ public class PlayerTracker extends TrackerBase {
                 tracker.sharedTo.add(((NBTTagLong) base).getLong());
             }
         }
+        tracker.notifyUser = trackerTag.getBoolean("notify");
         return tracker;
     }
 
@@ -164,6 +202,7 @@ public class PlayerTracker extends TrackerBase {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setLong("uuidMost", profile.getId().getMostSignificantBits());
         tag.setLong("uuidLeast", profile.getId().getLeastSignificantBits());
+        tag.setBoolean("notify",notifyUser);
         if(sharedTo.size() > 0) {
             NBTTagList sharedToTag = new NBTTagList();
             for(long id : sharedTo){
@@ -217,7 +256,7 @@ public class PlayerTracker extends TrackerBase {
      */
     @Override
     public String toString(){
-        return "PlayerTracker:{Owner: '" + getOwner().getName() + "', nsleft: " + tick_time_remaining_ns + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
+        return "PlayerTracker:{Owner: '" + getOwner().getName() + "', nsleft: " + tick_time_remaining_ns + ", unticked: " + tickQueue.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
     /**

@@ -11,9 +11,11 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  */
 public class ServerWorldLoadMonitor {
 
+    public static final ServerWorldLoadMonitor INSTANCE = new ServerWorldLoadMonitor();
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onLoad(ChunkEvent.Load e){
-        PersistentData.updatePersistentFileAndStorage(e.getWorld());
+        PersistentData.updatePersistentFileAndStorage();
         MinecraftForge.EVENT_BUS.unregister(this);
     }
 }

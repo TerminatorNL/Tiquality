@@ -132,11 +132,16 @@ public class TrackerManager {
      */
     @Nonnull
     public static <T extends Tracker> TrackerHolder<T> createNewTrackerHolder(TiqualityWorld world, T tracker){
-        TrackerHolder<T> holder = tracker.getHolder();
-        if(holder != null){
-            throw new IllegalStateException("This tracker wants to be saved as if it was new, but it's not! : " + tracker.toString());
+        TRACKER_LIST_LOCK.lock();
+        try{
+            TrackerHolder<T> holder = tracker.getHolder();
+            if(holder != null){
+                throw new IllegalStateException("This tracker wants to be saved as if it was new, but it's not! : " + tracker.toString());
+            }
+            return TrackerHolder.createNewTrackerHolder(world, tracker);
+        }finally {
+            TRACKER_LIST_LOCK.unlock();
         }
-        return TrackerHolder.createNewTrackerHolder(world, tracker);
     }
 
     public static void addTrackerHolder(TrackerHolder holder){

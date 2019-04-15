@@ -25,7 +25,7 @@ import java.util.List;
 @Mixin(value = WorldClient.class, priority = 999)
 public abstract class MixinWorldClient extends World implements TiqualityWorld {
 
-    @Shadow public abstract ChunkProviderClient getChunkProvider();
+    @Nonnull @Shadow public abstract ChunkProviderClient getChunkProvider();
 
     protected MixinWorldClient(ISaveHandler saveHandlerIn, WorldInfo info, WorldProvider providerIn, Profiler profilerIn, boolean client) {
         super(saveHandlerIn, info, providerIn, profilerIn, client);

@@ -38,10 +38,11 @@ public interface TiqualitySimpleTickable {
     TickType getType();
 
     enum TickType{
-        BLOCK,
-        BLOCK_RANDOM,
-        TILE_ENTITY,
-        ENTITY
+        BLOCK,          /* A block update */
+        BLOCK_RANDOM,   /* A random block update */
+        TILE_ENTITY,    /* A tile entity update */
+        ENTITY,         /* An entity update */
+        OTHER           /* Any other type of update, like metrics */
     }
 
     /**

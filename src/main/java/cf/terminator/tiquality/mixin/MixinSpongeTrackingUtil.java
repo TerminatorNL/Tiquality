@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.common.event.tracking.PhaseTracker;
 import org.spongepowered.common.event.tracking.TrackingUtil;
 import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
@@ -35,7 +34,7 @@ public class MixinSpongeTrackingUtil {
 
 
     @Inject(method="randomTickBlock", at = @At("HEAD"), cancellable = true)
-    private static void onRandomBlockTick(PhaseTracker phaseTracker, IMixinWorldServer mixinWorld, Block block, BlockPos pos, IBlockState state, Random random, CallbackInfo ci){
+    private static void onRandomBlockTick(IMixinWorldServer mixinWorld, Block block, BlockPos pos, IBlockState state, Random random, CallbackInfo ci){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
             TickHub.onRandomBlockTick(block, (World) mixinWorld, pos, state, random);
             ci.cancel();

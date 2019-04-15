@@ -227,7 +227,7 @@ public abstract class MixinChunk implements TiqualityChunk {
         if (trackerList.tagCount() > 0) {
             tag.setTag("Trackers", trackerList);
         }
-        return tag.hasNoTags() ? null : tag;
+        return tag.getSize() == 0 ? null : tag;
     }
 
     @Override

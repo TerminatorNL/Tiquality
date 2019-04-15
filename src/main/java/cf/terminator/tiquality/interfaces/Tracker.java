@@ -74,7 +74,7 @@ public interface Tracker {
 
     boolean needsTick();
 
-    void tickTileEntity(TiqualitySimpleTickable tileEntity);
+    void tickSimpleTickable(TiqualitySimpleTickable tileEntity);
 
     void tickEntity(TiqualityEntity entity);
 
@@ -83,6 +83,8 @@ public interface Tracker {
     void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand);
 
     void grantTick();
+
+    void addTickableToQueue(TiqualitySimpleTickable tickable);
 
     void associateChunk(TiqualityChunk chunk);
     void associateDelegatingTracker(Tracker tracker);
@@ -140,6 +142,14 @@ public interface Tracker {
      * @param state the new block state
      */
     default void notifyBlockStateChange(TiqualityWorld world, BlockPos pos, IBlockState state){
+
+    }
+
+    /**
+     * Notify this tracker about it's performance falling behind.
+     * @param ratio the tracker's speed compared to the server tick time.
+     */
+    default void notifyFallingBehind(double ratio) {
 
     }
 

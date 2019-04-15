@@ -5,11 +5,11 @@ import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.memory.WeakReferencedTracker;
+import cf.terminator.tiquality.tracking.tickqueue.TickQueue;
 import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
 import cf.terminator.tiquality.tracking.update.BlockUpdateHolder;
 import cf.terminator.tiquality.util.Constants;
 import cf.terminator.tiquality.util.SynchronizedAction;
-import cf.terminator.tiquality.util.TickQueue;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
@@ -30,7 +30,7 @@ public abstract class TrackerBase implements Tracker {
     protected boolean isUnloaded = false;
 
     protected long tick_time_remaining_ns = Constants.NS_IN_TICK_LONG;
-    protected TickQueue untickedTickables = new TickQueue();
+    public TickQueue tickQueue = new TickQueue(this);
     protected final HashSet<WeakReferencedChunk> ASSOCIATED_CHUNKS = new HashSet<>();
     protected final HashSet<WeakReferencedTracker> DELEGATING_TRACKERS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
@@ -57,6 +57,11 @@ public abstract class TrackerBase implements Tracker {
     }
 
     public TrackerBase(){
+    }
+
+    @Override
+    public void tick() {
+        tickQueue.notifyNextTick();
     }
 
     @Override
@@ -148,6 +153,7 @@ public abstract class TrackerBase implements Tracker {
         if(unloadCooldown > 0){
             --unloadCooldown;
         }
+        updateOld();
     }
 
     /**
@@ -175,9 +181,9 @@ public abstract class TrackerBase implements Tracker {
      * @return true if everything was updated, and there is more time left.
      */
     public boolean updateOld(){
-        while(untickedTickables.size() > 0 && getRemainingTime() > 0) {
+        while(tickQueue.size() > 0 && getRemainingTime() > 0) {
             if(isProfiling) {
-                TiqualitySimpleTickable tickable = untickedTickables.take();
+                TiqualitySimpleTickable tickable = tickQueue.take();
                 long start = System.nanoTime();
                 tickable.doUpdateTick();
                 long elapsed = System.nanoTime() - start;
@@ -185,11 +191,18 @@ public abstract class TrackerBase implements Tracker {
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                untickedTickables.take().doUpdateTick();
+                tickQueue.take().doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }
         return getRemainingTime() > 0;
+    }
+
+    @Override
+    public void addTickableToQueue(TiqualitySimpleTickable tickable){
+        if(tickQueue.containsSimpleUpdate(tickable)){
+            tickQueue.addToQueue(tickable);
+        }
     }
 
     /**
@@ -198,11 +211,11 @@ public abstract class TrackerBase implements Tracker {
      * @param tileEntity the TiqualityExtendedTickable object (Tile Entities are castable.)
      */
     @Override
-    public void tickTileEntity(TiqualitySimpleTickable tileEntity){
+    public void tickSimpleTickable(TiqualitySimpleTickable tileEntity){
         if(updateOld() == false && ((TiqualityBlock) tileEntity.getLocation().getBlock()).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            if (untickedTickables.containsTileEntityUpdate(tileEntity) == false) {
-                untickedTickables.addToQueue(tileEntity);
+            if (tickQueue.containsTileEntityUpdate(tileEntity) == false) {
+                tickQueue.addToQueue(tileEntity);
             }
         }else{
             /* Either We still have time, or the tile entity is on the forced-tick list. We update the tile entity.*/
@@ -235,8 +248,8 @@ public abstract class TrackerBase implements Tracker {
         }
         if (updateOld() == false){
             /* This TrackerBase ran out of time, we queue the entity update for another tick.*/
-            if (untickedTickables.containsEntityUpdate(entity) == false) {
-                untickedTickables.addToQueue(entity);
+            if (tickQueue.containsEntityUpdate(entity) == false) {
+                tickQueue.addToQueue(entity);
             }
         }else{
             /* Either We still have time, or the tile entity is on the forced-tick list. We update the entity.*/
@@ -266,8 +279,8 @@ public abstract class TrackerBase implements Tracker {
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            if (untickedTickables.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockUpdateHolder(world, pos, rand));
+            if (tickQueue.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
+                tickQueue.addToQueue(new BlockUpdateHolder(world, pos, rand));
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
@@ -298,8 +311,8 @@ public abstract class TrackerBase implements Tracker {
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
-            if (untickedTickables.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                untickedTickables.addToQueue(new BlockRandomUpdateHolder(world, pos, rand));
+            if (tickQueue.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
+                tickQueue.addToQueue(new BlockRandomUpdateHolder(world, pos, rand));
 
 
 
@@ -327,15 +340,15 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void grantTick(){
-        if(untickedTickables.size() > 0) {
+        if(tickQueue.size() > 0) {
             if(isProfiling) {
-                TiqualitySimpleTickable tickable = untickedTickables.take();
+                TiqualitySimpleTickable tickable = tickQueue.take();
                 long start = System.nanoTime();
                 tickable.doUpdateTick();
                 long elapsed = System.nanoTime() - start;
                 tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
             }else{
-                untickedTickables.take().doUpdateTick();
+                tickQueue.take().doUpdateTick();
             }
         }
     }
@@ -408,7 +421,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public String toString(){
-        return this.getClass() + ":{nsleft: " + getRemainingTime() + ", unticked: " + untickedTickables.size() + ", hashCode: " + System.identityHashCode(this) + "}";
+        return this.getClass() + ":{nsleft: " + getRemainingTime() + ", unticked: " + tickQueue.size() + ", hashCode: " + System.identityHashCode(this) + "}";
     }
 
     /**
@@ -422,7 +435,7 @@ public abstract class TrackerBase implements Tracker {
 
     @Override
     public boolean needsTick(){
-        return untickedTickables.size() > 0;
+        return tickQueue.size() > 0;
     }
 
     /**
@@ -436,8 +449,6 @@ public abstract class TrackerBase implements Tracker {
         /*
             We tick all remaining tickables to minimize chances on undefined behavior from mods
          */
-        while(untickedTickables.size() > 0){
-            untickedTickables.take().doUpdateTick();
-        }
+        tickQueue.tickAll();
     }
 }

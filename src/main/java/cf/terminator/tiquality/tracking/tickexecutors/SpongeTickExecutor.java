@@ -8,7 +8,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.spongepowered.common.event.tracking.PhaseTracker;
 import org.spongepowered.common.event.tracking.TrackingUtil;
 import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
@@ -24,7 +23,6 @@ import java.util.Random;
 public class SpongeTickExecutor implements TickExecutor {
 
     public static boolean IS_CONTROLLED_BY_TIQUALITY = false;
-    private static final PhaseTracker PHASE_TRACKER = PhaseTracker.getInstance();
 
     @Override
     public void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
@@ -36,7 +34,7 @@ public class SpongeTickExecutor implements TickExecutor {
     @Override
     public void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
         IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.randomTickBlock(PHASE_TRACKER, (IMixinWorldServer) world, block, pos, state, rand);
+        TrackingUtil.randomTickBlock((IMixinWorldServer) world, block, pos, state, rand);
         IS_CONTROLLED_BY_TIQUALITY = false;
     }
 
