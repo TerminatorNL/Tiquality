@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-@Config(modid = Tiquality.MODID, name = Tiquality.NAME, type = Config.Type.INSTANCE, category = "TickThrottling")
+@Config(modid = Tiquality.MODID, name = Tiquality.NAME, type = Config.Type.INSTANCE, category = "Tiquality")
 public class TiqualityConfig {
 
     @Config.Comment({
@@ -34,46 +34,66 @@ public class TiqualityConfig {
     @Config.RangeDouble(min = 0, max = 1)
     public static double OFFLINE_PLAYER_TICK_TIME_MULTIPLIER = 0.5;
 
-    @Config.Comment({
-            "Some blocks are automatically generated in the world, but do require ticking in order to funtion properly.",
-            "Define the blocks you wish to keep tick when the block has not been assigned an owner yet.",
-            "Keep in mind, if there is an owner set on this block, the block can be throttled. See: TICKFORCING",
-    })
-    public static String[] AUTO_WORLD_ASSIGNED_OBJECTS = new String[]{
-            "minecraft:mob_spawner",
-            "minecraft:chest",
-            "minecraft:ender_chest",
-            "minecraft:trapped_chest",
-            "REGEX=leaves",
-            "REGEX=sapling",
-            "REGEX=flowing",
-            "minecraft:snow_layer",
-            "minecraft:ice",
-            "minecraft:water",
-            "minecraft:lava",
-            "minecraft:grass",
-            "minecraft:sand",
-            "minecraft:gravel",
-            "minecraft:beetroots",
-            "minecraft:wheat",
-            "minecraft:carrots",
-            "minecraft:potatoes",
-            "minecraft:reeds",
-            "minecraft:farmland",
-            "minecraft:fire",
-            "minecraft:cocoa",
-            "minecraft:cactus",
-            "minecraft:double_plant"
-    };
 
     @Config.Comment({
-            "Some blocks, you simply don't want to be throttled, ever. For example: piston extensions.",
-            "Tiquality will still attempt to tick them per player, but if the player runs out of tick time, it will still tick these blocks.",
-            "Items in this list are also appended to AUTO_WORLD_ASSIGNED_OBJECTS through code, there is no need to define blocks twice."
-    })
-    public static String[] TICKFORCING = new String[]{
-            "minecraft:piston_extension"
-    };
+            "A block will tick if at least one of the following statements is true:",
+            "- There's a Tracker assigned and the tracker has enough time to tick the block",
+            "- The block is defined in the config NATURAL_BLOCKS and there's no tracker assigned to it",
+            "- The block is defined in the config NATURAL_BLOCKS and the tracker has enough time to tick the block",
+            "- The block is defined in the config ALWAYS_TICKED_BLOCKS It will tick even if a tracker has been assigned that ran out of time. Note that this will still consume the time on the tracker.",
+            "",
+            "The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under NATURAL_BLOCKS.",
+            "",
+            "Protip: Use /tq info first, to see if you are actually positioned on the block correctly.",
+            "",
+            "For nicer formatting, see: https://github.com/TerminatorNL/Tiquality/blob/master/README.md#my-blocks-dont-tick-what-do-i-do"
+})
+    public static BLOCK_TICKING BLOCK_TICK_BEHAVIOR = new BLOCK_TICKING();
+
+    public static class BLOCK_TICKING{
+        @Config.Comment({
+                "Some blocks are automatically generated in the world, but do require ticking in order to function properly.",
+                "Define the blocks you wish to keep tick when the block has not been assigned an owner yet.",
+                "Keep in mind, if there is an owner set on this block, the block can be throttled. See: ALWAYS_TICKED_BLOCKS",
+        })
+        public String[] NATURAL_BLOCKS = new String[]{
+                "minecraft:mob_spawner",
+                "minecraft:chest",
+                "minecraft:ender_chest",
+                "minecraft:trapped_chest",
+                "REGEX=leaves",
+                "REGEX=sapling",
+                "REGEX=flowing",
+                "minecraft:snow_layer",
+                "minecraft:ice",
+                "minecraft:water",
+                "minecraft:lava",
+                "minecraft:grass",
+                "minecraft:sand",
+                "minecraft:gravel",
+                "minecraft:beetroots",
+                "minecraft:wheat",
+                "minecraft:carrots",
+                "minecraft:potatoes",
+                "minecraft:reeds",
+                "minecraft:farmland",
+                "minecraft:fire",
+                "minecraft:cocoa",
+                "minecraft:cactus",
+                "minecraft:double_plant"
+        };
+
+        @Config.Comment({
+                "Some blocks, you simply don't want to be throttled, ever. For example: piston extensions.",
+                "Tiquality will still attempt to tick them per player, but if the player runs out of tick time, it will still tick these blocks.",
+                "Items in this list are also appended to NATURAL_BLOCKS through code, there is no need to define blocks twice."
+        })
+        public String[] ALWAYS_TICKED_BLOCKS = new String[]{
+                "minecraft:piston_extension"
+        };
+    }
+
+
 
     @Config.Comment({
             "Between ticks, the server must do some internal processing.",
@@ -99,25 +119,27 @@ public class TiqualityConfig {
     @Config.Comment({
             "When a tracker is being throttled, we can send a notification to the user.",
             "Throttling is measured by comparing the full tick cycles within ticking queues and comparing that to the server ticks.",
-            "Every 50 server ticks the amount of completed full ticks of the tracker is compared.",
+            "Every 100 server ticks the amount of completed full ticks of the tracker is compared.",
             "",
             "If the tracker is falling behind (actively throttling) the value for this tracker gets closer to zero. In",
-            "comparison, a tracker that runs at full speed will have a value of 1",
+            "comparison, a tracker that runs at full speed will have a value of 1 (100%)",
             "Whenever the value falls below the value specified here, a warning will be sent to the tracker",
             "",
-            "Set to 0 to disable",
+            "There's currently a limitation making warning levels between 0.5 and 1.0 unreliable. (Between 50% and 100% speed)",
+            "",
+            "Set to 1 to disable",
             "",
             "Note: If the server is ticking at 18 TPS, the tracker can still have a value of 1. Server tick speed does not impact this value."
     })
     @Config.RangeDouble(min = 0, max = 1)
-    public static double DEFAULT_THROTTLE_WARNING_LEVEL = 0.8;
+    public static double DEFAULT_THROTTLE_WARNING_LEVEL = 0.5;
 
 
     @Config.Comment({
             "When a tracker is being throttled, we can send a notification to the user.",
             "How often do you want the user to receive a message about his/her personal tick speed?",
             "",
-            "Note: If you don't want to send a message at all, set DEFAULT_THROTTLE_WARNING_LEVEL to 0."
+            "Note: If you don't want to send a message at all, set DEFAULT_THROTTLE_WARNING_LEVEL to 1."
     })
     @Config.RangeInt(min = 0)
     public static int DEFAULT_THROTTLE_WARNING_INTERVAL_SECONDS = 600;
@@ -158,10 +180,10 @@ public class TiqualityConfig {
             MODIFIED_BLOCKS.clear();
 
             Tiquality.LOGGER.info("SCANNING BLOCKS...");
-            Tiquality.LOGGER.info("Unownable blocks:");
+            Tiquality.LOGGER.info("NATURAL blocks:");
             AUTO_WORLD_ASSIGNED_OBJECTS_FAST.clear();
 
-            for (String input : AUTO_WORLD_ASSIGNED_OBJECTS) {
+            for (String input : BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS) {
                 if(input.startsWith("REGEX=")){
                     AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
                 }else {
@@ -173,7 +195,7 @@ public class TiqualityConfig {
                     if (block == Blocks.AIR) {
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
-                        Tiquality.LOGGER.warn("AUTO_WORLD_ASSIGNED_OBJECTS: " + block);
+                        Tiquality.LOGGER.warn("NATURAL_BLOCKS: " + block);
                         Tiquality.LOGGER.warn("This block has been skipped!");
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         continue;
@@ -186,10 +208,10 @@ public class TiqualityConfig {
                 ((TiqualityBlock) b).setUpdateType(UpdateType.NATURAL);
             }
 
-            Tiquality.LOGGER.info("Force ticked blocks:");
+            Tiquality.LOGGER.info("ALWAYS_TICKED blocks:");
             TICKFORCING_OBJECTS_FAST.clear();
 
-            for (String input : TICKFORCING) {
+            for (String input : BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS) {
                 if(input.startsWith("REGEX=")){
                     TICKFORCING_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
                 }else {
@@ -201,7 +223,7 @@ public class TiqualityConfig {
                     if (block == Blocks.AIR) {
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
-                        Tiquality.LOGGER.warn("TICKFORCING: " + block);
+                        Tiquality.LOGGER.warn("ALWAYS_TICKED_BLOCKS: " + block);
                         Tiquality.LOGGER.warn("This block has been skipped!");
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         continue;

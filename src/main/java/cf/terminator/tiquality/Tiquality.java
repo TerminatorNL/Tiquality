@@ -61,6 +61,7 @@ public class Tiquality {
         if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
             LOGGER.fatal("The MixinConfigPlugin has not been activated. (cf.terminator.tiquality.mixinhelper.MixinConfigPlugin)");
             LOGGER.fatal("To prevent you from wasting your time, the process has ended.");
+            LOGGER.fatal("-> Did you put the Tiquality.jar directly in /mods? Sub-folders are not supported.");
             LOGGER.fatal("-> Is mixin in the classpath, and initialized? It should have printed some messages by now.");
 
             try{
@@ -71,7 +72,11 @@ public class Tiquality {
                 LOGGER.fatal("");
                 LOGGER.fatal("If you are sure you have done the above correctly, please report this to Terminator_NL.");
             } catch (ClassNotFoundException ignored_2) {
-                LOGGER.fatal("It looks like you do not have Mixin installed. Please use either: the FAT version of Tiquality, Sponge or something else that ships Mixin.");
+                LOGGER.fatal("It looks like you do not have Mixin installed. Please do one of the following solutions: ");
+                LOGGER.fatal("- Use the FAT version of Tiquality (Recommended)");
+                LOGGER.fatal("- Install SpongeForge");
+                LOGGER.fatal("- Install something ships the Mixin library. (See https://github.com/SpongePowered/Mixin)");
+                LOGGER.fatal("- Add Mixin to the classpath yourself (See https://github.com/SpongePowered/Mixin)");
             }
             FMLCommonHandler.instance().exitJava(1, true);
         }

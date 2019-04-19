@@ -1,7 +1,7 @@
 # Tiquality
 [Tiquality](https://minecraft.curseforge.com/projects/tiquality) is the successor of the seemingly popular mod: LagGoggles.
 
-At this moment, Tiquality is a serverside only mod, but supports clients too (Lan hosted).
+At this moment, Tiquality is a server side only mod, but supports clients too (Lan hosted).
 
 The core functionality is limiting a player's tick time in the world to evenly distribute time.
 
@@ -46,7 +46,7 @@ If you are looking to permanently delete Tiquality, simply start the server with
 ## How it functions
 All calls to `Block.randomTickBlock()`, `Block.updateTickBlock()`, `Entity.onUpdate()` and `ITickable.tickTileEntity()` are redirected to Tiquality, which in turn finds the owner of a block using a customized high performance lookup.
 
-There are trackers associated with the block positions of the world, these trackers record how long an update took, and substract that from the 'granted nanoseconds' until it reaches zero. When it reaches zero all future updates are queued for later, and doesn't tick right away.
+There are trackers associated with the block positions of the world, these trackers record how long an update took, and subtract that from the 'granted nanoseconds' until it reaches zero. When it reaches zero all future updates are queued for later, and doesn't tick right away.
 
 When the next tick comes around, all trackers get a granted amount of tracking time, meaning blocks update again. The queue is executed first. If the queue doesn't complete, new updates will be added to the queue if it isn't already.
 
@@ -150,21 +150,22 @@ Recommended usage:
 
 A block will tick if at least one of the following statements is true:
  - There's a Tracker assigned and the tracker has enough time to tick the block
- - The block is defined in the config (`AUTO_WORLD_ASSIGNED_OBJECTS`) and the tracker has enough time to tick the block
- - The block is defined in the config (`TICKFORCING`) It will tick even if a tracker has been assigned that ran out of time.
+ - The block is defined in the config (`NATURAL_BLOCKS`) and there's no tracker assigned to it
+ - The block is defined in the config (`NATURAL_BLOCKS`) and the tracker has enough time to tick the block
+ - The block is defined in the config (`ALWAYS_TICKED_BLOCKS`) It will tick even if a tracker has been assigned that ran out of time. Note that this will still consume the time on the tracker.
  
-The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under `AUTO_WORLD_ASSIGNED_OBJECTS`.
+The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under `NATURAL_BLOCKS`.
 
-Protip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned on the block correctly.
+Pro tip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned on the block correctly.
 
 ### My fluids don't flow! What do I do?
 
 Fluid's are tracked the same way as [blocks](#my-blocks-dont-tick-what-do-i-do).
 
 
-The fastest way to solve this is simply by standing in the liquid and running `/tq set feet NATURAL`. It will add the fluid to the config under `AUTO_WORLD_ASSIGNED_OBJECTS`.
+The fastest way to solve this is simply by standing in the liquid and running `/tq set feet NATURAL`. It will add the fluid to the config under `NATURAL_BLOCKS`.
 
-Protip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned in the liquid correctly.
+Pro tip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned in the liquid correctly.
 
 
 ### I just installed Tiquality, and the TPS is HORRIBLE!
@@ -195,4 +196,4 @@ I follow my own set of rules whilst coding, to keep intent as clear as possible.
  - AtomicInteger can double as object for synchronization signaling when waiting for *N* tasks to end, instead of sleeping for a set time.
 
 If you feel like you found something that needs to change, please follow the rules above before submitting a pull request.
-Another note: Please notify me beforehand if you intent to drop a big pull request, so I can give you some feedback if it will make it in the master branch before you waste alot of time on something I already considered.
+Another note: Please notify me beforehand if you intent to drop a big pull request, so I can give you some feedback if it will make it in the master branch before you waste a lot of time on something I already considered.

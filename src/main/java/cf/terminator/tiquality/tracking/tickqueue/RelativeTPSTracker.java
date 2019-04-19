@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.tracking.tickqueue;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.Tracker;
@@ -7,13 +8,29 @@ import cf.terminator.tiquality.tracking.TickLogger;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+/**
+    TODO: Detection between 100% and 50% speed must be made more accurate.
+    I don't know how to tackle this properly yet.
+
+    There's a queue that gets emptied FIFO style, and we have to monitor how fast it's doing it.
+    But there's a caveat. The speed at which the queue is emptied varies, and you don't know the
+    time the queue needs to finish without profiling (Profiling itself drops performance aswell).
+
+    This implementation counts the amount of cycles a queue does by inserting itself over and over again.
+    It cannot insert itself more than once a tick, because the queue will then think it has more work to do
+    and will loop until it runs out of time, wasting CPU cycles.
+
+ */
 public class RelativeTPSTracker implements TiqualitySimpleTickable {
 
     private final TickQueue queue;
     private int worldTicks = 0;
     private int actualTrackerTicks = 0;
-    private double ratio = 1;
-    private boolean marked = false;
+    private double tps = 20;
+    private int mark_count = 0;
+    private boolean tickedThisTick = false;
+    private long startTime = System.currentTimeMillis();
+
 
     RelativeTPSTracker(TickQueue queue){
         this.queue = queue;
@@ -23,24 +40,25 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
     public void reset(){
         worldTicks = 0;
         actualTrackerTicks = 0;
+        startTime = System.currentTimeMillis();
     }
 
     /**
-     * Gets the ratio of tick time compared to server tick time.
-     * the returned value is always between 0 and 1.
+     * Gets the absolute TPS of this Queue.
      *
-     * @return A value of 1 would indicate that this tracker is running at the same speed as the server.
+     * @return TPS value, raw. (Could be more than 20)
      */
-    public double getRatio(){
+    public double getTps(){
         synchronized (this) {
-            return ratio;
+            return tps;
         }
     }
 
-    public void setRatio(double ratio){
+    public void setTPS(double tps){
         synchronized (this) {
-            this.ratio = ratio;
+            this.tps = tps;
         }
+        double ratio = tps/Tiquality.TPS_MONITOR.getAverageTPS();
         if (ratio <= TiqualityConfig.DEFAULT_THROTTLE_WARNING_LEVEL) {
             Tracker tracker = this.queue.tracker.get();
             if (tracker != null) {
@@ -49,21 +67,33 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
         }
     }
 
+    /**
+     * Called when the server is about to tick the world.
+     */
     public void notifyNextTick(){
         worldTicks++;
-        if (marked == false) {
+        tickedThisTick = false;
+        if (mark_count == 0) {
             queue.addToQueue(this);
         }
         if (worldTicks % 100 == 0){
-            double ratio_raw = (double) actualTrackerTicks / Math.max((double) worldTicks,1);
-            setRatio(ratio_raw);
+            long endTime = System.currentTimeMillis();
+            double durationInSeconds = (endTime - startTime)/1000D;
+            setTPS(actualTrackerTicks/durationInSeconds);
             reset();
         }
     }
 
+    /**
+     * Called when the queue executes this task
+     */
     @Override
     public void doUpdateTick() {
-        actualTrackerTicks++;
+        if (tickedThisTick == false) {
+            actualTrackerTicks++;
+            queue.addToQueue(this);
+        }
+        tickedThisTick = true;
     }
 
     @Override
@@ -86,18 +116,29 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
         return TickType.OTHER;
     }
 
+    /**
+     * Called before the queue adds this task to itself
+     */
     @Override
     public void tiquality_mark() {
-        marked = true;
+        mark_count++;
     }
 
+    /**
+     * Called before the queue executes the task, when already
+     * have taken the task out of the queue, but has not executed it yet
+     */
     @Override
     public void tiquality_unMark() {
-        marked = false;
+        mark_count--;
     }
 
+    /**
+     * Not called by anything in this instance.
+     * @return marked
+     */
     @Override
     public boolean tiquality_isMarked() {
-        return marked;
+        return mark_count > 0;
     }
 }

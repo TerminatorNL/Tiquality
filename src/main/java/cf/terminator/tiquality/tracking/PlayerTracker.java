@@ -99,7 +99,7 @@ public class PlayerTracker extends TrackerBase {
             Entity e = FMLCommonHandler.instance().getMinecraftServerInstance().getEntityFromUuid(getOwner().getId());
             if(e instanceof EntityPlayer){
                 EntityPlayer player = (EntityPlayer) e;
-                player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Warning: " + TextFormatting.GRAY + "Your blocks tick at " + (Math.round(ratio * 10000D)/100D) + "% speed. (See: /tq notify)"), true);
+                player.sendStatusMessage(new TextComponentString(TextFormatting.RED + "Warning: " + TextFormatting.GRAY + "Your blocks tick at " + (Math.round(ratio * 10000D)/100D) + "% speed." + TextFormatting.DARK_GRAY + " (/tq notify)"), true);
                 double serverTPS_raw = Tiquality.TPS_MONITOR.getAverageTPS();
 
                 String serverTPS = TWO_DECIMAL_FORMATTER.format(Math.round(serverTPS_raw * 100D) / 100D);
@@ -107,7 +107,7 @@ public class PlayerTracker extends TrackerBase {
 
 
 
-                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "]" + TextFormatting.GRAY + " Server TPS: " + TextFormatting.WHITE + serverTPS + TextFormatting.GRAY + " Your TPS: " + TextFormatting.WHITE + playerTPS + TextFormatting.DARK_GRAY + "         (/tq notify)"));
+                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "]" + TextFormatting.GRAY + " Server TPS: " + TextFormatting.WHITE + serverTPS + TextFormatting.GRAY + " Your TPS: " + TextFormatting.WHITE + playerTPS + TextFormatting.GRAY + " (" + TextFormatting.WHITE + Math.round(ratio * 100D) + "%" + TextFormatting.GRAY  + ")" + TextFormatting.DARK_GRAY + " (/tq notify)"));
             }
         }
     }

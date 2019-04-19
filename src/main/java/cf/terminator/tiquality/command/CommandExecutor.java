@@ -225,25 +225,25 @@ public class CommandExecutor {
 
                     /* Clear current status */
                     {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS));
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS));
                         list.remove(identifier);
-                        TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS = list.toArray(new String[0]);
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = list.toArray(new String[0]);
                     }
                     {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.TICKFORCING));
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS));
                         list.remove(identifier);
-                        TiqualityConfig.TICKFORCING = list.toArray(new String[0]);
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = list.toArray(new String[0]);
 
                     }
                     /* Recalculate inheritance */
                     if(updateType == UpdateType.NATURAL) {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS));
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS));
                         list.add(identifier);
-                        TiqualityConfig.AUTO_WORLD_ASSIGNED_OBJECTS = list.toArray(new String[0]);
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = list.toArray(new String[0]);
                     }else if(updateType == UpdateType.ALWAYS_TICK){
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.TICKFORCING));
+                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS));
                         list.add(identifier);
-                        TiqualityConfig.TICKFORCING = list.toArray(new String[0]);
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = list.toArray(new String[0]);
                     }
 
                     TiqualityConfig.QuickConfig.saveToFile();
