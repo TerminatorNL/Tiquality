@@ -7,6 +7,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,7 +34,7 @@ public class TrackerManager {
             for (TrackerHolder holder : TRACKER_LIST.values()) {
                 foreach.each(holder.getTracker());
                 if (foreach.stop) {
-                    return foreach.value;
+                    break;
                 }
             }
             return foreach.value;
@@ -63,18 +64,25 @@ public class TrackerManager {
      */
     public static void tickUntil(long time){
         TRACKER_LIST_LOCK.lock();
-        boolean hasWork = true;
-        while(System.nanoTime() < time && hasWork) {
-            hasWork = false;
-            for(TrackerHolder holder : TRACKER_LIST.values()){
-                Tracker tracker = holder.getTracker();
-                if(tracker.needsTick()){
-                    hasWork = true;
-                    tracker.grantTick();
+        try {
+            boolean hasWork = true;
+
+            // Shallow copy to prevent ConcurrentModificationExceptions.
+            LinkedList<TrackerHolder> copiedHolders = new LinkedList<>(TRACKER_LIST.values());
+
+            while (System.nanoTime() < time && hasWork) {
+                hasWork = false;
+                for (TrackerHolder holder : copiedHolders) {
+                    Tracker tracker = holder.getTracker();
+                    if (tracker.needsTick()) {
+                        hasWork = true;
+                        tracker.grantTick();
+                    }
                 }
             }
+        }finally {
+            TRACKER_LIST_LOCK.unlock();
         }
-        TRACKER_LIST_LOCK.unlock();
     }
 
     /**
@@ -82,16 +90,19 @@ public class TrackerManager {
      */
     public static void removeInactiveTrackers(){
         TRACKER_LIST_LOCK.lock();
-        TRACKER_LIST.entrySet().removeIf(entry -> {
-            Tracker tracker = entry.getValue().getTracker();
-            if(tracker.shouldUnload()){
-                tracker.onUnload();
-                return true;
-            }else{
-                return false;
-            }
-        });
-        TRACKER_LIST_LOCK.unlock();
+        try {
+            TRACKER_LIST.entrySet().removeIf(entry -> {
+                Tracker tracker = entry.getValue().getTracker();
+                if (tracker.shouldUnload()) {
+                    tracker.onUnload();
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        }finally {
+            TRACKER_LIST_LOCK.unlock();
+        }
     }
 
     /**
