@@ -4,7 +4,7 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
-import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.profiling.TickLogger;
 import cf.terminator.tiquality.tracking.TrackerHolder;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -22,8 +22,13 @@ public class TiqualityEvent extends Event {
         private final TickLogger logger;
         private final Tracker tracker;
 
+        /**
+         * Sent after a profiler has finished. Do not change the TickLogger here. Read only.
+         * @param tracker
+         * @param logger
+         */
         public ProfileCompletedEvent(Tracker tracker, TickLogger logger) {
-            this.logger = logger.copy();
+            this.logger = logger;
             this.tracker = tracker;
         }
 
@@ -161,11 +166,11 @@ public class TiqualityEvent extends Event {
         }
 
         public TiqualityWorld getTiqualityWorld(){
-            return (TiqualityWorld) entity.getWorld();
+            return (TiqualityWorld) entity.tiquality_getWorld();
         }
 
         public World getMinecraftWorld(){
-            return entity.getWorld();
+            return entity.tiquality_getWorld();
         }
 
         @Nullable

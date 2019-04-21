@@ -5,9 +5,10 @@ import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
-import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.profiling.ReferencedTickable;
 import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
+import cf.terminator.tiquality.tracking.UpdateType;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -20,7 +21,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 @Mixin(Entity.class)
 public abstract class MixinEntity implements TiqualityEntity {
@@ -29,36 +32,31 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Shadow public double posY;
     @Shadow public double posZ;
     @Shadow public World world;
+    @Shadow public abstract UUID getUniqueID();
+
     private TrackerHolder trackerHolder = null;
     private boolean isMarkedByTiquality = false;
+    private UpdateType updateType = UpdateType.DEFAULT;
 
     @Override
-    public void doUpdateTick() {
+    public void tiquality_doUpdateTick() {
         Tiquality.TICK_EXECUTOR.onEntityTick((Entity) (Object) this);
     }
 
     @Override
-    public BlockPos getPos() {
+    public BlockPos tiquality_getPos() {
         return new BlockPos(this.posX, this.posY, this.posZ);
     }
 
     @Override
-    public World getWorld() {
+    public World tiquality_getWorld() {
         return this.world;
     }
 
     @Override
-    public TickLogger.Location getLocation() {
-        return new TickLogger.Location(this);
-    }
-
-    /**
-     * Gets the type of this Tickable
-     * @return the type
-     */
-    @Override
-    public TickType getType() {
-        return TickType.ENTITY;
+    @Nullable
+    public ReferencedTickable.Reference getId() {
+        return new ReferencedTickable.EntityReference(world.provider.getDimension(), this.getUniqueID());
     }
 
     @Override
@@ -101,6 +99,16 @@ public abstract class MixinEntity implements TiqualityEntity {
         }
     }
 
+
+    /**
+     * Checks if this tickable is loaded, eg: chunk load status
+     * @return chunk status
+     */
+    @Override
+    public boolean tiquality_isLoaded(){
+        return this.world.isBlockLoaded(tiquality_getPos());
+    }
+
     /**
      * Marks this entity
      */
@@ -124,5 +132,15 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Override
     public boolean tiquality_isMarked() {
         return isMarkedByTiquality;
+    }
+
+
+    public void setUpdateType(@Nonnull UpdateType type){
+        updateType = type;
+    }
+
+    @Nonnull
+    public UpdateType getUpdateType(){
+        return updateType;
     }
 }

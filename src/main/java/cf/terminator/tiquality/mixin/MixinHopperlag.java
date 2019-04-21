@@ -20,7 +20,7 @@ public class MixinHopperlag {
             throw new ForgetFulProgrammerException();
         }
         try {
-            Thread.sleep(5);
+            Thread.sleep(5, 0);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

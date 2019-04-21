@@ -1,10 +1,13 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.memory.WeakReferencedTracker;
+import cf.terminator.tiquality.profiling.ProfilingKey;
+import cf.terminator.tiquality.profiling.TickLogger;
 import cf.terminator.tiquality.tracking.tickqueue.TickQueue;
 import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
 import cf.terminator.tiquality.tracking.update.BlockUpdateHolder;
@@ -16,7 +19,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashSet;
 import java.util.Random;
@@ -35,6 +38,7 @@ public abstract class TrackerBase implements Tracker {
     protected final HashSet<WeakReferencedTracker> DELEGATING_TRACKERS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
     private TrackerHolder holder;
+    private ProfilingKey key;
 
     public void setHolder(TrackerHolder holder) {
         if(this.holder != null){
@@ -84,56 +88,36 @@ public abstract class TrackerBase implements Tracker {
         return isProfiling;
     }
 
-    /**
-     * Enables or disables the profiler.
-     * This method will block if it's not ran on the main thread.
-     *
-     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
-     * this will cause a deadlock!
-     *
-     * Example: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
-     *
-     *
-     * @param shouldProfile if the profiler should be enabled
-     */
+    @Nonnull
     @Override
-    public synchronized void setProfileEnabled(boolean shouldProfile){
-        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
+    public ProfilingKey startProfiler() throws TiqualityException.TrackerAlreadyProfilingException{
+        if(isProfiling){
+            throw new TiqualityException.TrackerAlreadyProfilingException(this);
+        }
+        this.key = new ProfilingKey();
+        Tiquality.SCHEDULER.schedule(new Runnable() {
             @Override
             public void run() {
-                if(TrackerBase.this.isProfiling != shouldProfile) {
-                    TrackerBase.this.isProfiling = shouldProfile;
-                    if(shouldProfile == false){
-                        MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
-                    }else{
-                        tickLogger.reset();
-                    }
-                }
+                isProfiling = true;
             }
         });
+        return key;
     }
 
-    /**
-     * Stops the profiler, and gets it's TickLogger.
-     * This method will block if it's not ran on the main thread.
-     *
-     * BE WARNED: If you're in another thread, AND the server thread is WAITING (blocked) on your current thread,
-     * this will cause a deadlock!
-     *
-     * Example: net.minecraftforge.common.chunkio.ChunkIOProvider -- Chunk I/O Executor Thread
-     *
-     * @return The TickLogger, or null if the profiler was never running to begin with.
-     *
-     */
+    @Nonnull
     @Override
-    public synchronized @Nullable TickLogger stopProfiler(){
+    public TickLogger stopProfiler(ProfilingKey key) throws TiqualityException.InvalidKeyException {
+        if(this.key != key){
+            throw new TiqualityException.InvalidKeyException(this, this.key);
+        }
         return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
             @Override
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
-                if(TrackerBase.this.isProfiling == true) {
-                    TrackerBase.this.isProfiling = false;
+                if(isProfiling == true) {
+                    isProfiling = false;
                     MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
                     variable.set(tickLogger);
+                    tickLogger = new TickLogger();
                 }
             }
         });
@@ -145,15 +129,15 @@ public abstract class TrackerBase implements Tracker {
      * @param granted_ns the amount of time set for the coming tick in nanoseconds
      */
     @Override
+    @OverridingMethodsMustInvokeSuper
     public void setNextTickTime(long granted_ns){
         tick_time_remaining_ns = granted_ns;
         if(isProfiling) {
-            tickLogger.addTick(granted_ns);
+            tickLogger.addServerTick(granted_ns);
         }
         if(unloadCooldown > 0){
             --unloadCooldown;
         }
-        updateOld();
     }
 
     /**
@@ -182,16 +166,19 @@ public abstract class TrackerBase implements Tracker {
      */
     public boolean updateOld(){
         while(tickQueue.size() > 0 && getRemainingTime() > 0) {
+            TiqualitySimpleTickable tickable = tickQueue.take();
+            if(tickable.tiquality_isLoaded() == false){
+                continue;
+            }
             if(isProfiling) {
-                TiqualitySimpleTickable tickable = tickQueue.take();
                 long start = System.nanoTime();
-                tickable.doUpdateTick();
+                tickable.tiquality_doUpdateTick();
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+                tickLogger.addNanosAndIncrementCalls(tickable.getId(), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                tickQueue.take().doUpdateTick();
+                tickable.tiquality_doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }
@@ -212,7 +199,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void tickSimpleTickable(TiqualitySimpleTickable tileEntity){
-        if(updateOld() == false && ((TiqualityBlock) tileEntity.getLocation().getBlock()).getUpdateType().mustTick(this) == false){
+        if(updateOld() == false && tileEntity.getUpdateType().mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsTileEntityUpdate(tileEntity) == false) {
                 tickQueue.addToQueue(tileEntity);
@@ -221,13 +208,13 @@ public abstract class TrackerBase implements Tracker {
             /* Either We still have time, or the tile entity is on the forced-tick list. We update the tile entity.*/
             if(isProfiling) {
                 long start = System.nanoTime();
-                tileEntity.doUpdateTick();
+                tileEntity.tiquality_doUpdateTick();
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
+                tickLogger.addNanosAndIncrementCalls(tileEntity.getId(), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                tileEntity.doUpdateTick();
+                tileEntity.tiquality_doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }
@@ -242,7 +229,7 @@ public abstract class TrackerBase implements Tracker {
     @Override
     public void tickEntity(TiqualityEntity entity){
         if(isUnloaded){
-            entity.doUpdateTick();
+            entity.tiquality_doUpdateTick();
             entity.setTrackerHolder(null);
             return;
         }
@@ -255,13 +242,13 @@ public abstract class TrackerBase implements Tracker {
             /* Either We still have time, or the tile entity is on the forced-tick list. We update the entity.*/
             if(isProfiling) {
                 long start = System.nanoTime();
-                entity.doUpdateTick();
+                entity.tiquality_doUpdateTick();
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
+                tickLogger.addNanosAndIncrementCalls(entity.getId(), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
-                entity.doUpdateTick();
+                entity.tiquality_doUpdateTick();
                 consume(System.nanoTime() - start);
             }
         }
@@ -277,10 +264,11 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
+        UpdateType updateType = ((UpdateTyped) block).getUpdateType();
+        if(updateOld() == false && updateType.mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                tickQueue.addToQueue(new BlockUpdateHolder(world, pos, rand));
+                tickQueue.addToQueue(new BlockUpdateHolder(world, pos, rand, updateType));
                 //ServerSideEvents.showBlocked(world, pos);
             }
         }else{
@@ -289,7 +277,7 @@ public abstract class TrackerBase implements Tracker {
                 long start = System.nanoTime();
                 Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+                tickLogger.addNanosAndIncrementCalls(BlockUpdateHolder.getId(world.provider.getDimension(), pos), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
@@ -309,10 +297,11 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
-        if(updateOld() == false && ((TiqualityBlock) block).getUpdateType().mustTick(this) == false){
+        UpdateType updateType = ((UpdateTyped) block).getUpdateType();
+        if(updateOld() == false && updateType.mustTick(this) == false){
             /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
-                tickQueue.addToQueue(new BlockRandomUpdateHolder(world, pos, rand));
+                tickQueue.addToQueue(new BlockRandomUpdateHolder(world, pos, rand, updateType));
 
 
 
@@ -324,7 +313,7 @@ public abstract class TrackerBase implements Tracker {
                 long start = System.nanoTime();
                 Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+                tickLogger.addNanosAndIncrementCalls( BlockRandomUpdateHolder.getId(world.provider.getDimension(), pos), elapsed);
                 consume(elapsed);
             }else{
                 long start = System.nanoTime();
@@ -341,14 +330,17 @@ public abstract class TrackerBase implements Tracker {
     @Override
     public void grantTick(){
         if(tickQueue.size() > 0) {
+            TiqualitySimpleTickable tickable = tickQueue.take();
+            if(tickable.tiquality_isLoaded() == false){
+                return;
+            }
             if(isProfiling) {
-                TiqualitySimpleTickable tickable = tickQueue.take();
                 long start = System.nanoTime();
-                tickable.doUpdateTick();
+                tickable.tiquality_doUpdateTick();
                 long elapsed = System.nanoTime() - start;
-                tickLogger.addNanosAndIncrementCalls(tickable.getLocation(), elapsed);
+                tickLogger.addNanosAndIncrementCalls(tickable.getId(), elapsed);
             }else{
-                tickQueue.take().doUpdateTick();
+                tickable.tiquality_doUpdateTick();
             }
         }
     }
@@ -430,7 +422,7 @@ public abstract class TrackerBase implements Tracker {
      */
     @Override
     public boolean shouldUnload() {
-        return isLoaded() == false && unloadCooldown == 0;
+        return isLoaded() == false && unloadCooldown == 0 && isProfiling == false;
     }
 
     @Override
@@ -451,4 +443,14 @@ public abstract class TrackerBase implements Tracker {
          */
         tickQueue.tickAll();
     }
+
+    @Nonnull
+    public TickLogger getTickLogger() throws TiqualityException.TrackerWasNotProfilingException {
+        if(isProfiling == false){
+            throw new TiqualityException.TrackerWasNotProfilingException(this);
+        }else{
+            return tickLogger;
+        }
+    }
+
 }

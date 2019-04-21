@@ -1,6 +1,8 @@
 package cf.terminator.tiquality.interfaces;
 
-import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.api.TiqualityException;
+import cf.terminator.tiquality.profiling.ProfilingKey;
+import cf.terminator.tiquality.profiling.TickLogger;
 import cf.terminator.tiquality.tracking.TrackerHolder;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
@@ -11,7 +13,6 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.List;
 import java.util.Random;
@@ -44,9 +45,31 @@ public interface Tracker {
      */
     @Nonnull NBTTagCompound getNBT();
 
-    void setProfileEnabled(boolean shouldProfile);
+    /**
+     * Starts the profiler, and returns a key to stop profiling.
+     * @return the key
+     * @throws TiqualityException.TrackerCannotProfileException if the tracker isn't capable of profiling
+     * @throws TiqualityException.TrackerAlreadyProfilingException if the tracker already is profiling
+     */
+    @Nonnull
+    ProfilingKey startProfiler() throws TiqualityException.TrackerCannotProfileException, TiqualityException.TrackerAlreadyProfilingException;
 
-    @Nullable TickLogger stopProfiler();
+    /**
+     * Stops the profiler, using the key to stop. This ensures no collisions go undetected
+     * @param key the key
+     * @return the TickLogger containing profiling results (Unprocessed)
+     * @throws TiqualityException.TrackerWasNotProfilingException the tracker wasn't profiling.
+     * @throws cf.terminator.tiquality.api.TiqualityException.InvalidKeyException when a wrong key has been used
+     */
+    @Nonnull
+    TickLogger stopProfiler(ProfilingKey key) throws TiqualityException.TrackerWasNotProfilingException, TiqualityException.InvalidKeyException;
+
+    /**
+     * Gets the current TickLogger. Will throw an exception if access was attempted when the tracker wasn't profiling
+     * @return the TickLogger.
+     */
+    @Nonnull
+    TickLogger getTickLogger() throws TiqualityException.TrackerWasNotProfilingException;
 
     boolean canProfile();
 

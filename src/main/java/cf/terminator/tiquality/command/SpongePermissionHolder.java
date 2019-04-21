@@ -3,7 +3,6 @@ package cf.terminator.tiquality.command;
 import net.minecraft.command.CommandException;
 import org.spongepowered.api.command.CommandSource;
 
-@SuppressWarnings("NoTranslation")
 public class SpongePermissionHolder implements PermissionHolder {
 
     private final CommandSource source;

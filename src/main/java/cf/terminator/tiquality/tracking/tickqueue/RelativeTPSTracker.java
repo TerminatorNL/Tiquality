@@ -2,11 +2,16 @@ package cf.terminator.tiquality.tracking.tickqueue;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.Tracker;
-import cf.terminator.tiquality.tracking.TickLogger;
+import cf.terminator.tiquality.profiling.ReferencedTickable;
+import cf.terminator.tiquality.tracking.UpdateType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
     TODO: Detection between 100% and 50% speed must be made more accurate.
@@ -85,35 +90,48 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
     }
 
     /**
+     * Always true.
+     */
+    @Override
+    public boolean tiquality_isLoaded() {
+        return true;
+    }
+
+    /**
      * Called when the queue executes this task
      */
     @Override
-    public void doUpdateTick() {
+    public void tiquality_doUpdateTick() {
         if (tickedThisTick == false) {
             actualTrackerTicks++;
             queue.addToQueue(this);
+            Tracker tracker = queue.tracker.get();
+            if(tracker != null && tracker.isProfiling()){
+                try {
+                    tracker.getTickLogger().addTrackerTick();
+                } catch (TiqualityException.TrackerWasNotProfilingException e) {
+                    //Should never happen
+                    e.printStackTrace();
+                }
+            }
         }
         tickedThisTick = true;
     }
 
     @Override
-    public BlockPos getPos() {
+    public BlockPos tiquality_getPos() {
         return null;
     }
 
     @Override
-    public World getWorld() {
+    public World tiquality_getWorld() {
         return null;
     }
 
+    @Nullable
     @Override
-    public TickLogger.Location getLocation() {
+    public ReferencedTickable.Reference getId() {
         return null;
-    }
-
-    @Override
-    public TickType getType() {
-        return TickType.OTHER;
     }
 
     /**
@@ -140,5 +158,16 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
     @Override
     public boolean tiquality_isMarked() {
         return mark_count > 0;
+    }
+
+    @Override
+    public void setUpdateType(@Nonnull UpdateType type) {
+
+    }
+
+    @Nonnull
+    @Override
+    public UpdateType getUpdateType() {
+        return UpdateType.DEFAULT;
     }
 }

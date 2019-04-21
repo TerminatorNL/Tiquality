@@ -1,7 +1,10 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.profiling.ProfilingKey;
+import cf.terminator.tiquality.profiling.TickLogger;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -16,7 +19,6 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -99,15 +101,27 @@ public class DenyTracker implements Tracker {
         return new NBTTagCompound();
     }
 
+    @Nonnull
     @Override
-    public void setProfileEnabled(boolean shouldProfile) {
-        throw new UnsupportedOperationException();
+    public ProfilingKey startProfiler() throws TiqualityException.TrackerCannotProfileException{
+        throw new TiqualityException.TrackerCannotProfileException(this);
     }
 
-    @Nullable
+    @Nonnull
     @Override
-    public TickLogger stopProfiler() {
-        throw new UnsupportedOperationException();
+    public TickLogger stopProfiler(ProfilingKey key) throws TiqualityException.TrackerWasNotProfilingException {
+        throw new TiqualityException.TrackerWasNotProfilingException(this);
+    }
+
+    /**
+     * Gets the current TickLogger. Will throw an exception if access was attempted when the tracker wasn't profiling
+     *
+     * @return the TickLogger.
+     */
+    @Nonnull
+    @Override
+    public TickLogger getTickLogger() throws TiqualityException.TrackerWasNotProfilingException {
+        throw new TiqualityException.TrackerWasNotProfilingException(this);
     }
 
     @Override

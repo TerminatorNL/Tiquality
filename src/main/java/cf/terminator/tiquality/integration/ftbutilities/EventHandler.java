@@ -50,7 +50,7 @@ public class EventHandler {
         }
         TiqualityEntity entity = (TiqualityEntity) e.getEntity();
         if(entity.getTrackerHolder() == null){
-            PlayerTracker newTracker = FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) entity.getWorld(),team);
+            PlayerTracker newTracker = FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) entity.tiquality_getWorld(),team);
             if(newTracker != null){
                 entity.setTracker(newTracker);
             }

@@ -7,16 +7,17 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
-@SuppressWarnings({"NullableProblems", "JavaDoc", "NoTranslation"})
 public class ForgeCommand extends CommandBase {
 
     /**
      * Gets the name of the command
      */
+    @Nonnull
     @Override
     public String getName() {
         return CommandHub.ALIASES[0];
@@ -27,14 +28,16 @@ public class ForgeCommand extends CommandBase {
      *
      * @param sender the command sender
      */
+    @Nonnull
     @Override
-    public String getUsage(ICommandSender sender) {
+    public String getUsage(@Nonnull ICommandSender sender) {
         return "";
     }
 
     /**
      * Get a list of aliases for this command. <b>Never return null!</b>
      */
+    @Nonnull
     @Override
     public List<String> getAliases() {
         return Arrays.asList(CommandHub.ALIASES);
@@ -48,7 +51,7 @@ public class ForgeCommand extends CommandBase {
      * @param args arguments
      */
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void execute(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, @Nonnull String[] args) throws CommandException {
         CommandExecutor.execute(sender, args, new ForgePermissionHolder(sender));
     }
 
@@ -71,6 +74,7 @@ public class ForgeCommand extends CommandBase {
      * @param args arguments
      * @param targetPos the BlockPos of the block the player is looking at.
      */
+    @Nonnull
     @Override
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
         return CommandExecutor.getSuggestions(args, new ForgePermissionHolder(sender));

@@ -1,6 +1,6 @@
 package cf.terminator.tiquality;
 
-import cf.terminator.tiquality.interfaces.TiqualityBlock;
+import cf.terminator.tiquality.interfaces.UpdateTyped;
 import cf.terminator.tiquality.monitor.TickMaster;
 import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.tracking.UpdateType;
@@ -24,6 +24,21 @@ import java.util.regex.Pattern;
 public class TiqualityConfig {
 
     @Config.Comment({
+            "Tiquality stores data in every affected chunk, but it's possible",
+            "tiquality's data can get corrupted somehow. In order to still be able to use tiquality",
+            "without resetting your world, we can store data in a different tag in the chunk.",
+            "",
+            "WARNING: Changing this value will erase previous data saved by tiquality, but will not",
+            "affect other data (Your world stays intact, but tiquality has a clean slate)",
+            "",
+            "Just increase this number by one if you run into problems. Don't forget to submit a",
+            "detailed bug report on Github if you run into unexpected problems.",
+            "",
+            "New versions of Tiquality with incompatible storage data will override this setting for you automatically."
+    })
+    public static int SAVE_VERSION = 0;
+
+    @Config.Comment({
             "Tiquality pre-allocates the max tick time someone can use.",
             "This includes offline players (Loaded chunks with an offline player's base, for example)",
             "With this in mind, what multiplier should we use to assign tick time to them?",
@@ -42,7 +57,11 @@ public class TiqualityConfig {
             "- The block is defined in the config NATURAL_BLOCKS and the tracker has enough time to tick the block",
             "- The block is defined in the config ALWAYS_TICKED_BLOCKS It will tick even if a tracker has been assigned that ran out of time. Note that this will still consume the time on the tracker.",
             "",
-            "The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under NATURAL_BLOCKS.",
+            "Try running `/tq set <below|feet> DEFAULT`. It will remove the block from the config, returning default behavior.",
+            "Try running `/tq set <below|feet> NATURAL`. It will add the block to the config under NATURAL_BLOCKS.",
+            "Try running `/tq set <below|feet> PRIORITY`. It will add the block to the config under PRIORITY_BLOCKS.",
+            "Try running `/tq set <below|feet> ALWAYS_TICK`. It will add the block to the config under ALWAYS_TICKED_BLOCKS.",
+            "Try running `/tq set <below|feet> TICK_DENIED`. It will add the block to the config under TICK_DENIED_BLOCKS.",
             "",
             "Protip: Use /tq info first, to see if you are actually positioned on the block correctly.",
             "",
@@ -89,7 +108,21 @@ public class TiqualityConfig {
                 "Items in this list are also appended to NATURAL_BLOCKS through code, there is no need to define blocks twice."
         })
         public String[] ALWAYS_TICKED_BLOCKS = new String[]{
-                "minecraft:piston_extension"
+                "minecraft:piston_extension",
+                "minecraft:piston_head"
+        };
+
+        @Config.Comment({
+                "When people run bases, you can prioritize which blocks have to be updated first. Unlinke",
+                "ALWAYS_TICKED_BLOCKS, PRIORITY_BLOCKS can be throttled."
+        })
+        public String[] PRIORITY_BLOCKS = new String[]{
+        };
+
+        @Config.Comment({
+                "Blocks you never want to tick are defined here. Useful for stopping dupes or game breaking lag without banning recipes!"
+        })
+        public String[] TICK_DENIED_BLOCKS = new String[]{
         };
     }
 
@@ -103,12 +136,14 @@ public class TiqualityConfig {
     @Config.RangeInt(min = 0)
     public static int TIME_BETWEEN_TICKS_IN_NS = 90000;
 
+    /*
     @Config.Comment({
             "If someone has a large update queue, they can struggle to pick up their items.",
             "To fix this, we can make sure their items update first. However, this could lead to",
             "undesired/undefined behavior, since it's machines will tick slower than the items. Potential duping?"
     })
     public static boolean UPDATE_ITEMS_FIRST = false;
+*/
 
     @Config.Comment({
             "Define a maximum square range someone can claim using /tq claim [range].",
@@ -146,8 +181,6 @@ public class TiqualityConfig {
 
     public static class QuickConfig{
 
-        private static HashSet<Block> AUTO_WORLD_ASSIGNED_OBJECTS_FAST = new HashSet<>();
-        private static HashSet<Block> TICKFORCING_OBJECTS_FAST = new HashSet<>();
         private static HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
 
         public static void saveToFile(){
@@ -175,17 +208,21 @@ public class TiqualityConfig {
             TickMaster.TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
             for(Block b : MODIFIED_BLOCKS){
                 Tiquality.LOGGER.info("Unlinking: " + Block.REGISTRY.getNameForObject(b).toString());
-                ((TiqualityBlock) b).setUpdateType(UpdateType.DEFAULT);
+                ((UpdateTyped) b).setUpdateType(UpdateType.DEFAULT);
             }
             MODIFIED_BLOCKS.clear();
+            DenyTracker.unlinkAll();
+            HashSet<Block> TMP_BLOCKS = new HashSet<>();
 
             Tiquality.LOGGER.info("SCANNING BLOCKS...");
-            Tiquality.LOGGER.info("NATURAL blocks:");
-            AUTO_WORLD_ASSIGNED_OBJECTS_FAST.clear();
 
+            /*
+                NATURAL
+             */
+            Tiquality.LOGGER.info("NATURAL blocks:");
             for (String input : BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS) {
                 if(input.startsWith("REGEX=")){
-                    AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
+                    TMP_BLOCKS.addAll(findBlocks(input.substring(6)));
                 }else {
                     String[] split = input.split(":");
                     ResourceLocation location = new ResourceLocation(split[0], split[1]);
@@ -200,20 +237,23 @@ public class TiqualityConfig {
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         continue;
                     }
-                    AUTO_WORLD_ASSIGNED_OBJECTS_FAST.add(block);
+                    TMP_BLOCKS.add(block);
                 }
             }
-            for(Block b : AUTO_WORLD_ASSIGNED_OBJECTS_FAST){
+            for(Block b : TMP_BLOCKS){
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
-                ((TiqualityBlock) b).setUpdateType(UpdateType.NATURAL);
+                ((UpdateTyped) b).setUpdateType(UpdateType.NATURAL);
             }
+            MODIFIED_BLOCKS.addAll(TMP_BLOCKS);
+            TMP_BLOCKS.clear();
 
+            /*
+                ALWAYS_TICKED
+             */
             Tiquality.LOGGER.info("ALWAYS_TICKED blocks:");
-            TICKFORCING_OBJECTS_FAST.clear();
-
             for (String input : BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS) {
                 if(input.startsWith("REGEX=")){
-                    TICKFORCING_OBJECTS_FAST.addAll(findBlocks(input.substring(6)));
+                    TMP_BLOCKS.addAll(findBlocks(input.substring(6)));
                 }else {
                     String[] split = input.split(":");
                     ResourceLocation location = new ResourceLocation(split[0], split[1]);
@@ -228,16 +268,81 @@ public class TiqualityConfig {
                         Tiquality.LOGGER.warn("!!!!#######################!!!!");
                         continue;
                     }
-                    TICKFORCING_OBJECTS_FAST.add(block);
+                    TMP_BLOCKS.add(block);
                 }
             }
-            for(Block b : TICKFORCING_OBJECTS_FAST){
+            for(Block b : TMP_BLOCKS){
                 Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
-                ((TiqualityBlock) b).setUpdateType(UpdateType.ALWAYS_TICK);
+                ((UpdateTyped) b).setUpdateType(UpdateType.ALWAYS_TICK);
             }
-            AUTO_WORLD_ASSIGNED_OBJECTS_FAST.addAll(TICKFORCING_OBJECTS_FAST);
-            MODIFIED_BLOCKS.addAll(AUTO_WORLD_ASSIGNED_OBJECTS_FAST);
-            DenyTracker.unlinkAll();
+            MODIFIED_BLOCKS.addAll(TMP_BLOCKS);
+            TMP_BLOCKS.clear();
+
+            /*
+                PRIORITY
+             */
+            Tiquality.LOGGER.info("PRIORITY blocks:");
+            for (String input : BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS) {
+                if(input.startsWith("REGEX=")){
+                    TMP_BLOCKS.addAll(findBlocks(input.substring(6)));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+
+                    Block block = Block.REGISTRY.getObject(location);
+
+                    if (block == Blocks.AIR) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("PRIORITY_BLOCKS: " + block);
+                        Tiquality.LOGGER.warn("This block has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TMP_BLOCKS.add(block);
+                }
+            }
+            for(Block b : TMP_BLOCKS){
+                Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
+                ((UpdateTyped) b).setUpdateType(UpdateType.PRIORITY);
+            }
+            MODIFIED_BLOCKS.addAll(TMP_BLOCKS);
+            TMP_BLOCKS.clear();
+
+            /*
+                TICK_DENIED
+             */
+            Tiquality.LOGGER.info("TICK_DENIED blocks:");
+            for (String input : BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS) {
+                if(input.startsWith("REGEX=")){
+                    TMP_BLOCKS.addAll(findBlocks(input.substring(6)));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+
+                    Block block = Block.REGISTRY.getObject(location);
+
+                    if (block == Blocks.AIR) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("TICK_DENIED_BLOCKS: " + block);
+                        Tiquality.LOGGER.warn("This block has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TMP_BLOCKS.add(block);
+                }
+            }
+            for(Block b : TMP_BLOCKS){
+                Tiquality.LOGGER.info("+ " + Block.REGISTRY.getNameForObject(b).toString());
+                ((UpdateTyped) b).setUpdateType(UpdateType.TICK_DENIED);
+            }
+            MODIFIED_BLOCKS.addAll(TMP_BLOCKS);
+            TMP_BLOCKS.clear();
+
+
+
+            Tiquality.LOGGER.info("Scan complete.");
         }
 
         private static ArrayList<Block> findBlocks(String regex){

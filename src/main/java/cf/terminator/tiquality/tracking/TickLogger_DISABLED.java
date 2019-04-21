@@ -18,18 +18,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-public class TickLogger implements IMessage, Copyable<TickLogger> {
+public class TickLogger_DISABLED implements IMessage, Copyable<TickLogger_DISABLED> {
 
     private final SendableTreeMap<Location, Metrics> data;
     private int ticks = 0;
     private long grantedNanos = 0L;
     private long consumedNanos = 0L;
 
-    public TickLogger(){
+    public TickLogger_DISABLED(){
         data = new SendableTreeMap<>();
     }
 
-    public TickLogger(TickLogger logger) {
+    public TickLogger_DISABLED(TickLogger_DISABLED logger) {
         this.ticks = logger.ticks;
         this.grantedNanos = logger.grantedNanos;
         this.data = logger.data.copy();
@@ -58,8 +58,8 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
      * Gets a snapshot of the collected data, ready for processing.
      * @return a copy of the ticklogger.
      */
-    public TickLogger copy(){
-        return new TickLogger(this);
+    public TickLogger_DISABLED copy(){
+        return new TickLogger_DISABLED(this);
     }
 
     /**
@@ -199,7 +199,7 @@ public class TickLogger implements IMessage, Copyable<TickLogger> {
         }
 
         public Location(TiqualityEntity entity) {
-            this.world = entity.getWorld().provider.getDimension();
+            this.world = entity.tiquality_getWorld().provider.getDimension();
             this.entityUUID = entity.getPersistentID();
             this.type = Type.ENTITY;
         }

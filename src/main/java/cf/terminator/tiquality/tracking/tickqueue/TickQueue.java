@@ -4,12 +4,10 @@ import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.memory.WeakReferencedTracker;
-import net.minecraft.entity.item.EntityItem;
+import cf.terminator.tiquality.tracking.UpdateType;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.LinkedList;
-
-import static cf.terminator.tiquality.TiqualityConfig.UPDATE_ITEMS_FIRST;
 
 /**
  * Note: There is no actual implementation of contains on object level, but this is how this Queue is used.
@@ -58,7 +56,7 @@ public class TickQueue {
      */
     public void addToQueue(TiqualitySimpleTickable tickable){
         tickable.tiquality_mark();
-        if(UPDATE_ITEMS_FIRST && tickable instanceof EntityItem){
+        if(tickable.getUpdateType() == UpdateType.PRIORITY){
             data.addFirst(tickable);
         }else{
             data.addLast(tickable);
@@ -73,7 +71,10 @@ public class TickQueue {
 
     public void tickAll(){
         while(data.size() > 0){
-            take().doUpdateTick();
+            TiqualitySimpleTickable tickable = take();
+            if(tickable.tiquality_isLoaded()){
+                tickable.tiquality_doUpdateTick();
+            }
         }
     }
 

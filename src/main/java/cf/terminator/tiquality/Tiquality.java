@@ -12,6 +12,7 @@ import cf.terminator.tiquality.tracking.tickexecutors.ForgeTickExecutor;
 import cf.terminator.tiquality.tracking.tickexecutors.SpongeTickExecutor;
 import cf.terminator.tiquality.util.Scheduler;
 import cf.terminator.tiquality.world.WorldHelper;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -36,6 +37,7 @@ public class Tiquality {
     public static final String DESCRIPTION = "Evenly distribute tick time amongst player, its time we all tick equally!";
     public static final String URL = "https://minecraft.curseforge.com/projects/tiquality";
     public static final String[] AUTHORS = {"Terminator_NL"};
+    public static final String PREFIX = TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "] " + TextFormatting.GRAY;
     public static boolean SPONGE_IS_PRESENT = false;
     public static TickExecutor TICK_EXECUTOR;
 

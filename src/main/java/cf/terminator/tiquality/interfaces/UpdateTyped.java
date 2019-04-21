@@ -4,7 +4,7 @@ import cf.terminator.tiquality.tracking.UpdateType;
 
 import javax.annotation.Nonnull;
 
-public interface TiqualityBlock {
+public interface UpdateTyped {
     void setUpdateType(@Nonnull UpdateType type);
     @Nonnull UpdateType getUpdateType();
 }

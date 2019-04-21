@@ -1,8 +1,13 @@
 package cf.terminator.tiquality.tracking;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.profiling.ProfilingKey;
+import cf.terminator.tiquality.profiling.TickLogger;
+import cf.terminator.tiquality.tracking.update.BlockRandomUpdateHolder;
+import cf.terminator.tiquality.tracking.update.BlockUpdateHolder;
 import cf.terminator.tiquality.util.SynchronizedAction;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
@@ -17,7 +22,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -31,6 +35,7 @@ public class ForcedTracker implements Tracker {
     public static final ForcedTracker INSTANCE = new ForcedTracker();
     private boolean isProfiling = false;
     private TickLogger tickLogger = new TickLogger();
+    private ProfilingKey key;
 
     protected ForcedTracker() {
     }
@@ -44,28 +49,28 @@ public class ForcedTracker implements Tracker {
         return new NBTTagCompound();
     }
 
+    @Nonnull
     @Override
-    public void setProfileEnabled(boolean shouldProfile) {
-        Tiquality.SCHEDULER.scheduleWait(new Runnable() {
+    public ProfilingKey startProfiler() throws TiqualityException.TrackerAlreadyProfilingException{
+        if(isProfiling){
+            throw new TiqualityException.TrackerAlreadyProfilingException(this);
+        }
+        key = new ProfilingKey();
+        Tiquality.SCHEDULER.schedule(new Runnable() {
             @Override
             public void run() {
-                if(isProfiling != shouldProfile) {
-                    isProfiling = shouldProfile;
-                    if(shouldProfile == false){
-                        if(tickLogger != null) {
-                            MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, tickLogger));
-                        }
-                    }else{
-                        tickLogger.reset();
-                    }
-                }
+                isProfiling = true;
             }
         });
+        return key;
     }
 
-    @Nullable
+    @Nonnull
     @Override
-    public TickLogger stopProfiler() {
+    public TickLogger stopProfiler(ProfilingKey key) throws TiqualityException.InvalidKeyException {
+        if(this.key != key){
+            throw new TiqualityException.InvalidKeyException(this, this.key);
+        }
         return SynchronizedAction.run(new SynchronizedAction.Action<TickLogger>() {
             @Override
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
@@ -73,6 +78,7 @@ public class ForcedTracker implements Tracker {
                     isProfiling = false;
                     MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(ForcedTracker.this, tickLogger));
                     variable.set(tickLogger);
+                    tickLogger = new TickLogger();
                 }
             }
         });
@@ -90,7 +96,9 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void setNextTickTime(long granted_ns) {
-        tickLogger.addTick(granted_ns);
+        if(isProfiling) {
+            tickLogger.addServerTick(granted_ns);
+        }
     }
 
     @Override
@@ -118,7 +126,7 @@ public class ForcedTracker implements Tracker {
             long start = System.nanoTime();
             Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(tileEntity.getLocation(), elapsed);
+            tickLogger.addNanosAndIncrementCalls(tileEntity.getId(), elapsed);
         }else{
             Tiquality.TICK_EXECUTOR.onTileEntityTick((ITickable) tileEntity);
         }
@@ -138,7 +146,7 @@ public class ForcedTracker implements Tracker {
             long start = System.nanoTime();
             Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+            tickLogger.addNanosAndIncrementCalls(BlockUpdateHolder.getId(world.provider.getDimension(),pos), elapsed);
         }else{
             Tiquality.TICK_EXECUTOR.onBlockTick(block, world, pos, state, rand);
         }
@@ -158,7 +166,7 @@ public class ForcedTracker implements Tracker {
             long start = System.nanoTime();
             Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(new TickLogger.Location(world, pos), elapsed);
+            tickLogger.addNanosAndIncrementCalls(BlockRandomUpdateHolder.getId(world.provider.getDimension(),pos), elapsed);
         }else{
             Tiquality.TICK_EXECUTOR.onRandomBlockTick(block, world, pos, state, rand);
         }
@@ -171,7 +179,7 @@ public class ForcedTracker implements Tracker {
 
     @Override
     public void addTickableToQueue(TiqualitySimpleTickable tickable) {
-        tickable.doUpdateTick();
+        tickable.tiquality_doUpdateTick();
     }
 
     @Override
@@ -210,7 +218,7 @@ public class ForcedTracker implements Tracker {
             long start = System.nanoTime();
             Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
             long elapsed = System.nanoTime() - start;
-            tickLogger.addNanosAndIncrementCalls(entity.getLocation(), elapsed);
+            tickLogger.addNanosAndIncrementCalls(entity.getId(), elapsed);
         }else{
             Tiquality.TICK_EXECUTOR.onEntityTick((Entity) entity);
         }
@@ -310,6 +318,15 @@ public class ForcedTracker implements Tracker {
     @Override
     public TrackerHolder getHolder() {
         return holder;
+    }
+
+    @Nonnull
+    public TickLogger getTickLogger() throws TiqualityException.TrackerWasNotProfilingException {
+        if(isProfiling == false){
+            throw new TiqualityException.TrackerWasNotProfilingException(this);
+        }else{
+            return tickLogger;
+        }
     }
 
     @Override

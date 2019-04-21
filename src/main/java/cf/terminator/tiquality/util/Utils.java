@@ -14,6 +14,7 @@ import java.util.Map;
 public class Utils {
 
     public static DecimalFormat TWO_DECIMAL_FORMATTER = new DecimalFormat("#0.00");
+    public static DecimalFormat ONE_DECIMAL_FORMATTER = new DecimalFormat("#0.0");
 
     public static class BlockPos{
         public static net.minecraft.util.math.BlockPos getMax(net.minecraft.util.math.BlockPos a, net.minecraft.util.math.BlockPos b){

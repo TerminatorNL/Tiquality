@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import javax.annotation.Nonnull;
 import java.util.*;
 
+import static cf.terminator.tiquality.Tiquality.PREFIX;
 import static cf.terminator.tiquality.util.Utils.TWO_DECIMAL_FORMATTER;
 
 @SuppressWarnings("WeakerAccess")
@@ -74,6 +75,7 @@ public class PlayerTracker extends TrackerBase {
 
     @Override
     public void setNextTickTime(long time){
+        super.setNextTickTime(time);
         wallet.clearWallets();
         wallet.setRemainingTime(time);
     }
@@ -107,7 +109,7 @@ public class PlayerTracker extends TrackerBase {
 
 
 
-                player.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "]" + TextFormatting.GRAY + " Server TPS: " + TextFormatting.WHITE + serverTPS + TextFormatting.GRAY + " Your TPS: " + TextFormatting.WHITE + playerTPS + TextFormatting.GRAY + " (" + TextFormatting.WHITE + Math.round(ratio * 100D) + "%" + TextFormatting.GRAY  + ")" + TextFormatting.DARK_GRAY + " (/tq notify)"));
+                player.sendMessage(new TextComponentString(PREFIX + "Your TPS: " + TextFormatting.WHITE + playerTPS + TextFormatting.GRAY + " (" + TextFormatting.WHITE + Math.round(ratio * 100D) + "%" + TextFormatting.GRAY  + ")" + TextFormatting.DARK_GRAY + " (/tq notify)"));
             }
         }
     }

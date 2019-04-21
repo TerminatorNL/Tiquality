@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.monitor;
 
+import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.event.world.ChunkDataEvent;
@@ -9,7 +10,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ChunkLoadMonitor {
 
     public static final ChunkLoadMonitor INSTANCE = new ChunkLoadMonitor();
-    public static final String TIQUALITY_TAG = "Tiquality1";
+    public static final String TIQUALITY_TAG = "Tiquality1" + (TiqualityConfig.SAVE_VERSION == 0 ? "" : TiqualityConfig.SAVE_VERSION);
 
     private ChunkLoadMonitor(){
 
