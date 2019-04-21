@@ -93,11 +93,11 @@ public class ReferencedTickable {
                 case ENTITY:
                     /* Entity */
                     long mostSignificantPart1 = ((long) data2) << 32;
-                    long mostSignificantPart2 = ((long) data3);
+                    long mostSignificantPart2 = ((long) data3) & 0xFFFFFFFFL;
                     long mostSignificantBits = mostSignificantPart1 | mostSignificantPart2;
 
                     long leastSignificantPart1 = ((long) data4) << 32;
-                    long leastSignificantPart2 = ((long) data5);
+                    long leastSignificantPart2 = ((long) data5) & 0xFFFFFFFFL;
                     long leastSignificantBits = leastSignificantPart1 | leastSignificantPart2;
 
                     return new EntityReference(data1, new UUID(mostSignificantBits, leastSignificantBits));

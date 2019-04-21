@@ -69,10 +69,14 @@ public class AnalyzedComponent implements Comparable<AnalyzedComponent>, IMessag
     }
 
     public String getLocationString(){
-        return TextFormatting.GRAY + "D" + TextFormatting.WHITE + lastKnownLocation.getWorld()
-                + TextFormatting.GRAY + "X" + TextFormatting.WHITE + lastKnownLocation.getPos().getX()
-                + TextFormatting.GRAY + "Y" + TextFormatting.WHITE + lastKnownLocation.getPos().getY()
-                + TextFormatting.GRAY + "Z" + TextFormatting.WHITE + lastKnownLocation.getPos().getZ();
+        if(lastKnownLocation != null) {
+            return TextFormatting.GRAY + "D" + TextFormatting.WHITE + lastKnownLocation.getWorld()
+                    + TextFormatting.GRAY + "X" + TextFormatting.WHITE + lastKnownLocation.getPos().getX()
+                    + TextFormatting.GRAY + "Y" + TextFormatting.WHITE + lastKnownLocation.getPos().getY()
+                    + TextFormatting.GRAY + "Z" + TextFormatting.WHITE + lastKnownLocation.getPos().getZ();
+        }else{
+            return TextFormatting.RED + "Unknown";
+        }
     }
 
     public ReferencedTickable.ReferenceId getReferenceId(){
