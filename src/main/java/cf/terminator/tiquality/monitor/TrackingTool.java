@@ -99,7 +99,7 @@ public class TrackingTool {
         Tracker tracker = ((TiqualityWorld) player.world).getTiqualityTracker(selectedPos);
 
         if(tracker != null && tracker != DenyTracker.INSTANCE){
-            Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.GRAY + "Tracked by: " + tracker.getInfo().getText()));
+            Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.GRAY + tracker.getInfo().getText()));
             return;
         }
         if(step == COLORSCALE.length){

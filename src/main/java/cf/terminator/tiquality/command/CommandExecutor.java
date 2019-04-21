@@ -376,7 +376,6 @@ public class CommandExecutor {
             if(trackersToProfile.size() == 0){
                 throw new CommandException("Player is found, but there are no trackers associated.");
             }
-            sender.sendMessage(new TextComponentString(PREFIX + "Profiler started"));
 
             for(Tracker tracker : trackersToProfile) {
                 SimpleProfiler profiler = new SimpleProfiler(tracker, time * 1000, new SimpleProfiler.ProfilePrinter() {
@@ -468,14 +467,13 @@ public class CommandExecutor {
                             }
                         });
                         sender.sendMessage(new TextComponentString(PREFIX + "Hover over the text for more details!"));
-
-
-
-
                     }
                 });
                 try {
                     profiler.start();
+                    sender.sendMessage(new TextComponentString(PREFIX + "Profiler started"));
+                }catch (TiqualityException.TrackerAlreadyProfilingException e){
+                    throw new CommandException("Already profiling!");
                 } catch (TiqualityException e) {
                     e.printStackTrace();
                     sender.sendMessage(e.getTextComponent());
