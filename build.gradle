@@ -35,12 +35,9 @@ repositories {
         name = 'bStats'
         url = 'https://repo.bstats.org/content/repositories/releases/'
     }
-    ivy {
-        // FTB Utilities and FTB Libs
-        url "https://jenkins.latmod.com/job/"
-        layout "pattern", {
-            artifact "[organisation]/[revision]/artifact/build/libs/[artifact].jar"
-        }
+    maven {
+        name = "CurseForge"
+        url = "https://minecraft.curseforge.com/api/maven"
     }
 }
 
@@ -95,12 +92,12 @@ dependencies {
     /*
         FTB Utilities
      */
-    compileOnly 'FTB-Utilities:FTBUtilities-5.3.0.52:52'
+    compileOnly 'ftb-utilities:FTBUtilities:5.3.0.52'
 
     /*
         FTB Library
      */
-    compileOnly 'FTB-Library:FTBLib-5.3.0.56:56'
+    compileOnly 'ftblib:FTBLib:5.3.0.56'
 
     if(isFat) {
         embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
