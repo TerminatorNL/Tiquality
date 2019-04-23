@@ -5,6 +5,7 @@ import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.interfaces.UpdateTyped;
@@ -27,6 +28,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -35,6 +37,7 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -140,6 +143,32 @@ public class CommandExecutor {
                 return;
             }
 
+
+            if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+                List<ITextComponent> messages = new LinkedList<>();
+                messages.add(new TextComponentString(PREFIX + "Entities in chunk"));
+                Chunk chunk = player.getEntityWorld().getChunk(player.getPosition());
+                for(ClassInheritanceMultiMap<Entity> classInheritanceMultiMap :chunk.getEntityLists()){
+                    for(Entity entity_raw : classInheritanceMultiMap){
+                        TiqualityEntity entity = (TiqualityEntity) entity_raw;
+                        if(entity instanceof EntityPlayer){
+                            continue;
+                        }
+                        Tracker tracker = entity.getTracker();
+                        messages.add(new TextComponentString(entity.tiquality_getResourceLocation() + " ").appendSibling(entity.getUpdateType().getText(UpdateType.Type.ENTITY)).appendSibling(new TextComponentString(" ")).appendSibling((tracker == null) ? new TextComponentString(TextFormatting.GRAY + "Not tracked") : tracker.getInfo()));
+                    }
+                }
+                if(messages.size() == 0){
+                    player.sendMessage(new TextComponentString(PREFIX + "No entities are found in your chunk."));
+                }else{
+                    for(ITextComponent message : messages) {
+                        player.sendMessage(message);
+                    }
+                }
+            }
+
+            /* Blocks */
+
             World world = player.getEntityWorld();
 
             BlockPos blockPosAtFeet = player.getPosition();
@@ -157,21 +186,21 @@ public class CommandExecutor {
             boolean isBlockAtFeetAir = blockAtFeet.isAir(stateAtFeet, world, blockPosAtFeet);
             boolean isBlockBelowFeetAir = blockBelowFeet.isAir(stateBelowFeet, world, blockPosBelowFeet);
 
-            player.sendMessage(new TextComponentString(TextFormatting.GREEN + "Info:"));
+            player.sendMessage(new TextComponentString(PREFIX + "Info:"));
             if (isBlockAtFeetAir && isBlockBelowFeetAir) {
                 throw new CommandException("Please stand on top of a block and run this command again.");
             }
             if (isBlockBelowFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
-                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block below: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(belowUpdateType.getText()).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
+                player.sendMessage(new TextComponentString(PREFIX + "Block below: " +
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockBelowFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(belowUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
             }
             if (isBlockAtFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition());
                 TextComponentString message = tracker == null ? new TextComponentString(TextFormatting.AQUA + "Not tracked") : tracker.getInfo();
-                player.sendMessage(new TextComponentString(TextFormatting.WHITE + "Block at feet: " +
-                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(feetUpdateType.getText()).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
+                player.sendMessage(new TextComponentString(PREFIX + "Block at feet: " +
+                        TextFormatting.YELLOW + Block.REGISTRY.getNameForObject(blockAtFeet).toString() + TextFormatting.WHITE + " TickType: ").appendSibling(feetUpdateType.getText(UpdateType.Type.BLOCK)).appendSibling(new TextComponentString(TextFormatting.WHITE + " Status: " + message.getText())));
             }
         /*
 
@@ -201,7 +230,7 @@ public class CommandExecutor {
             }
             EntityPlayer player = (EntityPlayer) sender;
             if (args.length != 3) {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(TextFormatting.RED)));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
                 throw new CommandException("Hover over the different update types to see more info!");
             }
             String mode = args[1];
@@ -218,7 +247,7 @@ public class CommandExecutor {
                 }
             } else {
                 sender.sendMessage(new TextComponentString("Invalid input: '" + mode + "'. Expected 'feet' or 'below'"));
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(TextFormatting.RED)));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
                 throw new CommandException("Hover over the different update types to see more info!");
             }
 
@@ -227,7 +256,7 @@ public class CommandExecutor {
             try{
                 updateType = UpdateType.valueOf(type);
             }catch (IllegalArgumentException e){
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Invalid update type! Valid types: ").appendSibling(UpdateType.getArguments(TextFormatting.RED)));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Invalid update type! Valid types: ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
                 throw new CommandException("Hover over the different update types to see more info!");
             }
 
@@ -281,7 +310,7 @@ public class CommandExecutor {
                     }
                     TiqualityConfig.QuickConfig.saveToFile();
                     TiqualityConfig.QuickConfig.update();
-                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + ". New tick type: " + updateType.getText().getFormattedText()));
+                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + ". New tick type: " + updateType.getText(UpdateType.Type.BLOCK).getFormattedText()));
                 }
             });
         /*

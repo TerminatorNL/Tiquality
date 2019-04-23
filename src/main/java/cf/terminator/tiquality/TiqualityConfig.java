@@ -1,23 +1,26 @@
 package cf.terminator.tiquality;
 
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.UpdateTyped;
 import cf.terminator.tiquality.monitor.TickMaster;
 import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Config(modid = Tiquality.MODID, name = Tiquality.NAME, type = Config.Type.INSTANCE, category = "Tiquality")
@@ -126,7 +129,36 @@ public class TiqualityConfig {
         };
     }
 
+    @Config.Comment({
+            "Entity handling is a bit different than blocks. DEFAULT behavior is the same as NATURAL in blocks."
+    })
+    public static ENTITY_TICKING ENTITY_TICK_BEHAVIOR = new ENTITY_TICKING();
 
+    public static class ENTITY_TICKING{
+
+        @Config.Comment({
+                "Some entities, you simply don't want to be throttled, ever.",
+                "Tiquality will still attempt to tick them per player, but if the player runs out of tick time, it will still tick these entities.",
+                "Players are hardcoded to be in this category."
+        })
+        public String[] ALWAYS_TICKED_ENTITIES = new String[]{
+        };
+
+        @Config.Comment({
+                "When people run bases, you can prioritize which entities have to be updated first. Unlike",
+                "ALWAYS_TICKED_ENTITIES, PRIORITY_ENTITIES can be throttled.",
+                "If you put 'minecraft:item' here, it will be easier for players to pick them up etc. Recommended."
+        })
+        public String[] PRIORITY_ENTITIES = new String[]{
+                "minecraft:item"
+        };
+
+        @Config.Comment({
+                "Entities you never want to tick are defined here. Useful for stopping dupes or game breaking lag without banning recipes!"
+        })
+        public String[] TICK_DENIED_ENTITIES = new String[]{
+        };
+    }
 
     @Config.Comment({
             "Between ticks, the server must do some internal processing.",
@@ -135,15 +167,6 @@ public class TiqualityConfig {
     })
     @Config.RangeInt(min = 0)
     public static int TIME_BETWEEN_TICKS_IN_NS = 90000;
-
-    /*
-    @Config.Comment({
-            "If someone has a large update queue, they can struggle to pick up their items.",
-            "To fix this, we can make sure their items update first. However, this could lead to",
-            "undesired/undefined behavior, since it's machines will tick slower than the items. Potential duping?"
-    })
-    public static boolean UPDATE_ITEMS_FIRST = false;
-*/
 
     @Config.Comment({
             "Define a maximum square range someone can claim using /tq claim [range].",
@@ -182,6 +205,7 @@ public class TiqualityConfig {
     public static class QuickConfig{
 
         private static HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
+        public static final HashMap<ResourceLocation, UpdateType> ENTITY_UPDATE_TYPES = new HashMap<>();
 
         public static void saveToFile(){
             ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
@@ -214,6 +238,11 @@ public class TiqualityConfig {
             DenyTracker.unlinkAll();
             HashSet<Block> TMP_BLOCKS = new HashSet<>();
 
+            /*
+            ########################################################################
+            ######################           BLOCKS           ######################
+            ########################################################################
+             */
             Tiquality.LOGGER.info("SCANNING BLOCKS...");
 
             /*
@@ -340,6 +369,120 @@ public class TiqualityConfig {
             MODIFIED_BLOCKS.addAll(TMP_BLOCKS);
             TMP_BLOCKS.clear();
 
+            /*
+            ########################################################################
+            ######################          ENTITIES          ######################
+            ########################################################################
+            */
+
+
+            Set<ResourceLocation> ENTITY_LIST = EntityList.getEntityNameList();
+            HashSet<ResourceLocation> TMP_ENTITIES = new HashSet<>();
+
+            Tiquality.LOGGER.info("SCANNING ENTITIES:");
+            Tiquality.LOGGER.info("Unlinking...");
+            for(World world : FMLCommonHandler.instance().getMinecraftServerInstance().worlds){
+                for(Entity entity : world.loadedEntityList){
+                    ((TiqualityEntity) entity).setUpdateType(UpdateType.DEFAULT);
+                }
+            }
+            Tiquality.LOGGER.info("Unlinked.");
+            ENTITY_UPDATE_TYPES.clear();
+
+            /*
+                    ALWAYS_TICK
+             */
+            Tiquality.LOGGER.info("ALWAYS_TICKED entities:");
+            for (String input : ENTITY_TICK_BEHAVIOR.ALWAYS_TICKED_ENTITIES) {
+                if(input.startsWith("REGEX=")){
+                    TMP_ENTITIES.addAll(findEntities(ENTITY_LIST, input.substring(6)));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+                    if (ENTITY_LIST.contains(location) == false) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("ALWAYS_TICKED_ENTITIES: " + location);
+                        Tiquality.LOGGER.warn("This entity has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TMP_ENTITIES.add(location);
+                }
+            }
+            for(ResourceLocation location : TMP_ENTITIES){
+                Tiquality.LOGGER.info("+ " + location);
+                ENTITY_UPDATE_TYPES.put(location, UpdateType.ALWAYS_TICK);
+            }
+            TMP_ENTITIES.clear();
+
+            /*
+                    PRIORITY
+             */
+            Tiquality.LOGGER.info("PRIORITY entities:");
+            for (String input : ENTITY_TICK_BEHAVIOR.PRIORITY_ENTITIES) {
+                if(input.startsWith("REGEX=")){
+                    TMP_ENTITIES.addAll(findEntities(ENTITY_LIST, input.substring(6)));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+                    if (ENTITY_LIST.contains(location) == false) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("PRIORITY_ENTITIES: " + location);
+                        Tiquality.LOGGER.warn("This entity has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TMP_ENTITIES.add(location);
+                }
+            }
+            for(ResourceLocation location : TMP_ENTITIES){
+                Tiquality.LOGGER.info("+ " + location);
+                ENTITY_UPDATE_TYPES.put(location, UpdateType.PRIORITY);
+            }
+            TMP_ENTITIES.clear();
+
+            /*
+                    TICK_DENIED
+             */
+            Tiquality.LOGGER.info("TICK_DENIED_ENTITIES entities:");
+            for (String input : ENTITY_TICK_BEHAVIOR.TICK_DENIED_ENTITIES) {
+                if(input.startsWith("REGEX=")){
+                    TMP_ENTITIES.addAll(findEntities(ENTITY_LIST, input.substring(6)));
+                }else {
+                    String[] split = input.split(":");
+                    ResourceLocation location = new ResourceLocation(split[0], split[1]);
+                    if (ENTITY_LIST.contains(location) == false) {
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        Tiquality.LOGGER.warn("INVALID CONFIG ENTRY");
+                        Tiquality.LOGGER.warn("TICK_DENIED_ENTITIES: " + location);
+                        Tiquality.LOGGER.warn("This entity has been skipped!");
+                        Tiquality.LOGGER.warn("!!!!#######################!!!!");
+                        continue;
+                    }
+                    TMP_ENTITIES.add(location);
+                }
+            }
+            for(ResourceLocation location : TMP_ENTITIES){
+                Tiquality.LOGGER.info("+ " + location);
+                ENTITY_UPDATE_TYPES.put(location, UpdateType.TICK_DENIED);
+            }
+            TMP_ENTITIES.clear();
+            Tiquality.LOGGER.info("Relinking...");
+            for(World world : FMLCommonHandler.instance().getMinecraftServerInstance().worlds){
+                for(Entity entity_raw : world.loadedEntityList){
+                    TiqualityEntity entity = (TiqualityEntity) entity_raw;
+                    ResourceLocation location = entity.tiquality_getResourceLocation();
+                    UpdateType type = TiqualityConfig.QuickConfig.ENTITY_UPDATE_TYPES.get(location);
+                    entity.setUpdateType((type == null) ? UpdateType.DEFAULT : type);
+                }
+            }
+            Tiquality.LOGGER.info("Linked.");
+
+
+
+
 
 
             Tiquality.LOGGER.info("Scan complete.");
@@ -350,6 +493,20 @@ public class TiqualityConfig {
             for(ResourceLocation resource : Block.REGISTRY.getKeys()){
                 if(Pattern.compile(regex).matcher(resource.toString()).find()){
                     list.add(Block.REGISTRY.getObject(resource));
+                    Tiquality.LOGGER.info("regex '" + regex + "' applied for: " + resource.toString());
+                }
+            }
+            if(list.size() == 0){
+                Tiquality.LOGGER.warn("regex '" + regex + "' had no matches!");
+            }
+            return list;
+        }
+
+        private static ArrayList<ResourceLocation> findEntities(Set<ResourceLocation> entityList, String regex){
+            ArrayList<ResourceLocation> list = new ArrayList<>();
+            for(ResourceLocation resource : entityList){
+                if(Pattern.compile(regex).matcher(resource.toString()).find()){
+                    list.add(resource);
                     Tiquality.LOGGER.info("regex '" + regex + "' applied for: " + resource.toString());
                 }
             }

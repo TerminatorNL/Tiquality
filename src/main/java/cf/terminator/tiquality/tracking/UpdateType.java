@@ -38,6 +38,11 @@ public enum UpdateType {
      */
     ALWAYS_TICK;
 
+    public enum Type{
+        ENTITY,
+        BLOCK
+    }
+
     /**
      * Check if this tracker must tick.
      * @param tracker a tracker, or null if none has been assigned
@@ -58,11 +63,11 @@ public enum UpdateType {
         }
     }
 
-    public static ITextComponent getArguments(TextFormatting textColour){
+    public static ITextComponent getArguments(Type type, TextFormatting textColour){
         List<ITextComponent> list = new LinkedList<>();
         Iterator<UpdateType> iterator = Arrays.asList(UpdateType.values()).iterator();
         while(iterator.hasNext()){
-            list.add(iterator.next().getText());
+            list.add(iterator.next().getText(type));
             if(iterator.hasNext()){
                 list.add(new TextComponentString(textColour + " | "));
             }else{
@@ -78,26 +83,48 @@ public enum UpdateType {
         return builder;
     }
 
-    public ITextComponent getText(){
+    public ITextComponent getText(Type type){
         Style style = new Style();
-        switch (this){
-            case DEFAULT:
-                style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Only ticks when a tracker is assigned AND has time to tick.\nCan be throttled")));
-                break;
-            case PRIORITY:
-                style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Like " + TextFormatting.GRAY + "DEFAULT" + TextFormatting.RESET + ", but ticks before everything else.\nCan be throttled")));
-                break;
-            case TICK_DENIED:
-                style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Never ticks.")));
-                break;
-            case NATURAL:
-                style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Ticks when no tracker is assigned.\nWhen a tracker has been assigned, it can be throttled if no time is left.")));
-                break;
-            case ALWAYS_TICK:
-                style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Always ticks.\nNever throttled")));
-                break;
-            default:
-                throw new ForgetFulProgrammerException();
+        if(type == Type.BLOCK) {
+            switch (this) {
+                case DEFAULT:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Only ticks when a tracker is assigned AND has time to tick.\nCan be throttled")));
+                    break;
+                case PRIORITY:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Like " + TextFormatting.GRAY + "DEFAULT" + TextFormatting.RESET + ", but ticks before everything else.\nCan be throttled")));
+                    break;
+                case TICK_DENIED:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Never ticks.")));
+                    break;
+                case NATURAL:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Ticks when no tracker is assigned.\nWhen a tracker has been assigned, it can be throttled if no time is left.")));
+                    break;
+                case ALWAYS_TICK:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Always ticks.\nNever throttled")));
+                    break;
+                default:
+                    throw new ForgetFulProgrammerException();
+            }
+        }else if(type == Type.ENTITY){
+            switch (this) {
+                case DEFAULT:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Ticks when no tracker is assigned.\nWhen a tracker has been assigned, it can be throttled if no time is left.")));
+                    break;
+                case PRIORITY:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Like " + TextFormatting.GRAY + "DEFAULT" + TextFormatting.RESET + ", but ticks before everything else.\nCan be throttled")));
+                    break;
+                case TICK_DENIED:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Never ticks.")));
+                    break;
+                case NATURAL:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Like DEFAULT")));
+                    break;
+                case ALWAYS_TICK:
+                    style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Always ticks.\nNever throttled")));
+                    break;
+                default:
+                    throw new ForgetFulProgrammerException();
+            }
         }
         switch (this){
             case DEFAULT:

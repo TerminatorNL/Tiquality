@@ -200,7 +200,7 @@ public abstract class TrackerBase implements Tracker {
     @Override
     public void tickSimpleTickable(TiqualitySimpleTickable tileEntity){
         if(updateOld() == false && tileEntity.getUpdateType().mustTick(this) == false){
-            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsTileEntityUpdate(tileEntity) == false) {
                 tickQueue.addToQueue(tileEntity);
             }
@@ -233,8 +233,8 @@ public abstract class TrackerBase implements Tracker {
             entity.setTrackerHolder(null);
             return;
         }
-        if (updateOld() == false){
-            /* This TrackerBase ran out of time, we queue the entity update for another tick.*/
+        if (updateOld() == false && entity.getUpdateType().mustTick(this) == false){
+            /* This Tracker ran out of time, we queue the entity update for another tick.*/
             if (tickQueue.containsEntityUpdate(entity) == false) {
                 tickQueue.addToQueue(entity);
             }
@@ -266,7 +266,7 @@ public abstract class TrackerBase implements Tracker {
     public void doBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         UpdateType updateType = ((UpdateTyped) block).getUpdateType();
         if(updateOld() == false && updateType.mustTick(this) == false){
-            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsBlockUpdate(((TiqualityWorld) world), pos) == false) {
                 tickQueue.addToQueue(new BlockUpdateHolder(world, pos, rand, updateType));
                 //ServerSideEvents.showBlocked(world, pos);
@@ -299,7 +299,7 @@ public abstract class TrackerBase implements Tracker {
     public void doRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand){
         UpdateType updateType = ((UpdateTyped) block).getUpdateType();
         if(updateOld() == false && updateType.mustTick(this) == false){
-            /* This TrackerBase ran out of time, we queue the blockupdate for another tick.*/
+            /* This Tracker ran out of time, we queue the blockupdate for another tick.*/
             if (tickQueue.containsRandomBlockUpdate(((TiqualityWorld) world), pos) == false) {
                 tickQueue.addToQueue(new BlockRandomUpdateHolder(world, pos, rand, updateType));
 
@@ -324,7 +324,7 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
-     * After running out of tick time for this TrackerBase, the server may have more
+     * After running out of tick time for this Tracker, the server may have more
      * tick time to spare after ticking other Trackers, it grants unchecked ticks
      */
     @Override
@@ -346,7 +346,7 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
-     * Associates chunks with this TrackerBase.
+     * Associates chunks with this Tracker.
      * The tracker will only be garbage collected when all associated chunks are unloaded.
      * @param chunk the chunk.
      */
@@ -359,7 +359,7 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
-     * Associates another Tracker with this TrackerBase.
+     * Associates another Tracker with this Tracker.
      * The tracker will only be garbage collected when all delegating trackers are unloaded.
      * Delegators are trackers that use other trackers (this one) for their data management.
      * @param tracker the chunk.
@@ -384,9 +384,9 @@ public abstract class TrackerBase implements Tracker {
     }
 
     /**
-     * Checks if this TrackerBase has chunks associated with it and is kept in memory by the TrackerManager.
+     * Checks if this Tracker has chunks associated with it and is kept in memory by the TrackerManager.
      * Also removes references to unloaded chunks and unloaded delegating trackers.
-     * @return true if this TrackerBase has a loaded chunk or the cooldown is not over yet, false otherwise
+     * @return true if this Tracker has a loaded chunk or the cooldown is not over yet, false otherwise
      */
     public boolean isLoaded(){
         if(isUnloaded){

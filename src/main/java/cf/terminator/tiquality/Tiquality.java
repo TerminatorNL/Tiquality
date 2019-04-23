@@ -87,6 +87,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(EntitySpawnMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
 

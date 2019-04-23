@@ -10,7 +10,9 @@ import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.tracking.UpdateType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
@@ -37,6 +39,7 @@ public abstract class MixinEntity implements TiqualityEntity {
     private TrackerHolder trackerHolder = null;
     private boolean isMarkedByTiquality = false;
     private UpdateType updateType = UpdateType.DEFAULT;
+    private ResourceLocation locationCache = null;
 
     @Override
     public void tiquality_doUpdateTick() {
@@ -142,5 +145,17 @@ public abstract class MixinEntity implements TiqualityEntity {
     @Nonnull
     public UpdateType getUpdateType(){
         return updateType;
+    }
+
+    @Override
+    public ResourceLocation tiquality_getResourceLocation(){
+        if(locationCache != null){
+            return locationCache;
+        }
+        locationCache = EntityList.getKey((Entity) (Object) this);
+        if(locationCache == null){
+            locationCache = new ResourceLocation("*unknown*","*unknown*");
+        }
+        return locationCache;
     }
 }

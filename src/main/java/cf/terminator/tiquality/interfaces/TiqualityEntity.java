@@ -1,9 +1,9 @@
 package cf.terminator.tiquality.interfaces;
 
 import cf.terminator.tiquality.tracking.TrackerHolder;
+import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nullable;
-import java.util.UUID;
 
 public interface TiqualityEntity extends TiqualitySimpleTickable {
 
@@ -37,9 +37,5 @@ public interface TiqualityEntity extends TiqualitySimpleTickable {
      */
     void setTracker(@Nullable Tracker tracker);
 
-    /**
-     * Gets the persistent entity UUID.
-     * @return the entity's UUID.
-     */
-    UUID getPersistentID();
+    ResourceLocation tiquality_getResourceLocation();
 }
