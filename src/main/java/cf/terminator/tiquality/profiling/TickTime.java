@@ -33,6 +33,14 @@ public class TickTime implements IMessage, Comparable<TickTime> {
         this.calls += times.calls;
     }
 
+    public void addNanos(long nanosConsumed){
+        this.nanosConsumed =+ nanosConsumed;
+    }
+
+    public void addCalls(int calls){
+        this.calls =+ calls;
+    }
+
     @Override
     public void fromBytes(ByteBuf buf) {
         nanosConsumed = buf.readLong();
