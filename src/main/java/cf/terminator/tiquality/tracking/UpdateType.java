@@ -132,7 +132,7 @@ public enum UpdateType {
             case PRIORITY:
                 return new TextComponentString(TextFormatting.AQUA + "PRIORITY").setStyle(style);
             case TICK_DENIED:
-                return new TextComponentString(TextFormatting.DARK_RED + "TICK-DENIED").setStyle(style);
+                return new TextComponentString(TextFormatting.DARK_RED + "TICK_DENIED").setStyle(style);
             case NATURAL:
                 return new TextComponentString(TextFormatting.GOLD + "NATURAL").setStyle(style);
             case ALWAYS_TICK:

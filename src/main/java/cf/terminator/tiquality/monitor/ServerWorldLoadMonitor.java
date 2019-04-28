@@ -15,7 +15,7 @@ public class ServerWorldLoadMonitor {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onLoad(ChunkEvent.Load e){
-        PersistentData.updatePersistentFileAndStorage();
+        PersistentData.updatePersistentFileAndStorage(e.getWorld());
         MinecraftForge.EVENT_BUS.unregister(this);
     }
 }
