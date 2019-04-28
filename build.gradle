@@ -46,7 +46,8 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-version = "1.12.2-GAMMA-1.2.0"
+String spongeForgeVersion = '1.12.2-2768-7.1.6-RC3643'
+version = "1.12.2-GAMMA-1.2.1"
 group = "cf.terminator"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
 println("Compiling: " + archivesBaseName + "-" + version)
@@ -68,6 +69,8 @@ minecraft {
     mappings = "snapshot_20180808"
     replaceIn "Tiquality.java"
     replace '${version}', buildType + "-" + project.version
+    replaceIn "mixinhelper/MixinConfigPlugin.java"
+    replace '${spongeforge_version}', spongeForgeVersion
 }
 
 configurations {
@@ -80,7 +83,7 @@ dependencies {
     /*
         Sponge
      */
-    compileOnly 'org.spongepowered:spongeforge:1.12.2-2768-7.1.6-RC3643:dev'
+    compileOnly 'org.spongepowered:spongeforge:' + spongeForgeVersion + ':dev'
 
     /*
         GriefPrevention

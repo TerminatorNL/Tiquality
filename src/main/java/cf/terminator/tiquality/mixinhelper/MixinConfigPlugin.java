@@ -9,13 +9,19 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.JarInputStream;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin{
 
     public static boolean spongePresent = false;
+    public static String spongeForgeVersion = null;
     public static boolean hasClientClasses = true;
     public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
     public static final Logger LOGGER = LogManager.getLogger("Tiquality-Boot");
@@ -54,11 +60,35 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
             }
 
             try {
-                Class.forName("org.spongepowered.mod.SpongeCoremod", false, getClass().getClassLoader());
-                LOGGER.info("Sponge is present!");
+                Class spongeForgeClass = Class.forName("org.spongepowered.mod.SpongeCoremod", true, getClass().getClassLoader());
+                LOGGER.info("SpongeForge is present!");
+                LOGGER.info("I am designed for SpongeForge version: ${spongeforge_version}");
                 spongePresent = true;
+
+                File spongeForgeFile = new File(spongeForgeClass.getProtectionDomain().getCodeSource().getLocation().getFile());
+                JarInputStream SpongeForgeStream = new JarInputStream(new FileInputStream(spongeForgeFile));
+                Attributes spongeForgeMainAttributes = SpongeForgeStream.getManifest().getMainAttributes();
+                for(Map.Entry<Object, Object> e : spongeForgeMainAttributes.entrySet()){
+                    if("Implementation-Version".equals(String.valueOf(e.getKey()))){
+                        spongeForgeVersion = String.valueOf(e.getValue());
+                    }
+                }
+                if(spongeForgeVersion == null){
+                    LOGGER.warn("Unable to determine SpongeForge version. Use at your own risk.");
+                }else{
+                    if(spongeForgeVersion.equals("${spongeforge_version}")){
+                        LOGGER.info("SpongeForge version is a match!");
+                    }else{
+                        LOGGER.warn("SpongeForge version is different than expected!");
+                        LOGGER.warn("This could result in undefined behavior.");
+                        LOGGER.warn("");
+                        LOGGER.warn("Expected: '${spongeforge_version}', but you have: '" + spongeForgeVersion + "' installed.");
+                    }
+                }
+            }catch (IOException ignored){
+                LOGGER.warn("Failed to get your currently active Sponge version.");
             } catch (ClassNotFoundException ignored) {
-                LOGGER.info("Sponge is not present!");
+                LOGGER.info("SpongeForge is not present!");
                 spongePresent = false;
                 try{
                     Class.forName("org.spongepowered.asm.launch.MixinTweaker", false, getClass().getClassLoader());
