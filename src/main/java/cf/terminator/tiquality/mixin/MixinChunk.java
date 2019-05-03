@@ -156,6 +156,7 @@ public abstract class MixinChunk implements TiqualityChunk {
     /*
      * For sponge, see:
      * cf.terminator.tiquality.mixin.MixinSpongePhaseTracker.onBlockTick
+     * //TODO: SPONGE KILLS THIS
      */
     @Inject(method = "setBlockState", at = @At("HEAD"), require = 1)
     private void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> cir){

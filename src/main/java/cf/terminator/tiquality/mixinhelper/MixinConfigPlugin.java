@@ -5,6 +5,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.lib.tree.ClassNode;
+import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -33,6 +34,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
     }
 
     private void setup(){
+        MixinEnvironment.getDefaultEnvironment().setOption(MixinEnvironment.Option.DEBUG_ALL, true);
         if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
             File thisJar = new File(Tiquality.class.getProtectionDomain().getCodeSource().getLocation().getFile());
             LOGGER.info("I am located here: " + thisJar);
@@ -115,8 +117,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
             }
         }else{
             switch (mixin){
-                case "cf.terminator.tiquality.mixin.MixinSpongeTrackingUtil":
-                case "cf.terminator.tiquality.mixin.MixinSpongePhaseTracker":
+                //case "cf.terminator.tiquality.mixin.MixinSpongeTrackingUtil":
+                //case "cf.terminator.tiquality.mixin.MixinSpongePhaseTracker":
+                case "cf.terminator.tiquality.mixin.MixinWorldServerSponge":
                     return false;
             }
         }
@@ -172,7 +175,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
     }
 
     @Override
-    public void preApply(String s, ClassNode classNode, String s1, IMixinInfo iMixinInfo) {
+    public void preApply(String s, ClassNode classNode, String mixin, IMixinInfo iMixinInfo) {
 
     }
 

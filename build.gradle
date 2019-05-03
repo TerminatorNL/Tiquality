@@ -64,7 +64,6 @@ compileJava {
     options.compilerArgs << "-XDignore.symbol.file"
 }
 
-
 minecraft {
     version = forgeVersion
     runDir = "run"

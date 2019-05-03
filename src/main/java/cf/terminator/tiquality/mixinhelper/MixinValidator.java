@@ -33,7 +33,7 @@ public class MixinValidator {
             for(String target : FAILED_OR_UNLOADED_MIXINS.values()){
                 try {
                     Class clazz = Class.forName(target);
-                    LOGGER.info("Loading mixin class: " + clazz);
+                    LOGGER.info("Loaded mixin target class: " + clazz);
                 } catch (Exception e) {
                     LOGGER.warn("Failed to load class: " + target + ". This is required to apply mixins!");
                     e.printStackTrace();

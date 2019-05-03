@@ -10,12 +10,11 @@
     "MixinEntity",
     "MixinHopperlag",
     "MixinMinecraftServer",
-    "MixinSpongePhaseTracker",
-    "MixinSpongeTrackingUtil",
     "MixinTileEntity",
     "MixinWorldClient",
     "MixinWorldForge",
     "MixinWorldServerCommon",
-    "MixinWorldServerForge"
+    "MixinWorldServerForge",
+    "MixinWorldServerSponge"
   ]
 }

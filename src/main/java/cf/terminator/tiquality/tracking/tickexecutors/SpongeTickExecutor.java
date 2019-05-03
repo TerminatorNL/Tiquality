@@ -8,8 +8,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.spongepowered.common.event.tracking.TrackingUtil;
-import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 
 import java.util.Random;
 
@@ -22,33 +20,23 @@ import java.util.Random;
  */
 public class SpongeTickExecutor implements TickExecutor {
 
-    public static boolean IS_CONTROLLED_BY_TIQUALITY = false;
-
     @Override
     public void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
-        IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.updateTickBlock((IMixinWorldServer) world, block, pos, state, rand);
-        IS_CONTROLLED_BY_TIQUALITY = false;
+        ((TickExecutor) world).onBlockTick(block, world, pos, state, rand);
     }
 
     @Override
     public void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
-        IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.randomTickBlock((IMixinWorldServer) world, block, pos, state, rand);
-        IS_CONTROLLED_BY_TIQUALITY = false;
+        ((TickExecutor) world).onRandomBlockTick(block, world, pos, state, rand);
     }
 
     @Override
     public void onTileEntityTick(ITickable tickable) {
-        IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.tickTileEntity((IMixinWorldServer) ((TileEntity) tickable).getWorld(), tickable);
-        IS_CONTROLLED_BY_TIQUALITY = false;
+        ((TickExecutor) ((TileEntity) tickable).getWorld()).onTileEntityTick(tickable);
     }
 
     @Override
     public void onEntityTick(Entity e) {
-        IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.tickEntity(e);
-        IS_CONTROLLED_BY_TIQUALITY = false;
+        ((TickExecutor) e.getEntityWorld()).onEntityTick(e);
     }
 }
