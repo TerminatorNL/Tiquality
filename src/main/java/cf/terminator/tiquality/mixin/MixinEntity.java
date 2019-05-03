@@ -88,14 +88,14 @@ public abstract class MixinEntity implements TiqualityEntity {
         this.setTrackerHolder(tracker == null ? null : tracker.getHolder());
     }
 
-    @Inject(method = "writeToNBT", at = @At("HEAD"))
+    @Inject(method = "writeToNBT", at = @At("HEAD"), require = 1)
     private void TiqualityOnWrite(NBTTagCompound compound, CallbackInfoReturnable<NBTTagCompound> cir){
         if(trackerHolder != null && trackerHolder.getTracker().shouldSaveToDisk() == true) {
             compound.setTag("Tiquality", trackerHolder.getHolderTag());
         }
     }
 
-    @Inject(method = "readFromNBT", at = @At("HEAD"))
+    @Inject(method = "readFromNBT", at = @At("HEAD"), require = 1)
     private void TiqualityOnRead(NBTTagCompound compound, CallbackInfo ci){
         if(compound.hasKey("Tiquality")) {
             trackerHolder = TrackerManager.readHolder((TiqualityWorld) world, compound.getCompoundTag("Tiquality"));

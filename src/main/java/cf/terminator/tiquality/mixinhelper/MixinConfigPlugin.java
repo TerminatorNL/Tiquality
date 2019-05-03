@@ -11,10 +11,8 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.net.URLDecoder;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 
@@ -24,6 +22,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
     public static String spongeForgeVersion = null;
     public static boolean hasClientClasses = true;
     public static boolean MIXIN_CONFIG_PLUGIN_WAS_LOADED = false;
+    public static HashMap<String, String> MIXINS_TO_LOAD = new HashMap<>();
     public static final Logger LOGGER = LogManager.getLogger("Tiquality-Boot");
 
     /*
@@ -37,6 +36,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
         if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
             File thisJar = new File(Tiquality.class.getProtectionDomain().getCodeSource().getLocation().getFile());
             LOGGER.info("I am located here: " + thisJar);
+            LOGGER.info("I am designed for Forge version: ${forge_version}");
             MIXIN_CONFIG_PLUGIN_WAS_LOADED = true;
 
             for(StackTraceElement element : Thread.currentThread().getStackTrace()){
@@ -65,7 +65,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
                 LOGGER.info("I am designed for SpongeForge version: ${spongeforge_version}");
                 spongePresent = true;
 
-                File spongeForgeFile = new File(spongeForgeClass.getProtectionDomain().getCodeSource().getLocation().getFile());
+                File spongeForgeFile = new File(URLDecoder.decode(spongeForgeClass.getProtectionDomain().getCodeSource().getLocation().getFile(),"UTF-8"));
                 JarInputStream SpongeForgeStream = new JarInputStream(new FileInputStream(spongeForgeFile));
                 Attributes spongeForgeMainAttributes = SpongeForgeStream.getManifest().getMainAttributes();
                 for(Map.Entry<Object, Object> e : spongeForgeMainAttributes.entrySet()){
@@ -153,6 +153,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
     public boolean shouldApplyMixin(String target, String mixin) {
         boolean shouldApply = shouldApplyMixin(mixin);
         LOGGER.info((shouldApply ? "Enabling: " : "Skipping: ") + mixin);
+        if(shouldApply){
+            MIXINS_TO_LOAD.put(mixin, target);
+        }
         return shouldApply;
     }
 
@@ -174,7 +177,8 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
     }
 
     @Override
-    public void postApply(String s, ClassNode classNode, String s1, IMixinInfo iMixinInfo) {
-
+    public void postApply(String target, ClassNode classNode, String mixin, IMixinInfo iMixinInfo) {
+        LOGGER.info("Applied mixin: " + mixin);
+        MIXINS_TO_LOAD.remove(mixin);
     }
 }

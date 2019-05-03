@@ -16,17 +16,17 @@ import java.util.Random;
 @Mixin(value = World.class, priority = 1001)
 public class MixinWorldForge {
 
-    @Redirect(method="immediateBlockTick", at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
+    @Redirect(method="immediateBlockTick", at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
     private void onBlockTick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
         TickHub.onBlockTick(block, worldIn, pos, state, rand);
     }
 
-    @Redirect(method = "updateEntities", require = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ITickable;update()V"))
+    @Redirect(method = "updateEntities", require = 1, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ITickable;update()V"))
     private void onUpdateTileEntities(ITickable tile) {
         TickHub.onTileEntityTick(tile);
     }
 
-    @Redirect(method = "updateEntities", require = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onUpdate()V"))
+    @Redirect(method = "updateEntities", require = 1, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onUpdate()V"))
     private void onUpdateEntities(Entity entity){
         TickHub.onEntityTick(entity);
     }

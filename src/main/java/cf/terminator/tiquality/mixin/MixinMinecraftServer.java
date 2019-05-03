@@ -18,7 +18,7 @@ public abstract class MixinMinecraftServer implements TiqualityMinecraftServer {
         return serverThread;
     }
 
-    @Inject(method = "updateTimeLightAndEntities", at = @At("RETURN"))
+    @Inject(method = "updateTimeLightAndEntities", at = @At("RETURN"), require = 1)
     private void afterTick(CallbackInfo ci){
 
     }

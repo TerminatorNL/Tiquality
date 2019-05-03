@@ -4,6 +4,7 @@ import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.command.CommandHub;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.interfaces.TickExecutor;
+import cf.terminator.tiquality.mixinhelper.MixinValidator;
 import cf.terminator.tiquality.monitor.*;
 import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
@@ -82,7 +83,6 @@ public class Tiquality {
             }
             FMLCommonHandler.instance().exitJava(1, true);
         }
-
         MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
@@ -116,6 +116,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(MixinValidator.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
         Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
         Tracking.registerCustomTracker("Forced", ForcedTracker.class);
@@ -124,6 +125,9 @@ public class Tiquality {
     @EventHandler
     public void onStop(FMLServerStoppedEvent e){
         CommandHub.INSTANCE.reset();
+        if(TICK_MASTER != null){
+            MinecraftForge.EVENT_BUS.unregister(TICK_MASTER);
+        }
     }
 
     public static void log_sync(String str){

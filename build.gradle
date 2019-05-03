@@ -46,7 +46,9 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-String spongeForgeVersion = '1.12.2-2768-7.1.6-RC3643'
+String spongeForgeVersion = '1.12.2-2825-7.1.6-RC3692'
+String forgeVersion = '1.12.2-14.23.5.2825'
+//String spongeForgeVersion = '1.12.2-2768-7.1.6-RC3643'
 version = "1.12.2-GAMMA-1.2.1"
 group = "cf.terminator"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
@@ -64,13 +66,15 @@ compileJava {
 
 
 minecraft {
-    version = "1.12.2-14.23.5.2768"
+    version = forgeVersion
     runDir = "run"
     mappings = "snapshot_20180808"
     replaceIn "Tiquality.java"
     replace '${version}', buildType + "-" + project.version
     replaceIn "mixinhelper/MixinConfigPlugin.java"
     replace '${spongeforge_version}', spongeForgeVersion
+    replaceIn "mixinhelper/MixinConfigPlugin.java"
+    replace '${forge_version}', forgeVersion
 }
 
 configurations {
@@ -104,10 +108,9 @@ dependencies {
 
     if(isFat) {
         embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
-            ['gson','guava','commons-io'].each {
+            ['gson','guava','commons-io','launchwrapper'].each {
                 exclude module: it
             }
-            exclude module: 'launchwrapper'
         }
     }else{
         compile ('org.spongepowered:mixin:0.7.11-SNAPSHOT'){

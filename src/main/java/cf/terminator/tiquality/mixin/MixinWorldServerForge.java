@@ -15,13 +15,17 @@ import java.util.Random;
 @Mixin(value = WorldServer.class, priority = 999)
 public abstract class MixinWorldServerForge {
 
-    @SuppressWarnings("InvalidMemberReference")
-    @Redirect(method={"tickUpdates","updateBlockTick"}, at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/WorldHelper;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
+    @Redirect(method="tickUpdates", at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
+    private void onBlockTick_tick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
+        TickHub.onBlockTick(block, worldIn, pos, state, rand);
+    }
+
+    @Redirect(method="updateBlockTick", at = @At(value = "INVOKE", target = "net/minecraft/block/Block.updateTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
     private void onBlockTick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
         TickHub.onBlockTick(block, worldIn, pos, state, rand);
     }
 
-    @Redirect(method="updateBlocks", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;randomTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
+    @Redirect(method="updateBlocks", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;randomTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
     private void onRandomBlockTick(Block block, World worldIn, BlockPos pos, IBlockState state, Random rand){
         TickHub.onRandomBlockTick(block, worldIn, pos, state, rand);
     }

@@ -14,7 +14,7 @@ public class MixinHopperlag {
     /**
      * Used to test lag-generation, is not included in actual release.
      */
-    @Inject(method = "update", at = @At("HEAD"))
+    @Inject(method = "update", at = @At("HEAD"), require = 1)
     private void dolag(CallbackInfo ci){
         if(MixinConfigPlugin.isProductionEnvironment()){
             throw new ForgetFulProgrammerException();

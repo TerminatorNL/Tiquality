@@ -20,11 +20,17 @@ public class ChunkLoadMonitor {
 
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event){
+        if(event.getWorld().isRemote){
+            return;
+        }
         ((TiqualityChunk) event.getChunk()).associateTrackers();
     }
 
     @SubscribeEvent
     public void onNBTLoad(ChunkDataEvent.Load event){
+        if(event.getWorld().isRemote){
+            return;
+        }
         NBTTagCompound tag = event.getData();
         if(tag.hasKey(TIQUALITY_TAG)){
             NBTTagCompound tiqualityData = tag.getCompoundTag(TIQUALITY_TAG);
@@ -34,6 +40,9 @@ public class ChunkLoadMonitor {
 
     @SubscribeEvent
     public void onNBTSave(ChunkDataEvent.Save event){
+        if(event.getWorld().isRemote){
+            return;
+        }
         NBTTagCompound tag = event.getData();
         NBTTagCompound tiqualityData = ((TiqualityChunk) event.getChunk()).tiquality_getNBT();
         if(tiqualityData != null) {

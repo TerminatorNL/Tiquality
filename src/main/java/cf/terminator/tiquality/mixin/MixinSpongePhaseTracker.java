@@ -18,7 +18,7 @@ import org.spongepowered.common.interfaces.world.IMixinWorldServer;
 @Mixin(value = PhaseTracker.class, priority = 999, remap = false)
 public class MixinSpongePhaseTracker {
 
-    @Inject(method="setBlockState", at = @At("HEAD"))
+    @Inject(method="setBlockState", at = @At("HEAD"), require = 1)
     private void onBlockTick(IMixinWorldServer mixinWorld, BlockPos pos, IBlockState newState, BlockChangeFlag flag, CallbackInfoReturnable<Boolean> cir){
         Tracker tracker = ((TiqualityWorld) mixinWorld).getTiqualityTracker(pos);
         if(tracker != null){
