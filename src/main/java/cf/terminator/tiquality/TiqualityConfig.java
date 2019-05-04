@@ -112,7 +112,8 @@ public class TiqualityConfig {
         })
         public String[] ALWAYS_TICKED_BLOCKS = new String[]{
                 "minecraft:piston_extension",
-                "minecraft:piston_head"
+                "minecraft:piston_head",
+                "minecraft:portal"
         };
 
         @Config.Comment({

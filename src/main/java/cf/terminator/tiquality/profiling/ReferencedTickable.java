@@ -85,6 +85,7 @@ public class ReferencedTickable {
             return type;
         }
 
+        @Nonnull
         public Reference convert(){
             switch (type){
                 case BLOCK:

@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.monitor;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.DenyTracker;
@@ -7,7 +8,6 @@ import cf.terminator.tiquality.util.Utils;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -47,11 +47,11 @@ public class InfoMonitor {
         if(player.hasDisconnected()){
             return;
         }
-        Utils.sendStatusBarMessage(player,new TextComponentString("Info tool stopped."));
+        Utils.sendStatusBarMessage(player,new TextComponentString(Tiquality.PREFIX + "Info tool stopped."));
     }
 
     private void sendTime(){
-        Utils.sendStatusBarMessage(player,new TextComponentString("Info tool started, aim at a block and sneak. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
+        Utils.sendStatusBarMessage(player,new TextComponentString(Tiquality.PREFIX + "Info tool started, aim at a block and sneak. Time left: " + (((endTime - System.currentTimeMillis())/1000)+1) + "s"));
     }
 
     @SubscribeEvent
@@ -75,7 +75,7 @@ public class InfoMonitor {
         }
         RayTraceResult result = player.world.rayTraceBlocks(player.getPositionEyes(1F), Utils.getLookVec(player,25));
         if(result == null){
-            Utils.sendStatusBarMessage(player,new TextComponentString("No block found."));
+            Utils.sendStatusBarMessage(player,new TextComponentString(Tiquality.PREFIX + "No block found."));
             return;
         }
         endTime = System.currentTimeMillis() + timeout;
@@ -83,9 +83,9 @@ public class InfoMonitor {
         Tracker tracker = ((TiqualityWorld) player.world).getTiqualityTracker(result.getBlockPos());
 
         if(tracker != null && tracker != DenyTracker.INSTANCE){
-            Utils.sendStatusBarMessage(player,tracker.getInfo());
+            Utils.sendStatusBarMessage(player,new TextComponentString(Tiquality.PREFIX).appendSibling(tracker.getInfo()));
         }else{
-            Utils.sendStatusBarMessage(player,new TextComponentString(TextFormatting.AQUA + " Not tracked."));
+            Utils.sendStatusBarMessage(player,new TextComponentString(Tiquality.PREFIX + " Not tracked."));
         }
     }
 }

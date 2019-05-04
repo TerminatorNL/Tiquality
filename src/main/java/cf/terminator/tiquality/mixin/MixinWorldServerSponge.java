@@ -5,11 +5,14 @@ import cf.terminator.tiquality.tracking.TickHub;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.profiler.Profiler;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
-import org.spongepowered.asm.mixin.Debug;
+import net.minecraft.world.storage.ISaveHandler;
+import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,11 +27,15 @@ import org.spongepowered.common.mixin.core.world.MixinWorldServer;
 import java.util.Random;
 
 @SuppressWarnings({"ShadowTarget", "ReferenceToMixin"})
-@Debug(export = true, print = true)
-@Mixin(value = WorldServer.class, priority = 3000, remap = false)
-public abstract class MixinWorldServerSponge implements TickExecutor {
+@Mixin(value = WorldServer.class, priority = 3000)
+public abstract class MixinWorldServerSponge extends World implements TickExecutor {
 
     private boolean IS_CONTROLLED_BY_TIQUALITY;
+
+    protected MixinWorldServerSponge(ISaveHandler saveHandlerIn, WorldInfo info, WorldProvider providerIn, Profiler profilerIn, boolean client) {
+        super(saveHandlerIn, info, providerIn, profilerIn, client);
+        throw new RuntimeException("Mixins cannot be instantiated");
+    }
 
     /*
         ENTITY
@@ -37,7 +44,7 @@ public abstract class MixinWorldServerSponge implements TickExecutor {
     @Shadow protected abstract void redirect$onCallEntityUpdate$zmd000(Entity entity);
 
     @Dynamic(value = "onCallEntityUpdate is added by SpongeForge (redirect$onCallEntityUpdate$zmd000)", mixin = MixinWorldServer.class)
-    @Inject(method = "redirect$onCallEntityUpdate$zmd000", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "redirect$onCallEntityUpdate$zmd000", at = @At("HEAD"), cancellable = true, require = 1)
     private void onCallEntityUpdate(Entity entity, CallbackInfo ci){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
             TickHub.onEntityTick(entity);
@@ -59,7 +66,7 @@ public abstract class MixinWorldServerSponge implements TickExecutor {
     @Shadow protected abstract void redirect$onUpdateTileEntities$zmd000(ITickable tickable);
 
     @Dynamic(value = "onUpdateTileEntities is added by SpongeForge (redirect$onUpdateTileEntities$zmd000)", mixin = MixinWorldServer.class)
-    @Inject(method = "redirect$onUpdateTileEntities$zmd000", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "redirect$onUpdateTileEntities$zmd000", at = @At("HEAD"), cancellable = true, require = 1)
     private void onUpdateTileEntities(ITickable tickable, CallbackInfo ci){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
             TickHub.onTileEntityTick(tickable);
@@ -78,7 +85,7 @@ public abstract class MixinWorldServerSponge implements TickExecutor {
         BLOCK
      */
     @Dynamic(value = "onUpdateTick is added by SpongeForge (redirect$onUpdateTick$zme000)", mixin = MixinWorldServer.class)
-    @Inject(method = "redirect$onUpdateTick$zme000", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "redirect$onUpdateTick$zme000", at = @At("HEAD"), cancellable = true, require = 1)
     private void onUpdateTick(Block block, net.minecraft.world.World worldIn, BlockPos pos, IBlockState state, Random rand, CallbackInfo ci){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
             TickHub.onBlockTick(block, worldIn, pos, state, rand);
@@ -105,7 +112,7 @@ public abstract class MixinWorldServerSponge implements TickExecutor {
     }
 
     @Dynamic(value = "onUpdateTick is added by SpongeForge (redirect$onUpdateTick$zme000)", mixin = MixinWorldServer.class)
-    @Redirect(method = "updateBlocks", at = @At(value = "INVOKE", target = "Lorg/spongepowered/common/event/tracking/TrackingUtil;randomTickBlock(Lorg/spongepowered/common/interfaces/world/IMixinWorldServer;Lnet/minecraft/block/Block;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
+    @Redirect(method = "updateBlocks", at = @At(value = "INVOKE", target = "Lorg/spongepowered/common/event/tracking/TrackingUtil;randomTickBlock(Lorg/spongepowered/common/interfaces/world/IMixinWorldServer;Lnet/minecraft/block/Block;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
     private void onRandomBlockTick_TickHub(IMixinWorldServer mixinWorld, Block block, BlockPos pos, IBlockState state, Random rand){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
             TickHub.onRandomBlockTick(block, (World) mixinWorld, pos, state, rand);

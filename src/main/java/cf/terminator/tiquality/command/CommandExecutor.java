@@ -2,6 +2,7 @@ package cf.terminator.tiquality.command;
 
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
+import cf.terminator.tiquality.api.Location;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
@@ -11,15 +12,15 @@ import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.interfaces.UpdateTyped;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
-import cf.terminator.tiquality.profiling.AnalyzedComponent;
-import cf.terminator.tiquality.profiling.ProfileReport;
-import cf.terminator.tiquality.profiling.SimpleProfiler;
-import cf.terminator.tiquality.profiling.TickTime;
+import cf.terminator.tiquality.profiling.*;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.ForgeData;
+import cf.terminator.tiquality.util.Teleporting;
 import com.mojang.authlib.GameProfile;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
@@ -35,6 +36,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -89,6 +91,35 @@ public class CommandExecutor {
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Reloading..."));
             TiqualityConfig.QuickConfig.reloadFromFile();
             sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Done!"));
+        /*
+
+                GOTO
+
+         */
+        }else if(args[0].equalsIgnoreCase("goto")) {
+            if (sender instanceof EntityPlayer == false) {
+                throw new CommandException("Only players can use the 'goto' command.");
+            }
+            holder.checkPermission(PermissionHolder.Permission.ADMIN);
+            EntityPlayer player = (EntityPlayer) sender;
+            if(args.length != 2){
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "This command is not intended to be typed manually... Instead: Click on one of the profile results!"));
+                throw new CommandException("Usage: /goto <identifier>");
+            }
+            String identifier = args[1];
+            byte[] bytes = Base64.getDecoder().decode(identifier.getBytes());
+            ByteBuf buf = Unpooled.wrappedBuffer(bytes);
+            ReferencedTickable.ReferenceId referenceId = new ReferencedTickable.ReferenceId(buf);
+            ReferencedTickable.Reference reference = referenceId.convert();
+            Location<Integer, BlockPos> pos = reference.currentPos();
+            if(pos == null){
+                throw new CommandException("Sorry, the current position is unknown.");
+            }else{
+                sender.sendMessage(new TextComponentString(PREFIX + "Teleporting to: ").appendSibling(reference.getName()));
+                Teleporting.attemptTeleportWithGameMode3(player, pos.getWorld(), pos.getPos());
+            }
+
+
         /*
 
                 SHARE
@@ -146,7 +177,6 @@ public class CommandExecutor {
 
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
                 List<ITextComponent> messages = new LinkedList<>();
-                messages.add(new TextComponentString(PREFIX + "Entities in chunk"));
                 Chunk chunk = player.getEntityWorld().getChunk(player.getPosition());
                 for(ClassInheritanceMultiMap<Entity> classInheritanceMultiMap :chunk.getEntityLists()){
                     for(Entity entity_raw : classInheritanceMultiMap){
@@ -161,6 +191,7 @@ public class CommandExecutor {
                 if(messages.size() == 0){
                     player.sendMessage(new TextComponentString(PREFIX + "No entities are found in your chunk."));
                 }else{
+                    player.sendMessage(new TextComponentString(PREFIX + "Entities in chunk:"));
                     for(ITextComponent message : messages) {
                         player.sendMessage(message);
                     }
@@ -186,9 +217,9 @@ public class CommandExecutor {
             boolean isBlockAtFeetAir = blockAtFeet.isAir(stateAtFeet, world, blockPosAtFeet);
             boolean isBlockBelowFeetAir = blockBelowFeet.isAir(stateBelowFeet, world, blockPosBelowFeet);
 
-            player.sendMessage(new TextComponentString(PREFIX + "Info:"));
             if (isBlockAtFeetAir && isBlockBelowFeetAir) {
-                throw new CommandException("Please stand on top of a block and run this command again.");
+                player.sendMessage(new TextComponentString(PREFIX + "If you wish to see info about a block, please stand on it and run this command again."));
+                return;
             }
             if (isBlockBelowFeetAir == false) {
                 Tracker tracker = ((TiqualityWorld) player.getEntityWorld()).getTiqualityTracker(player.getPosition().down());
@@ -469,10 +500,18 @@ public class CommandExecutor {
                                     + TextFormatting.GRAY + "\nTracker ticks measured: " + TextFormatting.WHITE + TWO_DECIMAL_FORMATTER.format(report.getTrackerTicks())
                             );
 
+
+                            if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+                                hoverString.appendSibling(new TextComponentString(TextFormatting.DARK_GRAY + "\n\nClick to teleport!"));
+                                ByteBuf buf = Unpooled.buffer();
+                                component.getReferenceId().toBytes(buf);
+                                byte[] bytes = new byte[buf.readableBytes()];
+                                buf.readBytes(bytes);
+                                String referenceString = new String(Base64.getEncoder().encode(bytes));
+                                style.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tiquality goto " + referenceString));
+                            }
+
                             style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverString));
-
-
-
 
                             messages.add(new TextComponentString(stats + name).setStyle(style));
                         }

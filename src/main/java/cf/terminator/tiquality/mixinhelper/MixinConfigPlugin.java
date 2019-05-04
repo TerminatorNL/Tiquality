@@ -120,6 +120,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
                 //case "cf.terminator.tiquality.mixin.MixinSpongeTrackingUtil":
                 //case "cf.terminator.tiquality.mixin.MixinSpongePhaseTracker":
                 case "cf.terminator.tiquality.mixin.MixinWorldServerSponge":
+                case "cf.terminator.tiquality.mixin.MixinSpongeChunk":
                     return false;
             }
         }

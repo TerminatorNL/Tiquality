@@ -100,6 +100,7 @@ public class Tiquality {
     @EventHandler
     public void onPost(FMLInitializationEvent e){
         ExternalHooker.init();
+        MixinValidator.validate();
     }
 
     @EventHandler
@@ -116,7 +117,6 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(MixinValidator.INSTANCE);
         TiqualityConfig.QuickConfig.reloadFromFile();
         Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
         Tracking.registerCustomTracker("Forced", ForcedTracker.class);

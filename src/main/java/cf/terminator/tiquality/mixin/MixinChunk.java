@@ -18,6 +18,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
+import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,7 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-@Mixin(value = Chunk.class, priority = 1001)
+@Debug(print = true, export = true)
+@Mixin(value = Chunk.class, priority = 2000)
 public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract boolean isLoaded();
@@ -91,7 +93,7 @@ public abstract class MixinChunk implements TiqualityChunk {
      * @param create If true, it will create an entry for this chunk for that tracker if it does not
      *               exist yet. If it does, we return it's ID.
      *               If false, and the tracker does not exists, we return 1, indicating there's no tracker present
-     * @return
+     * @return tracker ID
      */
     private byte getIDbyTracker(Tracker tracker, boolean create){
         Byte owner_id = trackerLookup.inverse().get(tracker);
@@ -155,11 +157,15 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     /*
      * For sponge, see:
-     * cf.terminator.tiquality.mixin.MixinSpongePhaseTracker.onBlockTick
-     * //TODO: SPONGE KILLS THIS
+     * cf.terminator.tiquality.mixin.MixinWorldServerSponge.onSetBlockState
      */
     @Inject(method = "setBlockState", at = @At("HEAD"), require = 1)
     private void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> cir){
+        onSetBlockStateHook(pos, state);
+    }
+
+    @Override
+    public void onSetBlockStateHook(BlockPos pos, IBlockState state){
         Tracker tracker = tiquality_findTrackerByBlockPos(pos);
         if(tracker != null){
             tracker.notifyBlockStateChange((TiqualityWorld) world, pos, state);

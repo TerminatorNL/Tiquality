@@ -10,6 +10,7 @@
     "MixinEntity",
     "MixinHopperlag",
     "MixinMinecraftServer",
+    "MixinSpongeChunk",
     "MixinTileEntity",
     "MixinWorldClient",
     "MixinWorldForge",
