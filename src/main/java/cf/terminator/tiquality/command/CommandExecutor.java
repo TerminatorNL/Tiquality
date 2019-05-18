@@ -26,6 +26,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -353,7 +354,11 @@ public class CommandExecutor {
             holder.checkPermission(PermissionHolder.Permission.CLAIM);
             int range = MAX_CLAIM_RADIUS;
             if(args.length > 1){
-                range = CommandBase.parseInt(args[1],1, MAX_CLAIM_RADIUS);
+                try {
+                    range = CommandBase.parseInt(args[1], 1, MAX_CLAIM_RADIUS);
+                }catch (NumberInvalidException e){
+                    throw new CommandException("Number must be between 0 and " + MAX_CLAIM_RADIUS);
+                }
             }
             if(sender instanceof EntityPlayer == false){
                 throw new CommandException("You must be a player to use this command.");
@@ -365,7 +370,7 @@ public class CommandExecutor {
             leastPos = new BlockPos(leastPos.getX(), 0, leastPos.getZ());
             mostPos = new BlockPos(mostPos.getX(), 255, mostPos.getZ());
 
-            player.sendMessage(new TextComponentString(PREFIX + "Claiming area: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
+            player.sendMessage(new TextComponentString(PREFIX + "Claiming area in a " + range + " block radius: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
             Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world,player.getGameProfile());
             ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
                 @Override

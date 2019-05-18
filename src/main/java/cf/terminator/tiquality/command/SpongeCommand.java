@@ -3,10 +3,7 @@ package cf.terminator.tiquality.command;
 import cf.terminator.tiquality.Tiquality;
 import net.minecraft.command.ICommandSender;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandCallable;
-import org.spongepowered.api.command.CommandException;
-import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.*;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -21,6 +18,13 @@ import java.util.Optional;
 public class SpongeCommand implements CommandCallable {
 
     public void init() {
+        CommandManager commandManager = Sponge.getCommandManager();
+        for(String alias : CommandHub.ALIASES){
+            if(commandManager.containsAlias(alias)){
+                Tiquality.LOGGER.info("Command for '" + alias + "' has already been registered, skipping!");
+                return;
+            }
+        }
         Sponge.getCommandManager().register(Tiquality.INSTANCE, this, CommandHub.ALIASES);
     }
 

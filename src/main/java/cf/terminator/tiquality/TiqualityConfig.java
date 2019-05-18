@@ -7,6 +7,7 @@ import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
+import net.minecraft.command.CommandException;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.init.Blocks;
@@ -15,14 +16,15 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("ALL")
 @Config(modid = Tiquality.MODID, name = Tiquality.NAME, type = Config.Type.INSTANCE, category = "Tiquality")
 public class TiqualityConfig {
 
@@ -212,7 +214,7 @@ public class TiqualityConfig {
             ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
         }
 
-        public static void reloadFromFile() {
+        public static void reloadFromFile() throws CommandException {
             /*
              * I know this is not a proper way to do this, if you know of a better way to reload the config
              * FROM DISK, I'd gladly move to your solution.
@@ -221,12 +223,24 @@ public class TiqualityConfig {
                 Field field = ConfigManager.class.getDeclaredField("CONFIGS");
                 field.setAccessible(true);
                 @SuppressWarnings("unchecked") Map<String, Configuration> STOLEN_VARIABLE = (Map<String, Configuration>) field.get(null);
-                STOLEN_VARIABLE.remove(new File(Loader.instance().getConfigDir(), "Tiquality.cfg").getAbsolutePath());
+                Iterator<Map.Entry<String, Configuration>> iterator = STOLEN_VARIABLE.entrySet().iterator();
+                boolean foundConfig = false;
+                while (iterator.hasNext()){
+                    Map.Entry<String, Configuration> entry = iterator.next();
+                    if(entry.getKey().endsWith(Tiquality.NAME + ".cfg")){
+                        iterator.remove();
+                        foundConfig = true;
+                        ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
+                        update();
+                        break;
+                    }
+                }
+                if(foundConfig == false){
+                    throw new CommandException("Unable to reload config, entry was not found!");
+                }
             } catch (NoSuchFieldException | IllegalAccessException e) {
                 e.printStackTrace();
             }
-            saveToFile();
-            update();
         }
 
         public static void update(){
@@ -515,6 +529,22 @@ public class TiqualityConfig {
                 Tiquality.LOGGER.warn("regex '" + regex + "' had no matches!");
             }
             return list;
+        }
+    }
+
+    public static class Listener{
+
+        public static final Listener INSTANCE = new Listener();
+
+        private Listener(){
+
+        }
+
+        @SubscribeEvent
+        public void onConfigurationChangedEvent(ConfigChangedEvent.OnConfigChangedEvent event) {
+            if (event.getModID().equalsIgnoreCase(Tiquality.MODID)) {
+                QuickConfig.update();
+            }
         }
     }
 }

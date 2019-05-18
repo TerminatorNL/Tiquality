@@ -90,6 +90,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(EntitySpawnMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(TiqualityConfig.Listener.INSTANCE);
 
 
         /* Used to monitor TPS while testing. */
@@ -117,7 +118,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
-        TiqualityConfig.QuickConfig.reloadFromFile();
+        TiqualityConfig.QuickConfig.update();
         Tracking.registerCustomTracker("PlayerTracker", PlayerTracker.class);
         Tracking.registerCustomTracker("Forced", ForcedTracker.class);
     }

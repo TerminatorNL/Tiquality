@@ -7,7 +7,6 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.Utils;
-import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -278,8 +277,6 @@ public class WorldHelper {
 
             if (provider instanceof ChunkProviderServer) {
                 ((ChunkProviderServer) provider).queueUnload(mcChunk);
-            } else if (provider instanceof ChunkProviderClient) {
-                ((ChunkProviderClient) provider).unloadChunk(mcChunk.x, mcChunk.z);
             }
         }
 

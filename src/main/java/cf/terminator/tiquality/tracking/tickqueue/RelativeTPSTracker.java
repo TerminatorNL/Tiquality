@@ -1,6 +1,5 @@
 package cf.terminator.tiquality.tracking.tickqueue;
 
-import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.TiqualityConfig;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.interfaces.TiqualitySimpleTickable;
@@ -59,11 +58,11 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
         }
     }
 
-    public void setTPS(double tps){
+    public void setTPS(double trackerTPS, double worldTPS){
         synchronized (this) {
-            this.tps = tps;
+            this.tps = trackerTPS;
         }
-        double ratio = tps/Tiquality.TPS_MONITOR.getAverageTPS();
+        double ratio = trackerTPS/worldTPS;
         if (ratio <= TiqualityConfig.DEFAULT_THROTTLE_WARNING_LEVEL) {
             Tracker tracker = this.queue.tracker.get();
             if (tracker != null) {
@@ -84,7 +83,8 @@ public class RelativeTPSTracker implements TiqualitySimpleTickable {
         if (worldTicks % 100 == 0){
             long endTime = System.currentTimeMillis();
             double durationInSeconds = (endTime - startTime)/1000D;
-            setTPS(actualTrackerTicks/durationInSeconds);
+            double worldTPS = worldTicks/durationInSeconds;
+            setTPS(actualTrackerTicks/durationInSeconds, worldTPS);
             reset();
         }
     }
