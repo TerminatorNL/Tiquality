@@ -6,6 +6,7 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.TrackerHolder;
+import cf.terminator.tiquality.util.PersistentData;
 import cf.terminator.tiquality.world.ChunkStorage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -239,6 +240,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
+        PersistentData.ensureDataAvailability(world);
         STORAGE.clearAll();
         STORAGE.loadFromNBT(tag.getCompoundTag("Storage"), getMinecraftChunk());
         for (NBTBase nbtBase : tag.getTagList("Trackers", 10)) {

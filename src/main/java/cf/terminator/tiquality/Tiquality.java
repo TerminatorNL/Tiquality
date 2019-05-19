@@ -11,6 +11,7 @@ import cf.terminator.tiquality.tracking.PlayerTracker;
 import cf.terminator.tiquality.tracking.event.EntitySetTrackerEventHandler;
 import cf.terminator.tiquality.tracking.tickexecutors.ForgeTickExecutor;
 import cf.terminator.tiquality.tracking.tickexecutors.SpongeTickExecutor;
+import cf.terminator.tiquality.util.PersistentData;
 import cf.terminator.tiquality.util.Scheduler;
 import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraft.util.text.TextFormatting;
@@ -126,6 +127,7 @@ public class Tiquality {
     @EventHandler
     public void onStop(FMLServerStoppedEvent e){
         CommandHub.INSTANCE.reset();
+        PersistentData.deactivate();
         if(TICK_MASTER != null){
             MinecraftForge.EVENT_BUS.unregister(TICK_MASTER);
         }

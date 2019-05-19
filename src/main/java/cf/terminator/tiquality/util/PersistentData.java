@@ -24,7 +24,11 @@ public enum PersistentData {
 
     public static void updatePersistentFileAndStorage(World world){
         try {
-            persistentFile = new File(world.getSaveHandler().getWorldDirectory(), "TiqualityStorage.nbt");
+            File persistentFileTmp = new File(world.getSaveHandler().getWorldDirectory(), "TiqualityStorage.nbt");
+            if(persistentFileTmp.equals(persistentFile)){
+                return;
+            }
+            persistentFile = persistentFileTmp;
             Tiquality.LOGGER.info("Persistent data is inside: " + persistentFile.getCanonicalPath());
             NBTTagCompound read_tag = CompressedStreamTools.read(persistentFile);
             storage = read_tag == null ? new NBTTagCompound() : read_tag;
@@ -32,6 +36,21 @@ public enum PersistentData {
         } catch (IOException e) {
             throw new RuntimeException("Unable to read persistent data file.", e);
         }
+    }
+
+    public synchronized static void ensureDataAvailability(World world){
+        if(isAvailable() == false){
+            updatePersistentFileAndStorage(world);
+        }
+    }
+
+    public static boolean isAvailable(){
+        return storage != null;
+    }
+
+    public static void deactivate(){
+        storage = null;
+        persistentFile = null;
     }
 
     public static void save(){
