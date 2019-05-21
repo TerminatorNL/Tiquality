@@ -27,6 +27,8 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.Logger;
 
+import java.util.SplittableRandom;
+
 import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.MIXIN_CONFIG_PLUGIN_WAS_LOADED;
 
 @SuppressWarnings("WeakerAccess")
@@ -42,6 +44,7 @@ public class Tiquality {
     public static final String PREFIX = TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "] " + TextFormatting.GRAY;
     public static boolean SPONGE_IS_PRESENT = false;
     public static TickExecutor TICK_EXECUTOR;
+    public static final SplittableRandom RANDOM = new SplittableRandom();
 
     /**
      * Is also the sponge container.
@@ -88,7 +91,7 @@ public class Tiquality {
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
         MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(EntitySpawnMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(EntityMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
         MinecraftForge.EVENT_BUS.register(TiqualityConfig.Listener.INSTANCE);

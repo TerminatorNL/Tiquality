@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkPrimer;
 import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Final;
@@ -24,6 +25,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nonnull;
@@ -50,9 +52,20 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Shadow public abstract ChunkPos getPos();
 
-    private final BiMap<Byte, Tracker> trackerLookup = HashBiMap.create();
-    private final ChunkStorage STORAGE = new ChunkStorage();
+    private final BiMap<Byte, Tracker> tiquality_trackerLookup = HashBiMap.create();
+    private ChunkStorage tiquality_STORAGE;
+    private int tiquality_modcount = 0;
+    private int tiquality_refreshmod = 0;
 
+    @Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
+    private void tiquality_onInitialization_short(World worldIn, int x, int z, CallbackInfo ci){
+        tiquality_STORAGE = new ChunkStorage(this);
+    }
+
+    @Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
+    private void tiquality_onInitialization_extended(World worldIn, ChunkPrimer primer, int x, int z, CallbackInfo ci){
+        tiquality_STORAGE = new ChunkStorage(this);
+    }
 
     /**
      * Gets the first free index for a player.
@@ -72,12 +85,13 @@ public abstract class MixinChunk implements TiqualityChunk {
      */
     private byte getFirstFreeIndex(){
         byte i=6;
-        while(trackerLookup.containsKey(i)){
+        while(tiquality_trackerLookup.containsKey(i)){
             ++i;
             /* It overflowed, meaning our marker won't work. */
             if(i < 0){
-                trackerLookup.clear();
-                STORAGE.clearAll();
+                tiquality_trackerLookup.clear();
+                tiquality_STORAGE.clearAll();
+                tiquality_modcount++;
                 tiquality_refresh();
                 Tiquality.LOGGER.warn("There are too many owners in this chunk: " + this.getWorld().provider.getDimension() + " X=" + this.x + " Z=" + this.z);
                 Tiquality.LOGGER.warn("All tracking elements in this chunk have been removed to prevent undefined behavior.");
@@ -98,11 +112,12 @@ public abstract class MixinChunk implements TiqualityChunk {
      * @return tracker ID
      */
     private byte getIDbyTracker(Tracker tracker, boolean create){
-        Byte owner_id = trackerLookup.inverse().get(tracker);
+        Byte owner_id = tiquality_trackerLookup.inverse().get(tracker);
         if(owner_id == null){
             if(create == true) {
                 owner_id = getFirstFreeIndex();
-                trackerLookup.put(owner_id, tracker);
+                tiquality_trackerLookup.put(owner_id, tracker);
+                tiquality_modcount++;
                 return owner_id;
             }else{
                 return 1;
@@ -116,8 +131,12 @@ public abstract class MixinChunk implements TiqualityChunk {
      * Removes unused block owners.
      */
     private void tiquality_refresh(){
+        if(tiquality_refreshmod == tiquality_modcount){
+            return;
+        }
+
         Set<Byte> ownersToKeep = new TreeSet<>();
-        for(byte[] data : STORAGE.getAll()){
+        for(byte[] data : tiquality_STORAGE.getAll()){
             for(byte b : data){
                 if(b == 1 || b == 0){
                     continue;
@@ -128,7 +147,8 @@ public abstract class MixinChunk implements TiqualityChunk {
             }
         }
 
-        trackerLookup.keySet().retainAll(ownersToKeep);
+        tiquality_trackerLookup.keySet().retainAll(ownersToKeep);
+        tiquality_refreshmod = tiquality_modcount;
     }
 
     @Override
@@ -147,13 +167,15 @@ public abstract class MixinChunk implements TiqualityChunk {
         tracker = event.getTracker();
 
         if(tracker == null){
-            STORAGE.set(pos, (byte) 0);
+            tiquality_STORAGE.set(pos, (byte) 0);
         }else {
             byte id = getIDbyTracker(tracker, true);
-            STORAGE.set(pos, id);
+            tiquality_STORAGE.set(pos, id);
             tracker.associateChunk(this);
-            trackerLookup.forcePut(id, tracker);
+            tiquality_trackerLookup.forcePut(id, tracker);
         }
+
+        tiquality_modcount++;
         markDirty();
     }
 
@@ -203,14 +225,15 @@ public abstract class MixinChunk implements TiqualityChunk {
         tracker = event.getTracker();
 
         if(tracker == null){
-            STORAGE.clearAll();
+            tiquality_STORAGE.clearAll();
         }else {
             byte id = getIDbyTracker(tracker, true);
-            STORAGE.setAll(id);
+            tiquality_STORAGE.setAll(id);
             tracker.associateChunk(this);
-            trackerLookup.clear();
-            trackerLookup.forcePut(id, tracker);
+            tiquality_trackerLookup.clear();
+            tiquality_trackerLookup.forcePut(id, tracker);
         }
+        tiquality_modcount++;
         markDirty();
     }
 
@@ -219,12 +242,12 @@ public abstract class MixinChunk implements TiqualityChunk {
     public NBTTagCompound tiquality_getNBT() {
         tiquality_refresh();
         NBTTagCompound tag = new NBTTagCompound();
-        NBTTagCompound storageTag = STORAGE.getNBT();
+        NBTTagCompound storageTag = tiquality_STORAGE.getNBT();
         if(storageTag != null) {
             tag.setTag("Storage", storageTag);
         }
         NBTTagList trackerList = new NBTTagList();
-        for (Map.Entry<Byte, Tracker> e : trackerLookup.entrySet()) {
+        for (Map.Entry<Byte, Tracker> e : tiquality_trackerLookup.entrySet()) {
             if (e.getValue().shouldSaveToDisk() == false) {
                 continue;
             }
@@ -241,8 +264,8 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void tiquality_loadNBT(World world, NBTTagCompound tag) {
-        STORAGE.clearAll();
-        STORAGE.loadFromNBT(tag.getCompoundTag("Storage"), getMinecraftChunk());
+        tiquality_STORAGE.clearAll();
+        tiquality_STORAGE.loadFromNBT(tag.getCompoundTag("Storage"), getMinecraftChunk());
         for (NBTBase nbtBase : tag.getTagList("Trackers", 10)) {
             NBTTagCompound trackerData = (NBTTagCompound) nbtBase;
             long id = trackerData.getLong("tracker");
@@ -253,7 +276,7 @@ public abstract class MixinChunk implements TiqualityChunk {
             TrackerHolder holder = TrackerHolder.getTrackerHolder((TiqualityWorld) world, id);
             if(holder != null){
                 holder.getTracker().associateChunk(this);
-                trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
+                tiquality_trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
             }else{
                 Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: " + this);
             }
@@ -263,13 +286,19 @@ public abstract class MixinChunk implements TiqualityChunk {
     @Override
     public @Nullable
     Tracker tiquality_findTrackerByBlockPos(BlockPos pos){
-        return trackerLookup.get(STORAGE.get(pos));
+        return tiquality_trackerLookup.get(tiquality_STORAGE.get(pos));
     }
 
     @Override
     public Set<Tracker> getActiveTrackers(){
         tiquality_refresh();
-        return Collections.unmodifiableSet(trackerLookup.values());
+        return Collections.unmodifiableSet(tiquality_trackerLookup.values());
+    }
+
+    @Override
+    @Nullable
+    public Tracker getCachedMostDominantTracker(){
+        return tiquality_trackerLookup.get(tiquality_STORAGE.getDominatingTracker());
     }
 
     @Override
@@ -288,7 +317,7 @@ public abstract class MixinChunk implements TiqualityChunk {
 
     @Override
     public void associateTrackers() {
-        for (Tracker tracker : trackerLookup.values()) {
+        for (Tracker tracker : tiquality_trackerLookup.values()) {
             tracker.associateChunk(this);
         }
     }
@@ -299,11 +328,13 @@ public abstract class MixinChunk implements TiqualityChunk {
         byte new_ = getIDbyTracker(newTracker, false);
         if(old != new_){
             if(new_ == 1){
-                STORAGE.replaceAll(old, (byte) 0);
+                tiquality_STORAGE.replaceAll(old, (byte) 0);
             }else{
-                STORAGE.replaceAll(old, new_);
+                tiquality_STORAGE.replaceAll(old, new_);
             }
         }
+        tiquality_modcount++;
+        markDirty();
     }
 
     /**
@@ -312,7 +343,7 @@ public abstract class MixinChunk implements TiqualityChunk {
      */
     @Override
     public void tiquality_mark(BlockPos pos){
-        STORAGE.mark(pos);
+        tiquality_STORAGE.mark(pos);
     }
 
     /**
@@ -321,7 +352,7 @@ public abstract class MixinChunk implements TiqualityChunk {
      */
     @Override
     public void tiquality_unMark(BlockPos pos){
-        STORAGE.unMark(pos);
+        tiquality_STORAGE.unMark(pos);
     }
 
     /**
@@ -331,6 +362,6 @@ public abstract class MixinChunk implements TiqualityChunk {
      */
     @Override
     public boolean tiquality_isMarked(BlockPos pos){
-        return STORAGE.isMarked(pos);
+        return tiquality_STORAGE.isMarked(pos);
     }
 }

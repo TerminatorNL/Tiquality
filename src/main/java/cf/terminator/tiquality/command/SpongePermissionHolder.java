@@ -1,7 +1,9 @@
 package cf.terminator.tiquality.command;
 
 import net.minecraft.command.CommandException;
+import net.minecraft.util.text.ITextComponent;
 import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.text.Text;
 
 public class SpongePermissionHolder implements PermissionHolder {
 
@@ -21,5 +23,10 @@ public class SpongePermissionHolder implements PermissionHolder {
         if(hasPermission(permission) == false){
             throw new CommandException("Sorry, you don't have permission to use this command. (" + permission.getNode() + ")");
         }
+    }
+
+    @Override
+    public void sendMessage(ITextComponent message) {
+        source.sendMessage(Text.of(message.getFormattedText()));
     }
 }

@@ -1,7 +1,12 @@
 package cf.terminator.tiquality.world;
 
+import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import cf.terminator.tiquality.interfaces.TiqualityEntity;
+import cf.terminator.tiquality.util.CountingMap;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
@@ -10,6 +15,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Keep in mind the data in this class is treated as bytes, even during bitwise operations, I chose
@@ -19,8 +26,12 @@ import java.util.Arrays;
 public class ChunkStorage {
 
     private Element[] data = new Element[16];
+    private byte dominatingTracker = 0;
+    private int domination = 0;
+    private TiqualityChunk chunk;
 
-    public ChunkStorage(){
+    public ChunkStorage(TiqualityChunk chunk){
+        this.chunk = chunk;
     }
 
     /**
@@ -40,8 +51,15 @@ public class ChunkStorage {
         Arrays.fill(storage, owner_id);
 
         for(int i=0;i<data.length;i++){
-            data[i] = new Element(storage);
+            data[i] = new Element(Arrays.copyOf(storage,4096));
         }
+
+        dominatingTracker = owner_id;
+        domination = 4096 * data.length;
+    }
+
+    public byte getDominatingTracker(){
+        return dominatingTracker;
     }
 
     /**
@@ -64,7 +82,23 @@ public class ChunkStorage {
         if(data[y_layer] == null) {
             data[y_layer] = new Element();
         }
-        data[y_layer].set(pos, owner_id);
+        if(owner_id != dominatingTracker){
+            if(data[y_layer].set(pos, owner_id) == dominatingTracker){
+                domination--; //Dominating tracker lost a block.
+            }
+            if(owner_id != 0){
+                domination--; //Another tracker gained a block
+            }
+            if(domination < 0){
+                recalculateDominatingTracker();
+            }
+        }else{
+            if(data[y_layer].set(pos, owner_id) == 0){
+                domination++; //Dominating tracker gained a block
+            }else{
+                domination++; //Another tracker lost a block
+            }
+        }
     }
 
     /**
@@ -120,10 +154,17 @@ public class ChunkStorage {
      * @param new_ the new tracker
      */
     public void replaceAll(byte old, byte new_){
+        int count = 0;
         for (Element e : data) {
             if (e != null) {
-                e.replaceAll(old, new_);
+                count = count + e.replaceAll(old, new_);
             }
+        }
+        if(old == dominatingTracker){
+            domination = domination - count;
+        }
+        if(new_ == dominatingTracker){
+            domination = domination + count;
         }
     }
 
@@ -133,6 +174,37 @@ public class ChunkStorage {
             byte[] storage = list.getByteArray(key);
             data[y] = new Element(storage);
             data[y].queueMarkedForUpdate(chunk, y);
+        }
+        recalculateDominatingTracker();
+    }
+
+    private void recalculateDominatingTracker(){
+        CountingMap<Byte> map = new CountingMap<>();
+        for(Element element : data){
+            if(element == null){
+                continue;
+            }
+            for(byte b : element.getUnmarkedCopy()){
+                if(b != 0){
+                    map.addCount(b, 1);
+                }
+            }
+        }
+        Map.Entry<Byte, Integer> dominator = Collections.max(map.entrySet(), Map.Entry.comparingByValue());
+        dominatingTracker = dominator.getKey();
+        domination = dominator.getValue();
+        for(Map.Entry<Byte, Integer> e : map.entrySet()){
+            if(e.getKey() == dominatingTracker){
+                continue;
+            }
+            domination = domination - e.getValue();
+        }
+        for(ClassInheritanceMultiMap<Entity> entities : chunk.getMinecraftChunk().getEntityLists()){
+            if(entities != null){
+                for(Entity entity : entities){
+                    ((TiqualityEntity) entity).setTracker(chunk.getCachedMostDominantTracker());
+                }
+            }
         }
     }
 
@@ -194,18 +266,31 @@ public class ChunkStorage {
         /**
          * Sets the stored owner associated with the BlockPos.
          * @param pos the block pos
+         * @return old owner id
          */
-        void set(BlockPos pos, byte owner_id){
-            storage[getIndex(pos)] = owner_id;
+        byte set(BlockPos pos, byte owner_id){
+            int index = getIndex(pos);
+            byte oldvar = storage[index];
+            storage[index] = owner_id;
+            return oldvar;
         }
 
 
-        void replaceAll(byte old, byte new_) {
+        /**
+         * Replaces a tracker with another.
+         * @param old the tracker to replace
+         * @param new_ what to replace the old tracker with
+         * @return the amount of affected positions
+         */
+        int replaceAll(byte old, byte new_) {
+            int count = 0;
             for (int i = 0; i < storage.length; i++){
                 if(storage[i] == old || (storage[i] ^ -128) == old){
                     storage[i] = new_;
+                    count++;
                 }
             }
+            return count;
         }
 
         byte[] getUnmarkedCopy(){

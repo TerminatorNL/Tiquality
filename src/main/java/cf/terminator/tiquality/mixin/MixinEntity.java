@@ -154,7 +154,7 @@ public abstract class MixinEntity implements TiqualityEntity {
         }
         locationCache = EntityList.getKey((Entity) (Object) this);
         if(locationCache == null){
-            locationCache = new ResourceLocation("*unknown*","*unknown*");
+            locationCache = new ResourceLocation("*unknown*",getClass().toString());
         }
         return locationCache;
     }

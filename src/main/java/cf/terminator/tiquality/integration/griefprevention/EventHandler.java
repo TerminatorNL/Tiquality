@@ -2,14 +2,12 @@ package cf.terminator.tiquality.integration.griefprevention;
 
 import cf.terminator.tiquality.api.event.TiqualityEvent;
 import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.Tracker;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -64,6 +62,7 @@ public class EventHandler {
         }
     }
 
+    /*
     @SubscribeEvent
     public void onSpawn(EntityJoinWorldEvent e){
         ClaimManager manager = GriefPrevention.getApi().getClaimManager((World) e.getWorld());
@@ -73,5 +72,5 @@ public class EventHandler {
         if(tracker != null) {
             ((TiqualityEntity) e.getEntity()).setTracker(tracker);
         }
-    }
+    }*/
 }

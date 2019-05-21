@@ -1,10 +1,12 @@
 package cf.terminator.tiquality.command;
 
 import net.minecraft.command.CommandException;
+import net.minecraft.util.text.ITextComponent;
 
 public interface PermissionHolder {
     boolean hasPermission(Permission permission);
     void checkPermission(Permission permission) throws CommandException;
+    void sendMessage(ITextComponent message);
 
     enum Permission{
         USE("tiquality.use"),

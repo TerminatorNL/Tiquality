@@ -3,7 +3,6 @@ package cf.terminator.tiquality.integration.griefprevention;
 import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.Tracking;
 import cf.terminator.tiquality.integration.griefprevention.event.GPClaimCreatedFullyEvent;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
@@ -14,7 +13,6 @@ import com.mojang.authlib.GameProfile;
 import me.ryanhamshire.griefprevention.GriefPrevention;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
-import me.ryanhamshire.griefprevention.api.event.BorderClaimEvent;
 import me.ryanhamshire.griefprevention.api.event.ChangeClaimEvent;
 import me.ryanhamshire.griefprevention.api.event.CreateClaimEvent;
 import me.ryanhamshire.griefprevention.api.event.TransferClaimEvent;
@@ -43,7 +41,7 @@ public class GriefPreventionHook {
     private static final CreateClaimEventHandler createClaimHandler = new CreateClaimEventHandler();
     private static final ChangeClaimEventHandler claimChangeHandler = new ChangeClaimEventHandler();
     private static final TransferClaimEventHandler transferClaimHandler = new TransferClaimEventHandler();
-    private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
+    //private static final BorderClaimEventHandler borderClaimHandler = new BorderClaimEventHandler();
 
     public static void setClaimTrackers(Claim claim, Tracker tracker, Runnable callback, Runnable beforeRun){
         Location<World> least = claim.getLesserBoundaryCorner();
@@ -189,7 +187,7 @@ public class GriefPreventionHook {
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, CreateClaimEvent.class, createClaimHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, ChangeClaimEvent.class, claimChangeHandler);
         Sponge.getEventManager().registerListener(Tiquality.INSTANCE, TransferClaimEvent.class, transferClaimHandler);
-        Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
+        //Sponge.getEventManager().registerListener(Tiquality.INSTANCE, BorderClaimEvent.class, borderClaimHandler);
 
         Tracking.registerCustomTracker("GPAdmin", AdminClaimTracker.class);
         MinecraftForge.EVENT_BUS.register(EventHandler.INSTANCE);
@@ -273,6 +271,7 @@ public class GriefPreventionHook {
         }
     }
 
+    /*
     private static class BorderClaimEventHandler implements EventListener<BorderClaimEvent>{
         @Override
         public void handle(@Nonnull BorderClaimEvent event) {
@@ -282,5 +281,5 @@ public class GriefPreventionHook {
                 entity.setTrackerHolder(tracker.getHolder());
             }
         }
-    }
+    }*/
 }

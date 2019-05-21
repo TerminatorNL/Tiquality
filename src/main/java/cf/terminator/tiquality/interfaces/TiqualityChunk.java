@@ -32,6 +32,9 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
 
     Tracker tiquality_findTrackerByBlockPos(BlockPos pos);
 
+    @Nullable
+    Tracker getCachedMostDominantTracker();
+
     boolean isChunkLoaded();
 
     Set<Tracker> getActiveTrackers();

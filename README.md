@@ -9,7 +9,10 @@ The core functionality is limiting a player's tick time in the world to evenly d
 You can download the latest release [here](https://minecraft.curseforge.com/projects/tiquality/files)
 
 ## Modpack authors
-Yes, you have my permission! Please add this to your modpack! :thumbsup: It will save server admins alot of time if you do all the configuration work for them! ([/tq set](#commands-and-permissions))
+Yes, you have my permission! Please add this to your modpack! :thumbsup: It will save server admins a lot of time if you do all the configuration work for them! ([/tq setblock](#commands-and-permissions))
+
+## Configuration
+Interested in this mod? Check out the default and documented configuration [here](https://github.com/TerminatorNL/Tiquality/blob/master/Tiquality.cfg).
 
 ## What this is, and what it is intended for
 An update throttler, that aims to provide a fair Minecraft experience at 20 TPS for users who do not cause a heavy load on the server, whilst players who build carelessly only get 10 TPS (depending on their impact).
@@ -28,20 +31,14 @@ If more players log in, the time will be divided more. If a player doesn't use u
 
 Logged out player's blocks have less tick time than players who are online (Config customizable)!
 
+When entities spawn or move between chunks, their tracker is updated to match the most dominant tracker (cached) from that chunk. This means that there's full support for entity throttling as well
+
 ## Integration
+* [SpongeForge](https://github.com/SpongePowered/SpongeForge)
 * [GriefPrevention](https://github.com/MinecraftPortCentral/GriefPrevention)
 * [FTB Utilities](https://github.com/FTBTeam/FTB-Utilities)
 
 All of the above are optional.
-
-If you have either [GriefPrevention](https://github.com/MinecraftPortCentral/GriefPrevention) or [FTB Utilities](https://github.com/FTBTeam/FTB-Utilities) installed, entities inside claimed land are also tick throttled. There's a config option to make dropped items tick faster by putting them in front of the queue `UPDATE_ITEMS_FIRST`. Players are **never** throttled.
-
-
-
-## WARNING
-Removing Tiquality will **PERMANENTLY** remove it's existing data on chunk load on a per-chunk basis.
-
-If you are looking to permanently delete Tiquality, simply start the server without it, and all data will get lost over time.
 
 ## How it functions
 All calls to `Block.randomTickBlock()`, `Block.updateTickBlock()`, `Entity.onUpdate()` and `ITickable.tickTileEntity()` are redirected to Tiquality, which in turn finds the owner of a block using a customized high performance lookup.
@@ -87,22 +84,35 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * Runs a very basic profiler on the targeted UUID or playername. A better alternative is in the works.
    * tiquality.admin
  
- * /tq set &lt;`feet`|`below`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
+ * /tq setblock &lt;`feet`|`below`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
    * Sets all the blocks of the specified type to change tick behavior.<br>
    Valid types are:<br>
      * `DEFAULT`: 
-       * **Blocks:** Only ticks when a tracker is assigned AND has time to tick. Can be throttled
-       * **Entities:** Ticks when no tracker is assigned. When a tracker has been assigned, it can be throttled if no time is left.
+       * Only ticks when a tracker is assigned AND has time to tick. Can be throttled
      * `PRIORITY`: 
-       * **Blocks & Entities:** Like `DEFAULT`, but ticks before everything else in the same tracker. Can be throttled
+       * Like `DEFAULT`, but ticks before everything else in the same tracker. Can be throttled
      * `TICK_DENIED`:
-       * **Blocks & Entities:** Never ticks
+       * Never ticks
      * `NATURAL`: Ticks when either:
-       * **Blocks:** Ticks when *no tracker* is assigned. When a tracker has been assigned, it can be throttled
-       * **Entities:** Exactly the same as `DEFAULT`
+       * Ticks when *no tracker* is assigned. When a tracker has been assigned, it can be throttled
      * `ALWAYS_TICK`:
-       * **Blocks & Entities:** Always ticks, never throttled. If a tracker has been assigned, it will still affect the granted time for a tracker.
+       * Always ticks, never throttled. If a tracker has been assigned, it will still affect the granted time for a tracker.
    * tiquality.admin
+   
+ * /tq setentity &lt;`feet`|`below`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
+   * Sets all the blocks of the specified type to change tick behavior.<br>
+    Valid types are:<br>
+      * `DEFAULT`: 
+        * Ticks when no tracker is assigned. When a tracker has been assigned, it can be throttled if no time is left.
+      * `PRIORITY`: 
+        * Like `DEFAULT`, but ticks before everything else in the same tracker. Can be throttled
+      * `TICK_DENIED`:
+        * Never ticks
+      * `NATURAL`: Ticks when either:
+        * Exactly the same as `DEFAULT`
+      * `ALWAYS_TICK`:
+        * Always ticks, never throttled. If a tracker has been assigned, it will still affect the granted time for a tracker.
+    * tiquality.admin
   
  * /tq reload
    * Reloads the config file.
@@ -124,7 +134,7 @@ When the next tick comes around, all trackers get a granted amount of tracking t
 - [My fluids don't flow! What do I do?](#my-fluids-dont-flow-what-do-i-do)
 - [What is your code style?](#what-is-your-code-style)
 - [I just installed Tiquality, and the TPS is HORRIBLE!](#i-just-installed-tiquality-and-the-tps-is-horrible)
-- [Why store data in the chunk itself?](#why-store-data-in-the-chunk-itself)
+- [Why store data in the chunk itself?](#where-is-the-data-stored)
 - [You suck!](#you-suck)
 
 ### Why don't you move to Sponge already!?
@@ -133,10 +143,11 @@ It is my intention to make Tiquality as widely available to everyone. Not having
 **Sponge is still supported, however.**
 
 ### What does `/tq info` do?
-It helps you diagnose if a block can be ticked or not
+It helps you diagnose if a block can be ticked or not, as well as finding names to use in the config
 
 Stand on top of the block and use `/tq info`. The output will be as follows:
 ```
+No entities are found in your chunk
 Block below: minecraft:piston TickType: DEFAULT Status: Tracked by: Terminator_NL
 ```
 We can break this down:
@@ -146,11 +157,14 @@ We can break this down:
  
 Another example of `tq info`:
 ```
-Block below: minecraft:sand TickType: NATURAL Status: Not tracked
+Entities in chunk:
+minecraft:item PRIORITY Not tracked
+Block below: minecraft:grass TickType: NATURAL Status: Not tracked
 ```
 We can break this down:
- - "minecraft:sand" is the block name
- - "TickType: NATURAL" means that this block **type** will tick if it's not tracked or the tracker has time to spare. (See: [/tq set](#commands-and-permissions))
+ - "minecraft:item" is the entity name of a dropped item in the chunk
+ - "minecraft:grass" is the block name
+ - "TickType: NATURAL" means that this block **type** will tick if it's not tracked or the tracker has time to spare. (See: [/tq setblock](#commands-and-permissions))
  - "Not tracked" tells us that no tracker has been assigned to this block.
 
 Recommended usage:
@@ -165,7 +179,7 @@ A block will tick if at least one of the following statements is true:
  - The block is defined in the config (`NATURAL_BLOCKS`) and the tracker has enough time to tick the block
  - The block is defined in the config (`ALWAYS_TICKED_BLOCKS`) It will tick even if a tracker has been assigned that ran out of time. Note that this will still consume the time on the tracker.
  
-The fastest way to solve this is simply by standing on the block and running `/tq set below NATURAL`. It will add the block to the config under `NATURAL_BLOCKS`.
+The fastest way to solve this is simply by standing on the block and running `/tq setblock below NATURAL`. It will add the block to the config under `NATURAL_BLOCKS`.
 
 Pro tip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned on the block correctly.
 
@@ -174,7 +188,7 @@ Pro tip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actual
 Fluid's are tracked the same way as [blocks](#my-blocks-dont-tick-what-do-i-do).
 
 
-The fastest way to solve this is simply by standing in the liquid and running `/tq set feet NATURAL`. It will add the fluid to the config under `NATURAL_BLOCKS`.
+The fastest way to solve this is simply by standing in the liquid and running `/tq setblock feet NATURAL`. It will add the fluid to the config under `NATURAL_BLOCKS`.
 
 Pro tip: Use [`/tq info`](#what-does-tq-info-do) first, to see if you are actually positioned in the liquid correctly.
 
@@ -184,9 +198,8 @@ Keep in mind, that there are MANY other reasons the TPS can still not be 20. Chu
 Tiquality does **NOT** hook into world events, so any processing AFTER the world tick is completely outside of Tiquality's control. You can try to raise the config value `TIME_BETWEEN_TICKS_IN_NS`. Remember that increasing this value will cause the world to stop ticking sooner, effectively making the world tick slower. 
 
 
-### Why store data in the chunk itself?
-Storing data in the chunk allows for easier resets and makes sure the data does not go out of sync with the chunk.
-Inspired by minecraft's own code, Tiquality also uses bitshifting to find the right identifier for a block, without having to iterate on anything. This means blazing fast performance, and this is needed because Tiquality has to **intercept and act on every ticked object**.
+### Where is the data stored?
+The data is stored in the world folder under `TiqualityStorage`. Inspired by minecraft's own code, Tiquality also uses bitshifting to find the right identifier for a block, without having to iterate on anything. This means blazing fast performance, and this is needed because Tiquality has to **intercept and act on every ticked object**.
 
 ### You suck!
 Hey, I am just trying to make the world a better place, I am sorry it did not work out for you.

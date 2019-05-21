@@ -26,6 +26,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ClassInheritanceMultiMap;
@@ -43,7 +44,6 @@ import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nonnull;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static cf.terminator.tiquality.Tiquality.PREFIX;
 import static cf.terminator.tiquality.Tiquality.SCHEDULER;
@@ -68,7 +68,7 @@ public class CommandExecutor {
             builder.append("Usage: /tiquality <info [point] | track | share | notify | profile <secs>");
         }
         if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-            builder.append(" [target] | reload | set | unclaim");
+            builder.append(" [target] | reload | setblock | setentity | unclaim");
         }
         if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
             builder.append(" | claim");
@@ -174,6 +174,14 @@ public class CommandExecutor {
                 return;
             }
 
+            TiqualityChunk tiqualityChunk = (TiqualityChunk) player.getEntityWorld().getChunk(player.getPosition());
+            Tracker dominantTracker = tiqualityChunk.getCachedMostDominantTracker();
+            Style style = new Style().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new TextComponentString(TextFormatting.WHITE + "When entities enter this chunk, they will be assigned to this tracker.")));
+            if(dominantTracker != null){
+                sender.sendMessage(new TextComponentString(PREFIX + "Most dominant tracker in this chunk: " + dominantTracker.getInfo().getFormattedText()).setStyle(style));
+            }else{
+                sender.sendMessage(new TextComponentString(PREFIX + "There's no dominant tracker in this chunk.").setStyle(style));
+            }
 
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
                 List<ITextComponent> messages = new LinkedList<>();
@@ -251,17 +259,17 @@ public class CommandExecutor {
             new TrackingTool((EntityPlayerMP) sender).start(time * 1000);
         /*
 
-                SET
+                SETBLOCK
 
          */
-        }else if(args[0].equalsIgnoreCase("set")) {
+        }else if(args[0].equalsIgnoreCase("setblock")) {
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
             if (sender instanceof EntityPlayer == false) {
-                throw new CommandException("Only players can use the 'set' command.");
+                throw new CommandException("Only players can use the 'setblock' command.");
             }
             EntityPlayer player = (EntityPlayer) sender;
             if (args.length != 3) {
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: setblock <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
                 throw new CommandException("Hover over the different update types to see more info!");
             }
             String mode = args[1];
@@ -278,7 +286,7 @@ public class CommandExecutor {
                 }
             } else {
                 sender.sendMessage(new TextComponentString("Invalid input: '" + mode + "'. Expected 'feet' or 'below'"));
-                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: set <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: setblock <feet|below> ").appendSibling(UpdateType.getArguments(UpdateType.Type.BLOCK, TextFormatting.RED)));
                 throw new CommandException("Hover over the different update types to see more info!");
             }
 
@@ -295,53 +303,64 @@ public class CommandExecutor {
                 @Override
                 public void run() {
                     ResourceLocation resourceLocation = Block.REGISTRY.getNameForObject(blockToAdd);
-                    String identifier = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
+                    TiqualityConfig.QuickConfig.setBlockUpdateType(updateType, resourceLocation);
+                    TiqualityConfig.QuickConfig.saveToFile();
+                    TiqualityConfig.QuickConfig.update();
+                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + resourceLocation + TextFormatting.GREEN + ". New tick type: " + updateType.getText(UpdateType.Type.BLOCK).getFormattedText()));
+                }
+            });
+            /*
 
-                    /* Clear current status */
-                    {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS));
-                        list.remove(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = list.toArray(new String[0]);
-                    }
-                    {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS));
-                        list.remove(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = list.toArray(new String[0]);
+                SETBLOCK
 
-                    }
-                    {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS));
-                        list.remove(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS = list.toArray(new String[0]);
+         */
+        }else if(args[0].equalsIgnoreCase("setentity")) {
+            holder.checkPermission(PermissionHolder.Permission.ADMIN);
+            if (args.length != 3) {
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Usage: setentity <resource or regex> ").appendSibling(UpdateType.getArguments(UpdateType.Type.ENTITY, TextFormatting.RED)));
+                throw new CommandException("Hover over the different update types to see more info!");
+            }
+            String entity_name = args[1];
+            String type = args[2].toUpperCase();
+            UpdateType updateType;
+            try{
+                updateType = UpdateType.valueOf(type);
+            }catch (IllegalArgumentException e){
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "Invalid update type! Valid types: ").appendSibling(UpdateType.getArguments(UpdateType.Type.ENTITY, TextFormatting.RED)));
+                throw new CommandException("Hover over the different update types to see more info!");
+            }
 
-                    }
-                    {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS));
-                        list.remove(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS = list.toArray(new String[0]);
+            Set<ResourceLocation> ENTITY_LIST = EntityList.getEntityNameList();
+            ArrayList<ResourceLocation> AFFECTED_ENTITIES;
+            if(entity_name.contains(":") == false && entity_name.startsWith("REGEX=") == false){
+                throw new CommandException("Invalid format! Required either a resourcelocation or a string starting with REGEX=");
+            }
+            if(entity_name.startsWith("REGEX=")){
+                AFFECTED_ENTITIES = TiqualityConfig.QuickConfig.findEntities(ENTITY_LIST, entity_name.substring(6));
+                if(AFFECTED_ENTITIES.size() == 0){
+                    throw new CommandException("No targets have been found for your regex entry.");
+                }
+            }else{
+                String[] split = entity_name.split(":");
+                ResourceLocation location = new ResourceLocation(split[0], split[1]);
+                if (ENTITY_LIST.contains(location) == false) {
+                    throw new CommandException("Sorry, this entity type cannot be found. Domain: " + split[0] + " path: " + split[1] + ". Expected something like: minecraft:pig");
+                }else{
+                    AFFECTED_ENTITIES = new ArrayList<>();
+                    AFFECTED_ENTITIES.add(location);
+                }
+            }
 
-                    }
-                    /* Recalculate inheritance */
-                    if(updateType == UpdateType.NATURAL) {
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS));
-                        list.add(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = list.toArray(new String[0]);
-                    }else if(updateType == UpdateType.ALWAYS_TICK){
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS));
-                        list.add(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = list.toArray(new String[0]);
-                    }else if(updateType == UpdateType.PRIORITY){
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS));
-                        list.add(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS = list.toArray(new String[0]);
-                    }else if(updateType == UpdateType.TICK_DENIED){
-                        ArrayList<String> list = new ArrayList<>(Arrays.asList(TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS));
-                        list.add(identifier);
-                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS = list.toArray(new String[0]);
+
+            SCHEDULER.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    TiqualityConfig.QuickConfig.setEntityUpdateType(updateType, AFFECTED_ENTITIES.toArray(new ResourceLocation[0]));
+                    for(ResourceLocation resourceLocation : AFFECTED_ENTITIES){
+                        sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + resourceLocation + TextFormatting.GREEN + ". New tick type: " + updateType.getText(UpdateType.Type.ENTITY).getFormattedText()));
                     }
                     TiqualityConfig.QuickConfig.saveToFile();
                     TiqualityConfig.QuickConfig.update();
-                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "Updated: " + TextFormatting.YELLOW + identifier + TextFormatting.GREEN + ". New tick type: " + updateType.getText(UpdateType.Type.BLOCK).getFormattedText()));
                 }
             });
         /*
@@ -376,14 +395,13 @@ public class CommandExecutor {
 
             for(ChunkPos pos : affectedChunks){
                 TiqualityChunk chunk = (TiqualityChunk) world.getChunk(pos.x, pos.z);
-                for(Tracker tracker : chunk.getActiveTrackers()){
-                    if(tracker instanceof PlayerTracker && tracker.getAssociatedPlayers().contains(profile) == false){
-                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "Sorry, there's already a tracker nearby that prevents you " + TextFormatting.RED + "from claiming here. (" + tracker.getInfo().getUnformattedComponentText() + TextFormatting.RED + ")"));
-                        if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-                            throw new CommandException("Use /tq unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
-                        }else{
-                            throw new CommandException("Ask an admin to unclaim this piece of land for you");
-                        }
+                Tracker tracker = chunk.getCachedMostDominantTracker();
+                if(tracker instanceof PlayerTracker && tracker.getAssociatedPlayers().contains(profile) == false){
+                    sender.sendMessage(new TextComponentString(TextFormatting.RED + "Sorry, there's already a tracker nearby that prevents you " + TextFormatting.RED + "from claiming here. (" + tracker.getInfo().getUnformattedComponentText() + TextFormatting.RED + ")"));
+                    if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+                        throw new CommandException("Use /tq unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
+                    }else{
+                        throw new CommandException("Ask an admin to unclaim this piece of land for you");
                     }
                 }
             }
@@ -403,7 +421,7 @@ public class CommandExecutor {
          */
         }else if(args[0].equalsIgnoreCase("unclaim")){
             holder.checkPermission(PermissionHolder.Permission.ADMIN);
-            int range = MAX_CLAIM_RADIUS;
+            int range = 0;
             if(args.length > 1){
                 try {
                     range = CommandBase.parseInt(args[1], 1);
@@ -413,6 +431,9 @@ public class CommandExecutor {
             }
             if(sender instanceof EntityPlayer == false){
                 throw new CommandException("You must be a player to use this command.");
+            }
+            if(range == 0){
+                throw new CommandException("There's no default unclaim radius to prevent accidental data loss. Please specify it.");
             }
             EntityPlayer player = (EntityPlayer) sender;
             BlockPos leastPos = player.getPosition().add(range * -1, 0, range * -1);
@@ -583,12 +604,7 @@ public class CommandExecutor {
                         messages.add(new TextComponentString(PREFIX + TextFormatting.GREEN + TextFormatting.BOLD + "By class"));
                         messages.add(new TextComponentString(PREFIX + TextFormatting.GREEN + TextFormatting.BOLD + "REPORT"));
 
-                        messages.descendingIterator().forEachRemaining(new Consumer<ITextComponent>() {
-                            @Override
-                            public void accept(ITextComponent iTextComponent) {
-                                sender.sendMessage(iTextComponent);
-                            }
-                        });
+                        messages.descendingIterator().forEachRemaining(sender::sendMessage);
                         sender.sendMessage(new TextComponentString(PREFIX + "Hover over the text for more details!"));
                     }
                 });
@@ -709,21 +725,26 @@ public class CommandExecutor {
             addIfStartsWith(list, start, "notify");
             addIfStartsWith(list, start, "share");
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)){
-                addIfStartsWith(list, start, "set");
+                addIfStartsWith(list, start, "setblock");
+                addIfStartsWith(list, start, "setentity");
                 addIfStartsWith(list, start, "reload");
                 addIfStartsWith(list, start, "unclaim");
             }
             if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
                 addIfStartsWith(list, start, "claim");
             }
-            return list;
         }else if(args.length == 2){
             String start = args[1];
             if(args[0].equalsIgnoreCase("info")){
                 addIfStartsWith(list, start, "point");
-            }else if(args[0].equalsIgnoreCase("set")){
+            }else if(args[0].equalsIgnoreCase("setblock")){
                 addIfStartsWith(list, start, "below");
                 addIfStartsWith(list, start, "feet");
+            }else if(args[0].equalsIgnoreCase("setentity")){
+                addIfStartsWith(list, start, "PREFIX=");
+                for(ResourceLocation location : EntityList.getEntityNameList()) {
+                    addIfStartsWith(list, start, location.toString());
+                }
             }else if(args[0].equalsIgnoreCase("track")){
                 addIfStartsWith(list, start, "1");
                 addIfStartsWith(list, start, "5");
@@ -752,11 +773,18 @@ public class CommandExecutor {
                         addIfStartsWith(list, start, profile.getName());
                     }
                 }
-            }else if(args[0].equalsIgnoreCase("set")){
+            }else if(args[0].equalsIgnoreCase("setblock")){
+                for(UpdateType updateType : UpdateType.values()){
+                    addIfStartsWith(list, start, updateType.name());
+                }
+            }else if(args[0].equalsIgnoreCase("setentity")){
                 for(UpdateType updateType : UpdateType.values()){
                     addIfStartsWith(list, start, updateType.name());
                 }
             }
+        }
+        if(list.size() == 0){
+            holder.sendMessage(new TextComponentString(TextFormatting.RED + "No suggestions available. Did you make a typo?"));
         }
         return list;
     }

@@ -19,11 +19,12 @@ import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import javax.annotation.CheckReturnValue;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.Pattern;
 
-@SuppressWarnings("ALL")
+@SuppressWarnings("WeakerAccess")
 @Config(modid = Tiquality.MODID, name = Tiquality.NAME, type = Config.Type.INSTANCE, category = "Tiquality")
 public class TiqualityConfig {
 
@@ -204,10 +205,89 @@ public class TiqualityConfig {
     @Config.RangeInt(min = 0)
     public static int DEFAULT_THROTTLE_WARNING_INTERVAL_SECONDS = 600;
 
+    @SuppressWarnings("NoTranslation")
     public static class QuickConfig{
 
         private static HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
         public static final HashMap<ResourceLocation, UpdateType> ENTITY_UPDATE_TYPES = new HashMap<>();
+
+        public static void setEntityUpdateType(UpdateType type, ResourceLocation... resources){
+            removeEntityFromConfig(resources);
+            for(ResourceLocation location : resources){
+                switch (type){
+                    case DEFAULT:
+                    case NATURAL:
+                        continue;
+                    case TICK_DENIED:
+                        TiqualityConfig.ENTITY_TICK_BEHAVIOR.TICK_DENIED_ENTITIES = expensiveArrayAsListManipulationAdd(TiqualityConfig.ENTITY_TICK_BEHAVIOR.TICK_DENIED_ENTITIES, location.toString());
+                        continue;
+                    case ALWAYS_TICK:
+                        TiqualityConfig.ENTITY_TICK_BEHAVIOR.ALWAYS_TICKED_ENTITIES = expensiveArrayAsListManipulationAdd(TiqualityConfig.ENTITY_TICK_BEHAVIOR.ALWAYS_TICKED_ENTITIES, location.toString());
+                        continue;
+                    case PRIORITY:
+                        TiqualityConfig.ENTITY_TICK_BEHAVIOR.PRIORITY_ENTITIES = expensiveArrayAsListManipulationAdd(TiqualityConfig.ENTITY_TICK_BEHAVIOR.PRIORITY_ENTITIES, location.toString());
+                }
+            }
+        }
+
+        public static void setBlockUpdateType(UpdateType type, ResourceLocation... resources){
+            removeBlockFromConfig(resources);
+            for(ResourceLocation location : resources){
+                switch (type){
+                    case DEFAULT:
+                        continue;
+                    case NATURAL:
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = expensiveArrayAsListManipulationAdd(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS, location.toString());
+                        continue;
+                    case TICK_DENIED:
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS = expensiveArrayAsListManipulationAdd(TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS, location.toString());
+                        continue;
+                    case ALWAYS_TICK:
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = expensiveArrayAsListManipulationAdd(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS, location.toString());
+                        continue;
+                    case PRIORITY:
+                        TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS = expensiveArrayAsListManipulationAdd(TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS, location.toString());
+                }
+            }
+        }
+
+        private static void removeBlockFromConfig(ResourceLocation... entries){
+            for(ResourceLocation resource : entries){
+                String location = resource.getNamespace() + ":" + resource.getPath();
+                TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS = arrayRemoveIfExists(TiqualityConfig.BLOCK_TICK_BEHAVIOR.ALWAYS_TICKED_BLOCKS, location);
+                TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS = arrayRemoveIfExists(TiqualityConfig.BLOCK_TICK_BEHAVIOR.NATURAL_BLOCKS, location);
+                TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS = arrayRemoveIfExists(TiqualityConfig.BLOCK_TICK_BEHAVIOR.PRIORITY_BLOCKS, location);
+                TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS = arrayRemoveIfExists(TiqualityConfig.BLOCK_TICK_BEHAVIOR.TICK_DENIED_BLOCKS, location);
+            }
+        }
+
+        private static void removeEntityFromConfig(ResourceLocation... entries){
+            for(ResourceLocation resource : entries){
+                String location = resource.getNamespace() + ":" + resource.getPath();
+                TiqualityConfig.ENTITY_TICK_BEHAVIOR.ALWAYS_TICKED_ENTITIES = arrayRemoveIfExists(TiqualityConfig.ENTITY_TICK_BEHAVIOR.ALWAYS_TICKED_ENTITIES, location);
+                TiqualityConfig.ENTITY_TICK_BEHAVIOR.PRIORITY_ENTITIES = arrayRemoveIfExists(TiqualityConfig.ENTITY_TICK_BEHAVIOR.PRIORITY_ENTITIES, location);
+                TiqualityConfig.ENTITY_TICK_BEHAVIOR.TICK_DENIED_ENTITIES = arrayRemoveIfExists(TiqualityConfig.ENTITY_TICK_BEHAVIOR.TICK_DENIED_ENTITIES, location);
+            }
+        }
+
+        @CheckReturnValue
+        private static String[] arrayRemoveIfExists(String[] array, String entry){
+            for (String s : array) {
+                if (entry.equals(s)) {
+                    List<String> listified = new ArrayList<>(Arrays.asList(array));
+                    listified.remove(entry);
+                    return listified.toArray(new String[0]);
+                }
+            }
+            return array;
+        }
+
+        @CheckReturnValue
+        private static String[] expensiveArrayAsListManipulationAdd(String[] array, String entry){
+            List<String> list = new ArrayList<>(Arrays.asList(array));
+            list.add(entry);
+            return list.toArray(new String[0]);
+        }
 
         public static void saveToFile(){
             ConfigManager.sync(Tiquality.MODID, Config.Type.INSTANCE);
@@ -482,7 +562,8 @@ public class TiqualityConfig {
                 ENTITY_UPDATE_TYPES.put(location, UpdateType.TICK_DENIED);
             }
             TMP_ENTITIES.clear();
-            Tiquality.LOGGER.info("Relinking...");
+            Tiquality.LOGGER.info("Scan complete.");
+            Tiquality.LOGGER.info("Relinking entities...");
             for(World world : FMLCommonHandler.instance().getMinecraftServerInstance().worlds){
                 for(Entity entity_raw : world.loadedEntityList){
                     TiqualityEntity entity = (TiqualityEntity) entity_raw;
@@ -492,13 +573,6 @@ public class TiqualityConfig {
                 }
             }
             Tiquality.LOGGER.info("Linked.");
-
-
-
-
-
-
-            Tiquality.LOGGER.info("Scan complete.");
         }
 
         private static ArrayList<Block> findBlocks(String regex){
@@ -515,7 +589,7 @@ public class TiqualityConfig {
             return list;
         }
 
-        private static ArrayList<ResourceLocation> findEntities(Set<ResourceLocation> entityList, String regex){
+        public static ArrayList<ResourceLocation> findEntities(Set<ResourceLocation> entityList, String regex){
             ArrayList<ResourceLocation> list = new ArrayList<>();
             for(ResourceLocation resource : entityList){
                 if(Pattern.compile(regex).matcher(resource.toString()).find()){

@@ -1,7 +1,6 @@
 package cf.terminator.tiquality.integration.ftbutilities;
 
 import cf.terminator.tiquality.api.event.TiqualityEvent;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.tracking.PlayerTracker;
 import com.feed_the_beast.ftblib.lib.data.ForgeTeam;
@@ -13,8 +12,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.event.entity.EntityEvent;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class EventHandler {
@@ -25,6 +22,7 @@ public class EventHandler {
 
     }
 
+    /*
     @SubscribeEvent
     public void onSpawn(EntityJoinWorldEvent e){
         if(ClaimedChunks.isActive() == false){
@@ -36,8 +34,9 @@ public class EventHandler {
             return;
         }
         ((TiqualityEntity) e.getEntity()).setTracker(FTBUtilitiesHook.getTrackerForTeam((TiqualityWorld) e.getWorld(), team));
-    }
+    }*/
 
+    /*
     @SubscribeEvent
     public void onEntityEnterChunkEvent(EntityEvent.EnteringChunk e){
         if(ClaimedChunks.isActive() == false){
@@ -55,7 +54,7 @@ public class EventHandler {
                 entity.setTracker(newTracker);
             }
         }
-    }
+    }*/
 
     @SubscribeEvent
     public void onClaim(ChunkModifiedEvent.Claimed e){

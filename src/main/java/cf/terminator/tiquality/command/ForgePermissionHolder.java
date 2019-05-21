@@ -5,6 +5,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.server.permission.PermissionAPI;
 
 public class ForgePermissionHolder implements PermissionHolder {
@@ -32,5 +33,10 @@ public class ForgePermissionHolder implements PermissionHolder {
         if(hasPermission(permission) == false){
             throw new CommandException("Sorry, you don't have permission to use this command. (" + permission.getNode() + ")");
         }
+    }
+
+    @Override
+    public void sendMessage(ITextComponent message) {
+        sender.sendMessage(message);
     }
 }

@@ -64,7 +64,7 @@ public class ProfileReport implements IMessage {
     }
 
     public String getTrackerImpactPercentage(TickTime time){
-        double factor = (double) time.getNanosConsumed() / (double) this.totalNanosUsed;
+        double factor = (double) time.getNanosConsumed() / (double) this.grantedNanos;
         return TWO_DECIMAL_FORMATTER.format(Math.round(factor * 10000D) / 100D);
     }
 
