@@ -6,7 +6,8 @@ At this moment, Tiquality is a server side only mod, but supports clients too (L
 The core functionality is limiting a player's tick time in the world to evenly distribute time.
 
 ## Download
-You can download the latest release [here](https://minecraft.curseforge.com/projects/tiquality/files)
+You can download the latest release [here](https://minecraft.curseforge.com/projects/tiquality/files). The _ONLY_ difference between **THIN** and **FAT** is that **FAT** ships [Mixin](https://github.com/SpongePowered/Mixin), which is a library that Tiquality needs in order to function. It's possible that another mod already ships [Mixin](https://github.com/SpongePowered/Mixin) or has another version. Generally speaking, Tiquality can handle most [Mixin](https://github.com/SpongePowered/Mixin) releases well.
+A known mod to ship [Mixin](https://github.com/SpongePowered/Mixin) is **[SpongeForge](https://github.com/SpongePowered/SpongeForge)**. If you have [SpongeForge](https://github.com/SpongePowered/SpongeForge) or another mod that requires a different version of [Mixin](https://github.com/SpongePowered/Mixin), choose the **THIN** release.
 
 ## Modpack authors
 Yes, you have my permission! Please add this to your modpack! :thumbsup: It will save server admins a lot of time if you do all the configuration work for them! ([/tq setblock](#commands-and-permissions))
