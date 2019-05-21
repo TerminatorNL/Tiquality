@@ -59,11 +59,11 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * Alias for /tiquality
    * tiquality.use
    
- * /tq info [point]
+ * /tq info [`point`]
    * Prints info about the block you're standing on and the block your feet are inside (Liquids).<br>Prints the owner of the block(s)<br>Prints the current status if a block is on the whitelist or not.<br>If used with the 'point' flag, you can aim at blocks and sneak for quick info on who tracked a block.
    * tiquality.use
   
- * /tq share &lt;playername&gt;
+ * /tq share &lt;`playername`&gt;
    * Allows sharing tick time with basemates, meaning that you can keep playing if the base owner is offline. If both of you are online, the tick time is effectively doubled.
    * tiquality.use
   
@@ -71,30 +71,37 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * Claims a block for a player without actually having to re-place it. (Things found in nature, existing bases... etc)
    * tiquality.use
    
- * /tq claim [radius]
+ * /tq claim [`radius`]
    * Claims an area for a player. The maximum radius is defined using `MAX_CLAIM_RADIUS` in the config. If the radius parameter is omitted, the maximum value in the config is used instead. This is especially useful if you have just installed Tiquality and need to import bases into your existing world.
    * tiquality.claim
    
-* /tq unclaim [radius]
+* /tq unclaim [`radius`]
   * Unclaims an area, useful for admins.
   * tiquality.admin
    
- * /tq profile &lt;seconds&gt;
+ * /tq profile &lt;`seconds`&gt;
    * Runs a very basic profiler on blocks that you own. A better alternative is in the works.
    * tiquality.use
   
- * /tq profile &lt;seconds&gt; &lt;uuid or playername&gt;
+ * /tq profile &lt;`seconds`&gt; &lt;`uuid` or `playername`&gt;
    * Runs a very basic profiler on the targeted UUID or playername. A better alternative is in the works.
    * tiquality.admin
  
- * /tq set &lt;feet|below&gt; &lt;DEFAULT|NATURAL|ALWAYS_TICK&gt;
+ * /tq set &lt;`feet`|`below`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
    * Sets all the blocks of the specified type to change tick behavior.<br>
    Valid types are:<br>
-     * `DEFAULT`: Only ticks when a tracker has been assigned AND there's tick time left.
+     * `DEFAULT`: 
+       * **Blocks:** Only ticks when a tracker is assigned AND has time to tick. Can be throttled
+       * **Entities:** Ticks when no tracker is assigned. When a tracker has been assigned, it can be throttled if no time is left.
+     * `PRIORITY`: 
+       * **Blocks & Entities:** Like `DEFAULT`, but ticks before everything else in the same tracker. Can be throttled
+     * `TICK_DENIED`:
+       * **Blocks & Entities:** Never ticks
      * `NATURAL`: Ticks when either:
-       * No tracker is assigned
-       * A tracker is assigned AND there's tick time left.
-     * `ALWAYS_TICK`: always ticks, does not check for trackers.
+       * **Blocks:** Ticks when *no tracker* is assigned. When a tracker has been assigned, it can be throttled
+       * **Entities:** Exactly the same as `DEFAULT`
+     * `ALWAYS_TICK`:
+       * **Blocks & Entities:** Always ticks, never throttled. If a tracker has been assigned, it will still affect the granted time for a tracker.
    * tiquality.admin
   
  * /tq reload
