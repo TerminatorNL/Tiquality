@@ -7,6 +7,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 public interface TiqualityChunk extends Comparable<TiqualityChunk> {
 
@@ -32,6 +33,8 @@ public interface TiqualityChunk extends Comparable<TiqualityChunk> {
     Tracker tiquality_findTrackerByBlockPos(BlockPos pos);
 
     boolean isChunkLoaded();
+
+    Set<Tracker> getActiveTrackers();
 
     Chunk getMinecraftChunk();
 

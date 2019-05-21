@@ -75,6 +75,10 @@ When the next tick comes around, all trackers get a granted amount of tracking t
    * Claims an area for a player. The maximum radius is defined using `MAX_CLAIM_RADIUS` in the config. If the radius parameter is omitted, the maximum value in the config is used instead. This is especially useful if you have just installed Tiquality and need to import bases into your existing world.
    * tiquality.claim
    
+* /tq unclaim [radius]
+  * Unclaims an area, useful for admins.
+  * tiquality.admin
+   
  * /tq profile &lt;seconds&gt;
    * Runs a very basic profiler on blocks that you own. A better alternative is in the works.
    * tiquality.use

@@ -3,7 +3,6 @@ package cf.terminator.tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityEntity;
 import cf.terminator.tiquality.interfaces.UpdateTyped;
 import cf.terminator.tiquality.monitor.TickMaster;
-import cf.terminator.tiquality.tracking.DenyTracker;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.Constants;
 import net.minecraft.block.Block;
@@ -250,7 +249,6 @@ public class TiqualityConfig {
                 ((UpdateTyped) b).setUpdateType(UpdateType.DEFAULT);
             }
             MODIFIED_BLOCKS.clear();
-            DenyTracker.unlinkAll();
             HashSet<Block> TMP_BLOCKS = new HashSet<>();
 
             /*

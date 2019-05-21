@@ -167,7 +167,7 @@ public class ChunkStorage {
 
         boolean hasData(){
             for(byte b : storage){
-                if(b != 0){
+                if(b != 0 && b != 1){
                     return true;
                 }
             }

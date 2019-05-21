@@ -1,6 +1,5 @@
 package cf.terminator.tiquality.tracking;
 
-import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.profiling.ProfilingKey;
@@ -13,10 +12,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -31,31 +26,6 @@ import java.util.Random;
 public class DenyTracker implements Tracker {
 
     public static final DenyTracker INSTANCE = new DenyTracker();
-    private static boolean IS_FIRST_RUN = true;
-
-    public static void unlinkAll(){
-        /*
-         * This populates throughout the game, no need in removing stuff that does not exists!
-         */
-        if(IS_FIRST_RUN){
-            IS_FIRST_RUN = false;
-            return;
-        }
-        for(World world : FMLCommonHandler.instance().getMinecraftServerInstance().worlds){
-            IChunkProvider iProvider = world.getChunkProvider();
-            if(iProvider instanceof ChunkProviderServer){
-                ChunkProviderServer provider = (ChunkProviderServer) iProvider;
-                Tiquality.SCHEDULER.schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        for(Chunk chunk : provider.getLoadedChunks()){
-                            ((TiqualityChunk) chunk).replaceTracker(INSTANCE, null);
-                        }
-                    }
-                });
-            }
-        }
-    }
 
     /**
      * This tracker basically is a cache, and changing that block invalidates it's cache

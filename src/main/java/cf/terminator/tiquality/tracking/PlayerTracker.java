@@ -73,6 +73,10 @@ public class PlayerTracker extends TrackerBase {
         this.wallet.addWallet(wallet);
     }
 
+    public TickWallet getWallet(){
+        return this.wallet;
+    }
+
     @Override
     public void setNextTickTime(long time){
         super.setNextTickTime(time);

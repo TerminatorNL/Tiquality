@@ -16,9 +16,39 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class WorldHelper {
 
     private static final FiFoQueue<ScheduledAction> TASKS = new FiFoQueue<>();
+
+    public static List<ChunkPos> getAffectedChunksInCuboid(BlockPos corner_1, BlockPos corner_2){
+        BlockPos start = Utils.BlockPos.getMin(corner_1, corner_2);
+        BlockPos end = Utils.BlockPos.getMax(corner_1, corner_2);
+
+        int low_x = start.getX();
+        int low_z = start.getZ();
+
+        int high_x = end.getX();
+        int high_z = end.getZ();
+
+        ArrayList<ChunkPos> posList = new ArrayList<>();
+        for (int x = low_x; x <= high_x + 16; x = x + 16) {
+            for (int z = low_z; z <= high_z + 16; z = z + 16) {
+                if(x < low_x || x > high_x){
+                    continue;
+                }
+                if(z < low_z || z > high_z){
+                    continue;
+                }
+
+
+                posList.add(new ChunkPos(new BlockPos(x,0,z)));
+            }
+        }
+        return posList;
+    }
 
     /**
      * Sets the tracker in a cuboid area

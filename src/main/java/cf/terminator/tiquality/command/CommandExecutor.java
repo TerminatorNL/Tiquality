@@ -6,10 +6,7 @@ import cf.terminator.tiquality.api.Location;
 import cf.terminator.tiquality.api.TiqualityException;
 import cf.terminator.tiquality.integration.ExternalHooker;
 import cf.terminator.tiquality.integration.griefprevention.GriefPreventionHook;
-import cf.terminator.tiquality.interfaces.TiqualityEntity;
-import cf.terminator.tiquality.interfaces.TiqualityWorld;
-import cf.terminator.tiquality.interfaces.Tracker;
-import cf.terminator.tiquality.interfaces.UpdateTyped;
+import cf.terminator.tiquality.interfaces.*;
 import cf.terminator.tiquality.monitor.InfoMonitor;
 import cf.terminator.tiquality.monitor.TrackingTool;
 import cf.terminator.tiquality.profiling.*;
@@ -18,6 +15,7 @@ import cf.terminator.tiquality.tracking.TrackerManager;
 import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.util.ForgeData;
 import cf.terminator.tiquality.util.Teleporting;
+import cf.terminator.tiquality.world.WorldHelper;
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -33,6 +31,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
@@ -69,7 +68,7 @@ public class CommandExecutor {
             builder.append("Usage: /tiquality <info [point] | track | share | notify | profile <secs>");
         }
         if (holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-            builder.append(" [target] | reload | set");
+            builder.append(" [target] | reload | set | unclaim");
         }
         if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
             builder.append(" | claim");
@@ -357,7 +356,7 @@ public class CommandExecutor {
                 try {
                     range = CommandBase.parseInt(args[1], 1, MAX_CLAIM_RADIUS);
                 }catch (NumberInvalidException e){
-                    throw new CommandException("Number must be between 0 and " + MAX_CLAIM_RADIUS);
+                    throw new CommandException("Range must be between 0 and " + MAX_CLAIM_RADIUS);
                 }
             }
             if(sender instanceof EntityPlayer == false){
@@ -370,9 +369,60 @@ public class CommandExecutor {
             leastPos = new BlockPos(leastPos.getX(), 0, leastPos.getZ());
             mostPos = new BlockPos(mostPos.getX(), 255, mostPos.getZ());
 
+            List<ChunkPos> affectedChunks = WorldHelper.getAffectedChunksInCuboid(leastPos.add(-16,0,-16), mostPos.add(16,0,16));
+            World world = player.getEntityWorld();
+
+            GameProfile profile = player.getGameProfile();
+
+            for(ChunkPos pos : affectedChunks){
+                TiqualityChunk chunk = (TiqualityChunk) world.getChunk(pos.x, pos.z);
+                for(Tracker tracker : chunk.getActiveTrackers()){
+                    if(tracker instanceof PlayerTracker && tracker.getAssociatedPlayers().contains(profile) == false){
+                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "Sorry, there's already a tracker nearby that prevents you " + TextFormatting.RED + "from claiming here. (" + tracker.getInfo().getUnformattedComponentText() + TextFormatting.RED + ")"));
+                        if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
+                            throw new CommandException("Use /tq unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
+                        }else{
+                            throw new CommandException("Ask an admin to unclaim this piece of land for you");
+                        }
+                    }
+                }
+            }
+
             player.sendMessage(new TextComponentString(PREFIX + "Claiming area in a " + range + " block radius: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
             Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world,player.getGameProfile());
             ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
+                @Override
+                public void run() {
+                    player.sendMessage(new TextComponentString(PREFIX + "Done."));
+                }
+            });
+        /*
+
+            UNCLAIM
+
+         */
+        }else if(args[0].equalsIgnoreCase("unclaim")){
+            holder.checkPermission(PermissionHolder.Permission.ADMIN);
+            int range = MAX_CLAIM_RADIUS;
+            if(args.length > 1){
+                try {
+                    range = CommandBase.parseInt(args[1], 1);
+                }catch (NumberInvalidException e){
+                    throw new CommandException("Range must be more than 0!");
+                }
+            }
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("You must be a player to use this command.");
+            }
+            EntityPlayer player = (EntityPlayer) sender;
+            BlockPos leastPos = player.getPosition().add(range * -1, 0, range * -1);
+            BlockPos mostPos = player.getPosition().add(range, 0, range);
+
+            leastPos = new BlockPos(leastPos.getX(), 0, leastPos.getZ());
+            mostPos = new BlockPos(mostPos.getX(), 255, mostPos.getZ());
+
+            player.sendMessage(new TextComponentString(PREFIX + "Unclaiming area in a " + range + " block radius: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
+            ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, null, new Runnable() {
                 @Override
                 public void run() {
                     player.sendMessage(new TextComponentString(PREFIX + "Done."));
@@ -661,6 +711,7 @@ public class CommandExecutor {
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)){
                 addIfStartsWith(list, start, "set");
                 addIfStartsWith(list, start, "reload");
+                addIfStartsWith(list, start, "unclaim");
             }
             if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
                 addIfStartsWith(list, start, "claim");
@@ -680,7 +731,7 @@ public class CommandExecutor {
                 addIfStartsWith(list, start, "20");
             }else if(args[0].equalsIgnoreCase("profile")){
                 addIfStartsWith(list, start, "5");
-            }else if(args[0].equalsIgnoreCase("claim")){
+            }else if(args[0].equalsIgnoreCase("claim") || args[0].equalsIgnoreCase("unclaim")){
                 if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
                     addIfStartsWith(list, start, String.valueOf(MAX_CLAIM_RADIUS));
                 }
