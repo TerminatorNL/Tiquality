@@ -33,7 +33,6 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
     }
 
     /**
-     * Optimized way of getting a chunk using a BlockPos
      * @param pos the position of the block
      * @return the chunk
      */
@@ -41,7 +40,7 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
         if(Tiquality.SPONGE_IS_PRESENT){
             return SpongeChunkLoader.getChunkForced(this, pos);
         }else {
-            return (TiqualityChunk) chunkProvider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+            return (TiqualityChunk) this.getChunk(pos);
         }
     }
 
@@ -160,10 +159,5 @@ public abstract class MixinWorldClient extends World implements TiqualityWorld {
             //noinspection unchecked
             return (List<TiqualityEntity>) (Object) Collections.unmodifiableList(loadedEntityList);
         }
-    }
-
-    @Override
-    public ChunkProviderClient getMinecraftChunkProvider(){
-        return getChunkProvider();
     }
 }

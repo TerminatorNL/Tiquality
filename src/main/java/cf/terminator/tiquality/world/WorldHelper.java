@@ -5,19 +5,20 @@ import cf.terminator.tiquality.concurrent.PausableThreadPoolExecutor;
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
+import cf.terminator.tiquality.memory.WeakReferencedChunk;
 import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class WorldHelper {
 
@@ -144,6 +145,7 @@ public class WorldHelper {
             try {
                 threadPool.resume();
                 long maxTime = System.currentTimeMillis() + 40;
+                BlockingQueue<WeakReferencedChunk> chunksToUnload = new LinkedBlockingQueue<>();
                 while (System.currentTimeMillis() < maxTime) {
                     synchronized (TASKS) {
                         if (TASKS.size() == 0) {
@@ -151,7 +153,10 @@ public class WorldHelper {
                         }
                         ScheduledAction action = TASKS.take();
                         if(action.requiresChunkLoad()){
-                            action.loadChunk();
+                            WeakReferencedChunk chunk = action.loadChunk();
+                            if(chunk != null){
+                                chunksToUnload.add(chunk);
+                            }
                         }
                         if (action.isCallback() == false) {
                             /* It's a task, we execute it straight away in the threadpool. */
@@ -160,6 +165,9 @@ public class WorldHelper {
                             /* It's a callback, we wait for all Tasks to end, and then call it. */
                             threadPool.pause();
                             action.run();
+                            for(WeakReferencedChunk chunk : chunksToUnload){
+                                chunk.tryUnloadChunk();
+                            }
                             if(TASKS.size() == 0){
                                 break;
                             }
@@ -177,7 +185,7 @@ public class WorldHelper {
     interface ScheduledAction extends Runnable{
         boolean isCallback();
         boolean requiresChunkLoad();
-        void loadChunk();
+        WeakReferencedChunk loadChunk();
     }
 
     public static class CallBack implements ScheduledAction{
@@ -204,7 +212,9 @@ public class WorldHelper {
         }
 
         @Override
-        public void loadChunk() {
+        @Nullable
+        public WeakReferencedChunk loadChunk() {
+            return null;
         }
     }
 
@@ -227,8 +237,8 @@ public class WorldHelper {
         }
 
         @Override
-        public void loadChunk() {
-
+        public WeakReferencedChunk loadChunk() {
+            return null;
         }
 
         @Override
@@ -298,16 +308,6 @@ public class WorldHelper {
                     }
                 }
             }
-            /*
-                Unload chunks when it's done, prevent out of memory errors!
-             */
-            Chunk mcChunk = chunk.getMinecraftChunk();
-            mcChunk.markDirty();
-            IChunkProvider provider = mcChunk.getWorld().getChunkProvider();
-
-            if (provider instanceof ChunkProviderServer) {
-                ((ChunkProviderServer) provider).queueUnload(mcChunk);
-            }
         }
 
         @Override
@@ -321,12 +321,13 @@ public class WorldHelper {
         }
 
         @Override
-        public void loadChunk() {
+        public WeakReferencedChunk loadChunk() {
             if(Tiquality.SPONGE_IS_PRESENT){
                 chunk = SpongeChunkLoader.getChunkForced(world, chunkBlockPos);
             }else {
                 chunk = world.getTiqualityChunk(chunkBlockPos);
             }
+            return new WeakReferencedChunk(chunk);
         }
     }
 }

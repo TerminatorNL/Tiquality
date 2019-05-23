@@ -2,7 +2,6 @@ package cf.terminator.tiquality.interfaces;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.IChunkProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -96,11 +95,4 @@ public interface TiqualityWorld {
      */
     @Nonnull
     List<TiqualityEntity> getTiqualityEntities(boolean trackersOnly);
-
-
-    /**
-     * Gets the minecraft chunk provider
-     * @return the minecraft chunk provider
-     */
-    IChunkProvider getMinecraftChunkProvider();
 }

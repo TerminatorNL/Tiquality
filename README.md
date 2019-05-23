@@ -21,7 +21,7 @@ An update throttler, that aims to provide a fair Minecraft experience at 20 TPS 
 This encourages server friendly build behavior, and attempts to not ruin gameplay for others who care about their server.
 
 ## What this is not
- * This is not something like [ClearLagg](https://dev.bukkit.org/projects/clearlagg). Tiquality tries to keep the game fair for everyone, regardless of what someone else is doing.
+This is not something like [ClearLagg](https://dev.bukkit.org/projects/clearlagg). Tiquality tries to keep the game fair for everyone, regardless of what someone else is doing.
 
 ## Behavior
 Blocks without an owner which are not specified in the config cannot update. This includes freshly generated areas. To keep functionality like leaf decay and grass growth, you can **whitelist** blocks in the config. Whitelisted blocks do not need an owner in order to tick.

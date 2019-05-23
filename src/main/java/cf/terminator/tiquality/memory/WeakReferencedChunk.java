@@ -1,6 +1,9 @@
 package cf.terminator.tiquality.memory;
 
 import cf.terminator.tiquality.interfaces.TiqualityChunk;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderServer;
 
 import java.lang.ref.WeakReference;
 
@@ -13,6 +16,17 @@ public class WeakReferencedChunk extends WeakReference<TiqualityChunk> {
     public boolean isChunkLoaded(){
         TiqualityChunk chunk = get();
         return chunk != null && chunk.isChunkLoaded();
+    }
+
+    public void tryUnloadChunk(){
+        TiqualityChunk chunk = get();
+        if(chunk == null){
+            return;
+        }
+        IChunkProvider providerRaw = chunk.getMinecraftChunk().getWorld().getChunkProvider();
+        if(providerRaw instanceof ChunkProviderServer){
+            ((ChunkProviderServer) providerRaw).queueUnload((Chunk) chunk);
+        }
     }
 
     /**
