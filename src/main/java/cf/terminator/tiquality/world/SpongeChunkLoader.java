@@ -5,8 +5,10 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
-import org.spongepowered.common.interfaces.world.IMixinWorldServer;
-import org.spongepowered.common.interfaces.world.gen.IMixinChunkProviderServer;
+import net.minecraft.world.gen.ChunkProviderServer;
+import org.spongepowered.common.bridge.world.WorldInfoBridge;
+import org.spongepowered.common.bridge.world.chunk.ServerChunkProviderBridge;
+import org.spongepowered.common.config.category.WorldCategory;
 import org.spongepowered.common.world.SpongeEmptyChunk;
 
 import javax.annotation.Nonnull;
@@ -25,16 +27,19 @@ public class SpongeChunkLoader {
             if(maybeFakeChunk instanceof SpongeEmptyChunk == false){
                 return (TiqualityChunk) maybeFakeChunk;
             }
-            IMixinWorldServer mixinWorldServer = (IMixinWorldServer) world;
-            boolean isDenying = mixinWorldServer.getWorldConfig().getConfig().getWorld().getDenyChunkRequests();
-            if(isDenying){
-                IMixinChunkProviderServer provider = (IMixinChunkProviderServer) ((WorldServer) world).getChunkProvider();
-                provider.setDenyChunkRequests(false);
-                TiqualityChunk result = (TiqualityChunk) ((WorldServer) world).getChunk(pos);
-                provider.setDenyChunkRequests(true);
-                return result;
-            }else{
-                return (TiqualityChunk) world.getMinecraftWorld().getChunkProvider().provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+
+            ChunkProviderServer provider = ((WorldServer) world).getChunkProvider();
+            if(provider instanceof ServerChunkProviderBridge){
+                WorldCategory category = ((WorldInfoBridge) provider.world.getWorldInfo()).getConfigAdapter().getConfig().getWorld();
+                boolean isDenying = category.getDenyChunkRequests();
+                if(isDenying){
+                    ((ServerChunkProviderBridge) provider).bridge$setDenyChunkRequests(false);
+                    TiqualityChunk result = (TiqualityChunk) ((WorldServer) world).getChunk(pos);
+                    ((ServerChunkProviderBridge) provider).bridge$setDenyChunkRequests(true);
+                    return result;
+                }else{
+                    return (TiqualityChunk) provider.provideChunk(pos.getX() >> 4, pos.getZ() >> 4);
+                }
             }
         }
         return (TiqualityChunk) world.getMinecraftWorld().getChunkProvider().provideChunk(pos.getX() >> 4, pos.getZ() >> 4);

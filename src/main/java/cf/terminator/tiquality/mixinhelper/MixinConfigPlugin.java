@@ -1,6 +1,8 @@
 package cf.terminator.tiquality.mixinhelper;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodFinder;
+import cf.terminator.tiquality.mixinhelper.extended.MethodHeadInserter;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -182,6 +184,11 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
 
     @Override
     public void postApply(String target, ClassNode classNode, String mixin, IMixinInfo iMixinInfo) {
+        if(mixin.equals("cf.terminator.tiquality.mixin.MixinWorldServerSponge")) {
+            LOGGER.info("Applying custom transformer for cf.terminator.tiquality.mixin.MixinWorldServerSponge");
+            new MethodHeadInserter(classNode).transform();
+            new DynamicMethodFinder(classNode).transform();
+        }
         LOGGER.info("Applied mixin: " + mixin);
         MIXINS_TO_LOAD.remove(mixin);
     }

@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.common.mixin.core.world.MixinChunk;
 
 @SuppressWarnings({"ReferenceToMixin"})
 @Mixin(value = Chunk.class, priority = 2000)
