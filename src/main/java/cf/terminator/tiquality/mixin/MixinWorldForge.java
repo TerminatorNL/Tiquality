@@ -30,4 +30,9 @@ public class MixinWorldForge {
     private void onUpdateEntities(Entity entity){
         TickHub.onEntityTick(entity);
     }
+
+    @Redirect(method = "updateEntityWithOptionalForce", require = 1, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onUpdate()V"))
+    private void onUpdateEntityWithOptionalForce(Entity entity){
+        TickHub.onEntityTick(entity);
+    }
 }

@@ -49,7 +49,7 @@ String buildType = (isFat ? "FAT" : "THIN")
 String spongeForgeVersion = '1.12.2-2838-7.1.7-RC3812'
 String forgeVersion = '1.12.2-14.23.5.2825'
 
-version = "1.12.2-GAMMA-1.5.0"
+version = "1.12.2-GAMMA-1.5.1"
 group = "cf.terminator"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
 println("Compiling: " + archivesBaseName + "-" + version)

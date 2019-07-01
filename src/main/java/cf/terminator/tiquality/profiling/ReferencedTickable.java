@@ -177,6 +177,14 @@ public class ReferencedTickable {
             this.pos = pos;
         }
 
+        public int getDimension(){
+            return dimension;
+        }
+
+        public BlockPos getPos(){
+            return pos;
+        }
+
         @Override
         public ReferenceId getId() {
             return new ReferenceId(ReferenceId.Type.BLOCK, dimension, pos.getX(), pos.getY(), pos.getZ(),0);
@@ -242,6 +250,10 @@ public class ReferencedTickable {
         public EntityReference(int dimension, UUID uuid){
             this.dimension = dimension;
             this.uuid = uuid;
+        }
+
+        public UUID getUUID(){
+            return uuid;
         }
 
         @Override
