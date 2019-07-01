@@ -139,4 +139,8 @@ public class ProfileReport implements IMessage {
             entry.getValue().toBytes(buf);
         }
     }
+
+    public long getTotalNanosUsed() {
+        return totalNanosUsed;
+    }
 }

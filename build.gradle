@@ -86,7 +86,9 @@ dependencies {
     /*
         Sponge
      */
-    compileOnly 'org.spongepowered:spongeforge:' + spongeForgeVersion + ':dev'
+    compileOnly ('org.spongepowered:spongeforge:' + spongeForgeVersion + ':dev'){
+        transitive = false
+    }
 
     /*
         GriefPrevention

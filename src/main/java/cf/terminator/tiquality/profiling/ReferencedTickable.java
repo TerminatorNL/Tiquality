@@ -33,7 +33,7 @@ public class ReferencedTickable {
 
     public static class ReferenceId implements Comparable, IMessage{
 
-        enum Type{
+        public enum Type{
             BLOCK((byte) 0),
             ENTITY((byte) 1);
 
@@ -45,6 +45,14 @@ public class ReferencedTickable {
 
             public byte getByte() {
                 return b;
+            }
+
+            public boolean isEntity(){
+                return this == ENTITY;
+            }
+
+            public boolean isBlock(){
+                return this == BLOCK;
             }
         }
 
