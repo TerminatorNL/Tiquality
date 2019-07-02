@@ -279,6 +279,7 @@ public abstract class MixinChunk implements TiqualityChunk {
                 Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: " + this);
             }
         }
+        tiquality_STORAGE.recalculateDominatingTracker();
     }
 
     @Override

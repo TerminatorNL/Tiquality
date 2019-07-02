@@ -60,17 +60,32 @@ public enum PersistentData {
         return new File(worldFile, pos);
     }
 
+    @Nonnull
+    public static File getTempChunkFile(Chunk chunk){
+        int dim = chunk.getWorld().provider.getDimension();
+        String pos = chunk.x + "_" + chunk.z + ".tmp.nbt";
+        File worldFile = new File(tiqualityWorldData, String.valueOf(dim));
+        return new File(worldFile, pos);
+    }
+
     @Nullable
     public static NBTTagCompound getChunkNBTData(Chunk chunk) throws IOException{
         File chunkFile = getChunkFile(chunk);
         if(chunkFile.exists() == false){
             return null;
         }else{
-            return CompressedStreamTools.readCompressed(new FileInputStream(chunkFile));
+            try{
+                return CompressedStreamTools.readCompressed(new FileInputStream(chunkFile));
+            }catch (IOException e){
+                Tiquality.LOGGER.fatal("FAILED TO LOAD DATA FOR CHUNK AT " + chunk.getPos());
+                e.printStackTrace();
+                return null;
+            }
         }
     }
 
     public static void saveChunkNBTData(Chunk chunk, @Nullable NBTTagCompound tag) throws IOException{
+        File tempFile = getTempChunkFile(chunk);
         File chunkFile = getChunkFile(chunk);
         if(tag == null){
             if(chunkFile.exists() && chunkFile.delete() == false){
@@ -78,19 +93,25 @@ public enum PersistentData {
             }
             return;
         }
-        if(chunkFile.exists() == false){
-            if(chunkFile.getParentFile().exists() == false && chunkFile.getParentFile().mkdirs() == false){
-                 throw new IOException("Unable to create directories at: " + chunkFile.getParentFile());
+        if(tempFile.exists() == false){
+            if(tempFile.getParentFile().exists() == false && tempFile.getParentFile().mkdirs() == false){
+                 throw new IOException("Unable to create directories at: " + tempFile.getParentFile());
             }
             try {
-                if(chunkFile.createNewFile() == false){
-                    throw new IOException("Unable to create file at: " + chunkFile);
+                if(tempFile.createNewFile() == false){
+                    throw new IOException("Unable to create file at: " + tempFile);
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        CompressedStreamTools.writeCompressed(tag, new FileOutputStream(chunkFile));
+        CompressedStreamTools.writeCompressed(tag, new FileOutputStream(tempFile));
+        if(chunkFile.exists() && chunkFile.delete() == false){
+            throw new IOException("Failed to remove old file: " + chunkFile);
+        }
+        if(tempFile.renameTo(chunkFile) == false){
+            throw new IOException("Failed to rename file " + tempFile + " to " + chunkFile);
+        }
     }
 
     public synchronized static void ensureDataAvailability(World world){

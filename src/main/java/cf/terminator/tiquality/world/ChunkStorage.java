@@ -175,10 +175,9 @@ public class ChunkStorage {
             data[y] = new Element(storage);
             data[y].queueMarkedForUpdate(chunk, y);
         }
-        recalculateDominatingTracker();
     }
 
-    private void recalculateDominatingTracker(){
+    public void recalculateDominatingTracker(){
         CountingMap<Byte> map = new CountingMap<>();
         for(Element element : data){
             if(element == null){
