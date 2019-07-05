@@ -17,8 +17,6 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class WorldHelper {
 
@@ -145,7 +143,6 @@ public class WorldHelper {
             try {
                 threadPool.resume();
                 long maxTime = System.currentTimeMillis() + 40;
-                BlockingQueue<WeakReferencedChunk> chunksToUnload = new LinkedBlockingQueue<>();
                 while (System.currentTimeMillis() < maxTime) {
                     synchronized (TASKS) {
                         if (TASKS.size() == 0) {
@@ -153,10 +150,7 @@ public class WorldHelper {
                         }
                         ScheduledAction action = TASKS.take();
                         if(action.requiresChunkLoad()){
-                            WeakReferencedChunk chunk = action.loadChunk();
-                            if(chunk != null){
-                                chunksToUnload.add(chunk);
-                            }
+                            action.loadChunk();
                         }
                         if (action.isCallback() == false) {
                             /* It's a task, we execute it straight away in the threadpool. */
@@ -165,9 +159,6 @@ public class WorldHelper {
                             /* It's a callback, we wait for all Tasks to end, and then call it. */
                             threadPool.pause();
                             action.run();
-                            for(WeakReferencedChunk chunk : chunksToUnload){
-                                chunk.tryUnloadChunk();
-                            }
                             if(TASKS.size() == 0){
                                 break;
                             }

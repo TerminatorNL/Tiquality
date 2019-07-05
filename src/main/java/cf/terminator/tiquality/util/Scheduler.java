@@ -15,6 +15,20 @@ public class Scheduler {
     private Scheduler(){}
 
     /**
+     * Ensures your Runnable runs in the main thread.
+     * @param runnable task
+     * @return task, converted to ensure it runs in the main thread.
+     */
+    public Runnable convertSync(Runnable runnable){
+        return new Runnable() {
+            @Override
+            public void run() {
+                Scheduler.INSTANCE.schedule(runnable);
+            }
+        };
+    }
+
+    /**
      * Schedules an action to run on the main thread.
      * Actions are performed in order.
      * @param runnable action to perform

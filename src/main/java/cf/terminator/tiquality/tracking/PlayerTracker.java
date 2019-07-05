@@ -91,8 +91,8 @@ public class PlayerTracker extends TrackerBase {
             return false;
         }
 
-        String acceptString = "/tq acceptoverride " + user.getName();
-        String denyString = "/tq denyoverride " + user.getName();
+        String acceptString = "/tiquality acceptoverride " + user.getName();
+        String denyString = "/tiquality denyoverride " + user.getName();
 
         if(pendingRequests.containsKey(user.getName().toLowerCase())){
             throw new CommandException("You already have another pending request. Inform the owner to run: '" + acceptString + "' to accept your last request, or '" + denyString + "' to reject it.");
@@ -101,12 +101,12 @@ public class PlayerTracker extends TrackerBase {
                 @Override
                 public void run() {
                     EntityPlayerMP newOwner = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUUID(user.getId());
-                    Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) world, user);
+                    Tracker newTracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) world, user);
                     //noinspection ConstantConditions (Player == null can be true.)
                     if(newOwner != null){
                         newOwner.sendMessage(new TextComponentString(PREFIX + getOwner().getName() + " accepted your claim request."));
                     }
-                    ((TiqualityWorld) world).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
+                    ((TiqualityWorld) world).setTiqualityTrackerCuboidAsync(leastPos, mostPos, newTracker, new Runnable() {
                         @Override
                         public void run() {
                             //noinspection ConstantConditions (Player == null can be true.)
@@ -123,8 +123,8 @@ public class PlayerTracker extends TrackerBase {
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected area: X=" + leastPos.getX() + "Z=" + leastPos.getZ() + " to X=" + mostPos.getX() + " Z=" + mostPos.getZ()));
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected dimension: " + world.provider.getDimension()));
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Surface area of total claim: " + (mostPos.getX() - leastPos.getX()) * (mostPos.getZ() - leastPos.getZ())));
-        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To accept this request use: '" + TextFormatting.GREEN + acceptString + TextFormatting.GRAY + "'"));
-        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To deny this request use:   '" + TextFormatting.RED + denyString + TextFormatting.GRAY + "'"));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To accept this request use: " + TextFormatting.GREEN + acceptString));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To deny this request use: " + TextFormatting.RED + denyString));
         return true;
     }
 

@@ -136,12 +136,14 @@ public class CommandExecutor {
             if(args.length != 2){
                 List<TextComponentString> list = tracker.getSharedToTextual((TiqualityWorld) sender.getEntityWorld());
                 if(list.size() > 0) {
-                    sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "You are currently sharing your tick time with: "));
+                    sender.sendMessage(new TextComponentString(PREFIX + "You are currently sharing your tick time with: "));
                     for (TextComponentString t : list) {
-                        sender.sendMessage(t);
+                        sender.sendMessage(new TextComponentString(PREFIX).appendSibling(t));
                     }
+                }else{
+                    sender.sendMessage(new TextComponentString(PREFIX + "You are currently sharing your tick time nobody."));
                 }
-                throw new CommandException("Usage: /tiquality share [name]");
+                throw new CommandException("To change: /tiquality share [name]");
             }
             String name = args[1];
             GameProfile targetPlayer = ForgeData.getGameProfileByName(name);
@@ -153,11 +155,11 @@ public class CommandExecutor {
             boolean newState = tracker.switchSharedTo(targetTracker.getHolder().getId());
 
             if(newState == true) {
-                sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "You are now sharing your tick time with: " + targetPlayer.getName()));
-                sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "If you want to stop sharing your time, run this command again!"));
+                sender.sendMessage(new TextComponentString(PREFIX + "You are now sharing your tick time with: " + TextFormatting.GREEN + targetPlayer.getName()));
+                sender.sendMessage(new TextComponentString(PREFIX + "If you want to stop sharing your time, run this command again!"));
             }else{
-                sender.sendMessage(new TextComponentString(TextFormatting.GOLD + "You are no longer sharing your tick time with: " + targetPlayer.getName()));
-                sender.sendMessage(new TextComponentString(TextFormatting.GRAY + "If you want to share your time again, run this command again!"));
+                sender.sendMessage(new TextComponentString(PREFIX + "You are no longer sharing your tick time with: " + TextFormatting.RED + targetPlayer.getName()));
+                sender.sendMessage(new TextComponentString(PREFIX + "If you want to share your time again, run this command again!"));
             }
         /*
 
@@ -403,7 +405,7 @@ public class CommandExecutor {
                 if(tracker instanceof PlayerTracker == false){
                     sender.sendMessage(new TextComponentString(TextFormatting.RED + "Sorry, there's already a tracker nearby that prevents you " + TextFormatting.RED + "from claiming here. (" + tracker.getInfo().getUnformattedComponentText() + TextFormatting.RED + ")"));
                     if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
-                        throw new CommandException("Use /tq unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
+                        throw new CommandException("Use /tiquality unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
                     }else{
                         throw new CommandException("Ask an admin to unclaim this piece of land for you");
                     }
@@ -419,12 +421,12 @@ public class CommandExecutor {
                 }
             }
 
-            player.sendMessage(new TextComponentString(PREFIX + "Claiming area in a " + range + " block radius: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
+            sender.sendMessage(new TextComponentString(PREFIX + "Claiming area in a " + range + " block radius: x=" + leastPos.getX() + " z=" + leastPos.getZ() + " to x=" + mostPos.getX() + " z=" + mostPos.getZ()));
             Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world,player.getGameProfile());
             ((TiqualityWorld) player.getEntityWorld()).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
                 @Override
                 public void run() {
-                    player.sendMessage(new TextComponentString(PREFIX + "Done."));
+                    sender.sendMessage(new TextComponentString(PREFIX + "Done."));
                 }
             });
         /*
@@ -473,7 +475,7 @@ public class CommandExecutor {
                 throw new CommandException("Only players can use the acceptoverride command!");
             }
             if(args.length != 2){
-                throw new CommandException("Usage: /tq acceptoverride <name>");
+                throw new CommandException("Usage: /tiquality acceptoverride <name>");
             }
             EntityPlayer player = (EntityPlayer) sender;
             PlayerTracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world, player.getGameProfile());
@@ -489,7 +491,7 @@ public class CommandExecutor {
                 throw new CommandException("Only players can use the denyoverride command!");
             }
             if(args.length != 2){
-                throw new CommandException("Usage: /tq denyoverride <name>");
+                throw new CommandException("Usage: /tiquality denyoverride <name>");
             }
             EntityPlayer player = (EntityPlayer) sender;
             PlayerTracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world, player.getGameProfile());
@@ -802,6 +804,10 @@ public class CommandExecutor {
             }else if(args[0].equalsIgnoreCase("claim") || args[0].equalsIgnoreCase("unclaim")){
                 if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
                     addIfStartsWith(list, start, String.valueOf(MAX_CLAIM_RADIUS));
+                }
+            }else if(args[0].equalsIgnoreCase("share")){
+                for (String onlinePlayerName : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getOnlinePlayerNames()) {
+                    addIfStartsWith(list, start, onlinePlayerName);
                 }
             }else if(args[0].equalsIgnoreCase("acceptoverride") || args[0].equalsIgnoreCase("denyoverride")){
                 for (String onlinePlayerName : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getOnlinePlayerNames()) {
