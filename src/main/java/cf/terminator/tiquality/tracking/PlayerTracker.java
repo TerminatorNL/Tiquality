@@ -6,14 +6,19 @@ import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.util.ForgeData;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.command.CommandException;
+import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
@@ -22,13 +27,14 @@ import java.util.*;
 import static cf.terminator.tiquality.Tiquality.PREFIX;
 import static cf.terminator.tiquality.util.Utils.TWO_DECIMAL_FORMATTER;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "NoTranslation"})
 public class PlayerTracker extends TrackerBase {
 
     private final GameProfile profile;
     private boolean notifyUser = true;
     private long nextMessageMillis = 0L;
     private final Set<Long> sharedTo = new HashSet<>();
+    private final HashMap<String, Runnable> pendingRequests = new HashMap<>();
     private TickWallet wallet = new TickWallet();
 
     /**
@@ -66,6 +72,82 @@ public class PlayerTracker extends TrackerBase {
             sharedTo.remove(id);
             getHolder().update();
             return false;
+        }
+    }
+
+    /**
+     * Requests a claim override.
+     * @param user The user that attempts to override
+     * @param world The world
+     * @param leastPos .
+     * @param mostPos .
+     * @return true if a request was sent, false if the user was offline
+     * @throws CommandException If the user already has a pending request.
+     */
+    public boolean requestClaimOverride(GameProfile user, World world, BlockPos leastPos, BlockPos mostPos) throws CommandException {
+        EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUUID(getOwner().getId());
+        //noinspection ConstantConditions (Player == null can be true.)
+        if(player == null || player.hasDisconnected()){
+            return false;
+        }
+
+        String acceptString = "/tq acceptoverride " + user.getName();
+        String denyString = "/tq denyoverride " + user.getName();
+
+        if(pendingRequests.containsKey(user.getName().toLowerCase())){
+            throw new CommandException("You already have another pending request. Inform the owner to run: '" + acceptString + "' to accept your last request, or '" + denyString + "' to reject it.");
+        }else{
+            pendingRequests.put(user.getName().toLowerCase(), new Runnable() {
+                @Override
+                public void run() {
+                    EntityPlayerMP newOwner = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUUID(user.getId());
+                    Tracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) world, user);
+                    //noinspection ConstantConditions (Player == null can be true.)
+                    if(newOwner != null){
+                        newOwner.sendMessage(new TextComponentString(PREFIX + getOwner().getName() + " accepted your claim request."));
+                    }
+                    ((TiqualityWorld) world).setTiqualityTrackerCuboidAsync(leastPos, mostPos, tracker, new Runnable() {
+                        @Override
+                        public void run() {
+                            //noinspection ConstantConditions (Player == null can be true.)
+                            if(newOwner != null){
+                                newOwner.sendMessage(new TextComponentString(PREFIX + "Claiming area complete!"));
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        player.sendMessage(new TextComponentString(PREFIX + user.getName() + " wishes to claim an area that overlaps or is near your claim:"));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected area: X=" + leastPos.getX() + "Z=" + leastPos.getZ() + " to X=" + mostPos.getX() + " Z=" + mostPos.getZ()));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected dimension: " + world.provider.getDimension()));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Surface area of total claim: " + (mostPos.getX() - leastPos.getX()) * (mostPos.getZ() - leastPos.getZ())));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To accept this request use: '" + TextFormatting.GREEN + acceptString + TextFormatting.GRAY + "'"));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To deny this request use:   '" + TextFormatting.RED + denyString + TextFormatting.GRAY + "'"));
+        return true;
+    }
+
+    public List<String> getOverrideRequests(){
+        return new LinkedList<>(pendingRequests.keySet());
+    }
+
+    public void acceptOverride(ICommandSender sender, String name) throws CommandException{
+        Runnable request = pendingRequests.remove(name.toLowerCase());
+        if(request != null){
+            sender.sendMessage(new TextComponentString(PREFIX + "Accepted!"));
+            request.run();
+        }else{
+            throw new CommandException("Request with name: '" + name + "' was not found.");
+        }
+    }
+
+    public void denyOverride(ICommandSender sender, String name) throws CommandException{
+        Runnable request = pendingRequests.remove(name.toLowerCase());
+        if(request != null){
+            sender.sendMessage(new TextComponentString(PREFIX + "Denied override!"));
+        }else{
+            throw new CommandException("Request with name: '" + name + "' was not found.");
         }
     }
 

@@ -19,6 +19,7 @@ public class SimpleProfiler implements Runnable {
     private final Tracker tracker;
     private final long durationInMs;
     private final ProfilePrinter printer;
+    private long startTimeNanos;
     private ProfilingKey key;
 
     public SimpleProfiler(Tracker tracker, long durationInMs, ProfilePrinter printer){
@@ -29,6 +30,7 @@ public class SimpleProfiler implements Runnable {
 
     public void start() throws TiqualityException{
         key = tracker.startProfiler();
+        startTimeNanos = System.nanoTime();
         new Thread(this, "Tiquality profiler").start();
     }
 
@@ -57,6 +59,7 @@ public class SimpleProfiler implements Runnable {
             return;
         }
         final TickLogger logger;
+        final long endTimeNanos = System.nanoTime();
         try {
             logger = tracker.stopProfiler(key);
         } catch (TiqualityException.TrackerWasNotProfilingException | TiqualityException.InvalidKeyException e) {
@@ -112,7 +115,7 @@ public class SimpleProfiler implements Runnable {
 
 
         printer.progressUpdate(new TextComponentString(PREFIX + "Generating report..."));
-        ProfileReport report = new ProfileReport(serverTPS, trackerTPS, logger.getWorldServerTicks(), logger.getTrackerTicks(), logger.getGrantedNanos(), finishedAnalyzers);
+        ProfileReport report = new ProfileReport(startTimeNanos, endTimeNanos, serverTPS, trackerTPS, logger.getWorldServerTicks(), logger.getTrackerTicks(), logger.getGrantedNanos(), finishedAnalyzers);
         printer.progressUpdate(new TextComponentString(PREFIX + "Done!"));
         printer.report(report);
     }

@@ -17,11 +17,15 @@ public class ProfileReport implements IMessage {
     private int trackerTicks;
     private long grantedNanos;
     private long totalNanosUsed = 0L;
+    private final long startTimeNanos;
+    private final long endTimeNanos;
     private final TreeSet<AnalyzedComponent> analyzedComponents = new TreeSet<>();
     private final TreeMap<String, TickTime> classTimes = new TreeMap<>();
     private NavigableSet<Map.Entry<String, TickTime>> classTimesSorted = null;
 
-    public ProfileReport(double serverTPS, double trackerTPS, int serverTicks, int trackerTicks, long grantedNanos, Collection<AnalyzedComponent> analyzedComponents){
+    public ProfileReport(long startTimeNanos, long endTimeNanos, double serverTPS, double trackerTPS, int serverTicks, int trackerTicks, long grantedNanos, Collection<AnalyzedComponent> analyzedComponents){
+        this.startTimeNanos = startTimeNanos;
+        this.endTimeNanos = endTimeNanos;
         this.serverTPS = serverTPS;
         this.trackerTPS = trackerTPS;
         this.serverTicks = serverTicks;
@@ -142,5 +146,13 @@ public class ProfileReport implements IMessage {
 
     public long getTotalNanosUsed() {
         return totalNanosUsed;
+    }
+
+    public long getStartTimeNanos() {
+        return startTimeNanos;
+    }
+
+    public long getEndTimeNanos() {
+        return endTimeNanos;
     }
 }

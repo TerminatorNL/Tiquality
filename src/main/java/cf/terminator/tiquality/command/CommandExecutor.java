@@ -41,6 +41,7 @@ import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -396,12 +397,24 @@ public class CommandExecutor {
             for(ChunkPos pos : affectedChunks){
                 TiqualityChunk chunk = (TiqualityChunk) world.getChunk(pos.x, pos.z);
                 Tracker tracker = chunk.getCachedMostDominantTracker();
-                if(tracker instanceof PlayerTracker && tracker.getAssociatedPlayers().contains(profile) == false){
+                if(tracker == null){
+                    continue;
+                }
+                if(tracker instanceof PlayerTracker == false){
                     sender.sendMessage(new TextComponentString(TextFormatting.RED + "Sorry, there's already a tracker nearby that prevents you " + TextFormatting.RED + "from claiming here. (" + tracker.getInfo().getUnformattedComponentText() + TextFormatting.RED + ")"));
                     if(holder.hasPermission(PermissionHolder.Permission.ADMIN)) {
                         throw new CommandException("Use /tq unclaim to resolve this. Keep in mind that for claiming land at least one completely unclaimed chunk must be left as spacing between different owners of trackers.");
                     }else{
                         throw new CommandException("Ask an admin to unclaim this piece of land for you");
+                    }
+                }
+                PlayerTracker playerTracker = (PlayerTracker) tracker;
+                GameProfile trackerProfile = playerTracker.getOwner();
+                if(trackerProfile.equals(profile) == false){
+                    if(playerTracker.requestClaimOverride(profile, world, leastPos, mostPos)){
+                        throw new CommandException("Another user has already claimed in this proximity. A request to override has been sent to " + trackerProfile.getName());
+                    }else{
+                        throw new CommandException("Another user has already claimed in this proximity. A request to override cannot be sent, as the owner isn't online: " + trackerProfile.getName());
                     }
                 }
             }
@@ -449,6 +462,38 @@ public class CommandExecutor {
                     player.sendMessage(new TextComponentString(PREFIX + "Done."));
                 }
             });
+            /*
+
+            ACCEPT CLAIM OVERRIDE
+
+             */
+        }else if(args[0].equalsIgnoreCase("acceptoverride")){
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("Only players can use the acceptoverride command!");
+            }
+            if(args.length != 2){
+                throw new CommandException("Usage: /tq acceptoverride <name>");
+            }
+            EntityPlayer player = (EntityPlayer) sender;
+            PlayerTracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world, player.getGameProfile());
+            tracker.acceptOverride(sender, args[1]);
+            /*
+
+            DENY CLAIM OVERRIDE
+
+             */
+        }else if(args[0].equalsIgnoreCase("denyoverride")){
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            if(sender instanceof EntityPlayer == false){
+                throw new CommandException("Only players can use the denyoverride command!");
+            }
+            if(args.length != 2){
+                throw new CommandException("Usage: /tq denyoverride <name>");
+            }
+            EntityPlayer player = (EntityPlayer) sender;
+            PlayerTracker tracker = PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) player.world, player.getGameProfile());
+            tracker.denyOverride(sender, args[1]);
         /*
 
             NOTIFY
@@ -724,6 +769,8 @@ public class CommandExecutor {
             addIfStartsWith(list, start, "profile");
             addIfStartsWith(list, start, "notify");
             addIfStartsWith(list, start, "share");
+            addIfStartsWith(list, start, "acceptoverride");
+            addIfStartsWith(list, start, "denyoverride");
             if(holder.hasPermission(PermissionHolder.Permission.ADMIN)){
                 addIfStartsWith(list, start, "setblock");
                 addIfStartsWith(list, start, "setentity");
@@ -755,6 +802,10 @@ public class CommandExecutor {
             }else if(args[0].equalsIgnoreCase("claim") || args[0].equalsIgnoreCase("unclaim")){
                 if (holder.hasPermission(PermissionHolder.Permission.CLAIM)) {
                     addIfStartsWith(list, start, String.valueOf(MAX_CLAIM_RADIUS));
+                }
+            }else if(args[0].equalsIgnoreCase("acceptoverride") || args[0].equalsIgnoreCase("denyoverride")){
+                for (String onlinePlayerName : FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getOnlinePlayerNames()) {
+                    addIfStartsWith(list, start, onlinePlayerName);
                 }
             }
         }else if (args.length == 3){

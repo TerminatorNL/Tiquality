@@ -86,6 +86,14 @@ You can share tick time with other players using [/tq share](#commands-and-permi
    * Claims an area for a player. The maximum radius is defined using `MAX_CLAIM_RADIUS` in the config. If the radius parameter is omitted, the maximum value in the config is used instead. This is especially useful if you have just installed Tiquality and need to import bases into your existing world.
    * tiquality.claim
    
+ * /tq acceptoverride <`player`>
+   * Allows another player to claim your area after a failed claim attempt. You will receive a message on when to use this.
+   * tiquality.use
+   
+ * /tq denyoverride <`player`>
+   * Denies another player to claim your area after a failed claim attempt. You will receive a message on when to use this.
+   * tiquality.use
+   
 * /tq unclaim [`radius`]
   * Unclaims an area, useful for admins.
   * tiquality.admin
@@ -209,23 +217,6 @@ Tiquality does **NOT** hook into world events, so any processing AFTER the world
 ### Where is the data stored?
 The data is stored in the world folder under `TiqualityStorage`. Inspired by minecraft's own code, Tiquality also uses bitshifting to find the right identifier for a block, without having to iterate on anything. This means blazing fast performance, and this is needed because Tiquality has to **intercept and act on every ticked object**.
 
-### You suck!
-Hey, I am just trying to make the world a better place, I am sorry it did not work out for you.
-At the time of writing I have had several encounters where people flat out accuse me of doing everything wrong, and simply put: It hurts, lets not do this?
-
-### What is your code style?
-
-I follow my own set of rules whilst coding, to keep intent as clear as possible.
- - `== true` clarifies intent
- - `== false` is much more visible than `!`
- - There's no shorthands like `if()return;` I **always** use blocks
-  ```
-  if(){
-     return;
-  }
-  ```
- - There are no lambdas, simply because I don't like them for readability purposes (Subject to change)
- - AtomicInteger can double as object for synchronization signaling when waiting for *N* tasks to end, instead of sleeping for a set time.
-
-If you feel like you found something that needs to change, please follow the rules above before submitting a pull request.
-Another note: Please notify me beforehand if you intent to drop a big pull request, so I can give you some feedback if it will make it in the master branch before you waste a lot of time on something I already considered.
+### I have an idea! What can I do to help?
+Make an issue at [GitHub](https://github.com/TerminatorNL/Tiquality/issues/) and I'll give you some feedback. (I might already have considered your idea!) After that, fork Tiquality and just make a pull request!
+If you can't code, you can obviously still submit requests, and I will implement it as long as it fits the scope of the project.
