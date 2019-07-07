@@ -1,7 +1,7 @@
 ---
 name: Bug report - Without SpongeForge
 about: Submit a bug report. Use this if you dont have SpongeForge installed
-title: "[BUG]"
+title: "[Bug]"
 labels: no-spongeforge
 assignees: ''
 
