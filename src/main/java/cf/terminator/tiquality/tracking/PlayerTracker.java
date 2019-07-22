@@ -120,7 +120,7 @@ public class PlayerTracker extends TrackerBase {
         }
 
         player.sendMessage(new TextComponentString(PREFIX + user.getName() + " wishes to claim an area that overlaps or is near your claim:"));
-        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected area: X=" + leastPos.getX() + "Z=" + leastPos.getZ() + " to X=" + mostPos.getX() + " Z=" + mostPos.getZ()));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected area: X=" + leastPos.getX() + " Z=" + leastPos.getZ() + " to X=" + mostPos.getX() + " Z=" + mostPos.getZ()));
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Affected dimension: " + world.provider.getDimension()));
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  Surface area of total claim: " + (mostPos.getX() - leastPos.getX()) * (mostPos.getZ() - leastPos.getZ())));
         player.sendMessage(new TextComponentString(TextFormatting.GRAY + "To accept this request use: " + TextFormatting.GREEN + acceptString));

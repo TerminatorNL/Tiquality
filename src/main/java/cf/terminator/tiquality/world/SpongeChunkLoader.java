@@ -30,7 +30,7 @@ public class SpongeChunkLoader {
 
             ChunkProviderServer provider = ((WorldServer) world).getChunkProvider();
             if(provider instanceof ServerChunkProviderBridge){
-                WorldCategory category = ((WorldInfoBridge) provider.world.getWorldInfo()).getConfigAdapter().getConfig().getWorld();
+                WorldCategory category = ((WorldInfoBridge) provider.world.getWorldInfo()).bridge$getConfigAdapter().getConfig().getWorld();
                 boolean isDenying = category.getDenyChunkRequests();
                 if(isDenying){
                     ((ServerChunkProviderBridge) provider).bridge$setDenyChunkRequests(false);
