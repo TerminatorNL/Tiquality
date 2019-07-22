@@ -1,7 +1,7 @@
 ---
 name: Bug report - With SpongeForge
 about: Submit a bug report. Use this if you have SpongeForge installed
-title: "[BUG]"
+title: "[Bug]"
 labels: spongeforge
 assignees: ''
 
