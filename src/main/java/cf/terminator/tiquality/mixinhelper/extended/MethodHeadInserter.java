@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.LOGGER;
 
@@ -74,14 +75,19 @@ public class MethodHeadInserter implements Transformer {
     }
 
     private void findTargets(LinkedList<ScheduledAction> scheduledActions, MethodNode instructor, String nameRegex, String signatureRegex){
+        final AtomicBoolean found = new AtomicBoolean(false);
         MethodHelper.findMethods(nameRegex, signatureRegex, classNode, new MethodHelper.Handler() {
             @Override
             public void onFoundMethod(MethodNode node) {
                 if(instructor.equals(node) == false){
                     scheduledActions.add(new ScheduledAction(instructor, node));
+                    found.set(true);
                 }
             }
         });
+        if (found.get() == false) {
+            throw new IllegalStateException("Transformer did not find matches!");
+        }
     }
 
     public class ScheduledAction{
@@ -119,7 +125,7 @@ public class MethodHeadInserter implements Transformer {
             target.instructions.insert(instructions);
             target.instructions.resetLabels();
 
-            LOGGER.info("Newly generated method (" + target.name + "):");
+            LOGGER.debug("Newly generated method (" + target.name + "):");
             for (ListIterator<AbstractInsnNode> it = target.instructions.iterator(); it.hasNext(); ) {
                 AbstractInsnNode node = it.next();
                 if(node instanceof FrameNode){
@@ -127,7 +133,7 @@ public class MethodHeadInserter implements Transformer {
                     continue;
                 }
             }
-            LOGGER.info(Debugging.getInstructions(target));
+            LOGGER.debug(Debugging.getInstructions(target));
         }
     }
 

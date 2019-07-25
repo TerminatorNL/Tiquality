@@ -9,7 +9,6 @@ import cf.terminator.tiquality.tracking.TrackerHolder;
 import cf.terminator.tiquality.world.ChunkStorage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -25,7 +24,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -177,23 +175,6 @@ public abstract class MixinChunk implements TiqualityChunk {
         markDirty();
     }
 
-    /*
-     * For sponge, see:
-     * cf.terminator.tiquality.mixin.MixinWorldServerSponge.onSetBlockState
-     */
-    @Inject(method = "setBlockState", at = @At("HEAD"), require = 1)
-    private void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> cir){
-        onSetBlockStateHook(pos, state);
-    }
-
-    @Override
-    public void onSetBlockStateHook(BlockPos pos, IBlockState state){
-        Tracker tracker = tiquality_findTrackerByBlockPos(pos);
-        if(tracker != null){
-            tracker.notifyBlockStateChange((TiqualityWorld) world, pos, state);
-        }
-    }
-
     @Override
     public void tiquality_setTrackerForEntireChunk(Tracker tracker){
 
@@ -274,6 +255,7 @@ public abstract class MixinChunk implements TiqualityChunk {
             TrackerHolder holder = TrackerHolder.getTrackerHolder((TiqualityWorld) world, id);
             if(holder != null){
                 holder.getTracker().associateChunk(this);
+
                 tiquality_trackerLookup.forcePut(trackerData.getByte("chunk_id"), holder.getTracker());
             }else{
                 Tiquality.LOGGER.debug("Failed to load tracker with ID " + id + " in chunk: " + this);

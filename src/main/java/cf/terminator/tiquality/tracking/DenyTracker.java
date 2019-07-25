@@ -27,17 +27,6 @@ public class DenyTracker implements Tracker {
 
     public static final DenyTracker INSTANCE = new DenyTracker();
 
-    /**
-     * This tracker basically is a cache, and changing that block invalidates it's cache
-     * @param world the world
-     * @param pos the position
-     * @param state the new block state
-     */
-    @Override
-    public void notifyBlockStateChange(TiqualityWorld world, BlockPos pos, IBlockState state){
-        world.setTiqualityTracker(pos, null);
-    }
-
     @Override
     public boolean isLoaded() {
         return true;

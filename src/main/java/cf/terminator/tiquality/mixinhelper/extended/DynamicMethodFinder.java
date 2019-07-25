@@ -9,6 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.LOGGER;
 
@@ -73,21 +74,25 @@ public class DynamicMethodFinder implements Transformer {
     }
 
     private void findTarget(LinkedList<ScheduledAction> scheduledActions, MethodNode instructor, String nameRegex, String signatureRegex){
-        MethodHelper.findMethods(nameRegex, signatureRegex, classNode, new MethodHelper.Handler() {
-            boolean found = false;
+        final AtomicBoolean found = new AtomicBoolean(false);
 
+        MethodHelper.findMethods(nameRegex, signatureRegex, classNode, new MethodHelper.Handler() {
             @Override
             public void onFoundMethod(MethodNode node) {
-                if(found == true){
+                if (found.get()) {
                     LOGGER.fatal("@DynamicMethodFinder.FindMethod matched multiple targets. This is not allowed.");
                     FMLCommonHandler.instance().exitJava(-1, true);
                 }
-                found = true;
+                found.set(true);
                 if(instructor.equals(node) == false){
                     scheduledActions.add(new ScheduledAction(instructor, node));
                 }
             }
         });
+
+        if (found.get() == false) {
+            throw new IllegalStateException("Transformer did not find matches!");
+        }
     }
 
     public class ScheduledAction{
@@ -119,10 +124,10 @@ public class DynamicMethodFinder implements Transformer {
 
     private void redirectMethodInsnNode(MethodNode target, MethodInsnNode node, MethodNode method){
         LOGGER.info("Found target inside method: " + method.name);
-        LOGGER.info(Debugging.getInstructionText(node));
+        LOGGER.debug(Debugging.getInstructionText(node));
         node.name = target.name;
         node.desc = target.desc;
-        LOGGER.info("becomes...");
-        LOGGER.info(Debugging.getInstructionText(node));
+        LOGGER.debug("becomes...");
+        LOGGER.debug(Debugging.getInstructionText(node));
     }
 }

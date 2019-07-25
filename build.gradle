@@ -46,10 +46,10 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-String spongeForgeVersion = '1.12.2-2838-7.1.7-RC3854'
+String spongeForgeVersion = '1.12.2-2838-7.1.7-RC3856'
 String forgeVersion = '1.12.2-14.23.5.2825'
 
-version = "1.12.2-GAMMA-1.5.4"
+version = "1.12.2-GAMMA-1.5.5"
 group = "cf.terminator"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
 println("Compiling: " + archivesBaseName + "-" + version)

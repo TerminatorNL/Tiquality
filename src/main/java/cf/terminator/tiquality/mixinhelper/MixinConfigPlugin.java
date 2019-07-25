@@ -184,10 +184,12 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
 
     @Override
     public void postApply(String target, ClassNode classNode, String mixin, IMixinInfo iMixinInfo) {
-        if(mixin.equals("cf.terminator.tiquality.mixin.MixinWorldServerSponge")) {
-            LOGGER.info("Applying custom transformer for cf.terminator.tiquality.mixin.MixinWorldServerSponge");
-            new MethodHeadInserter(classNode).transform();
-            new DynamicMethodFinder(classNode).transform();
+        switch (mixin) {
+            case "cf.terminator.tiquality.mixin.MixinWorldServerSponge":
+            case "cf.terminator.tiquality.mixin.MixinSpongeChunk":
+                LOGGER.info("Applying custom transformer: (" + mixin + ")");
+                new MethodHeadInserter(classNode).transform();
+                new DynamicMethodFinder(classNode).transform();
         }
         LOGGER.info("Applied mixin: " + mixin);
         MIXINS_TO_LOAD.remove(mixin);
