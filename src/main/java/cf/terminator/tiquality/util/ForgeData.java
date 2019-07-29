@@ -74,13 +74,23 @@ public class ForgeData {
          */
         if(profile == null){
             profile = new GameProfile(uuid, null);
-            SERVER.getMinecraftSessionService().fillProfileProperties(profile, false);
+            try {
+                SERVER.getMinecraftSessionService().fillProfileProperties(profile, false);
+            } catch (Exception e) {
+                Tiquality.LOGGER.warn("Failed attempt to fill profile (Stage 1)");
+                e.printStackTrace();
+            }
         }
         /*
                 If it still did not, we make sure to contact mojang.
          */
         if(profile.getName() == null){
-            SERVER.getMinecraftSessionService().fillProfileProperties(profile, true);
+            try {
+                SERVER.getMinecraftSessionService().fillProfileProperties(profile, true);
+            } catch (Exception e) {
+                Tiquality.LOGGER.warn("Failed attempt to fill profile (Stage 2)");
+                e.printStackTrace();
+            }
         }
 
 
