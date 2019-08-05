@@ -1,11 +1,13 @@
 package cf.terminator.tiquality.tracking;
 
+import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import net.minecraft.nbt.NBTTagCompound;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
@@ -37,6 +39,10 @@ public class TrackerManager {
                     break;
                 }
             }
+            return foreach.value;
+        } catch (ConcurrentModificationException e) {
+            Tiquality.LOGGER.warn("Concurrent modification exception occurred! To prevent a crash, we caught it. I need more eyes for this. See issues: #20 #22 and #41");
+            e.printStackTrace();
             return foreach.value;
         }finally {
             TRACKER_LIST_LOCK.unlock();
@@ -80,6 +86,9 @@ public class TrackerManager {
                     }
                 }
             }
+        } catch (ConcurrentModificationException e) {
+            Tiquality.LOGGER.warn("Concurrent modification exception occurred! To prevent a crash, we caught it. I need more eyes for this. See issues: #20 #22 and #41");
+            e.printStackTrace();
         }finally {
             TRACKER_LIST_LOCK.unlock();
         }
@@ -100,6 +109,9 @@ public class TrackerManager {
                     return false;
                 }
             });
+        } catch (ConcurrentModificationException e) {
+            Tiquality.LOGGER.warn("Concurrent modification exception occurred! To prevent a crash, we caught it. I need more eyes for this. See issues: #20 #22 and #41");
+            e.printStackTrace();
         }finally {
             TRACKER_LIST_LOCK.unlock();
         }
