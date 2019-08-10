@@ -1,7 +1,9 @@
 package cf.terminator.tiquality.mixinhelper;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.mixinhelper.extended.Debugging;
 import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodFinder;
+import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodRedirector;
 import cf.terminator.tiquality.mixinhelper.extended.MethodHeadInserter;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.apache.logging.log4j.LogManager;
@@ -184,13 +186,22 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
 
     @Override
     public void postApply(String target, ClassNode classNode, String mixin, IMixinInfo iMixinInfo) {
-        switch (mixin) {
-            case "cf.terminator.tiquality.mixin.MixinWorldServerSponge":
-            case "cf.terminator.tiquality.mixin.MixinSpongeChunk":
-                LOGGER.info("Applying custom transformer: (" + mixin + ")");
-                new MethodHeadInserter(classNode).transform();
-                new DynamicMethodFinder(classNode).transform();
+        try {
+            switch (mixin) {
+                case "cf.terminator.tiquality.mixin.MixinWorldServerSponge":
+                case "cf.terminator.tiquality.mixin.MixinSpongeChunk":
+                    LOGGER.info("Applying custom transformer: (" + mixin + ")");
+                    new MethodHeadInserter(classNode).transform();
+                    new DynamicMethodFinder(classNode).transform();
+                    new DynamicMethodRedirector(classNode).transform();
+            }
+        } catch (Throwable t) {
+            LOGGER.fatal("Unable to transform class: " + target);
+            t.printStackTrace();
+            Debugging.dumpClassToFatalLog(classNode);
+            FMLCommonHandler.instance().exitJava(-1, true);
         }
+
         LOGGER.info("Applied mixin: " + mixin);
         MIXINS_TO_LOAD.remove(mixin);
     }

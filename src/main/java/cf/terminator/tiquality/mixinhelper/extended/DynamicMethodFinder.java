@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper.extended;
 
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.spongepowered.asm.lib.tree.*;
 
@@ -19,22 +20,6 @@ import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.LOGGER;
  */
 public class DynamicMethodFinder implements Transformer {
 
-    /**
-     * Redirects the method specified here to the found method
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @java.lang.annotation.Target(ElementType.METHOD)
-    public @interface FindMethod {
-        String nameRegex();
-        String signatureRegex() default "";
-    }
-
-    private final ClassNode classNode;
-
-    public DynamicMethodFinder(ClassNode classNode){
-        this.classNode = classNode;
-    }
-
     @Override
     public void transform() {
         LinkedList<ScheduledAction> scheduledActions = new LinkedList<>();
@@ -45,25 +30,26 @@ public class DynamicMethodFinder implements Transformer {
             for(AnnotationNode annotation : method.visibleAnnotations){
                 if(annotation.desc.equals("Lcf/terminator/tiquality/mixinhelper/extended/DynamicMethodFinder$FindMethod;")){
                     String currentKey = null;
-                    String nameRegex = null;
-                    String signatureRegex = null;
+                    String deobfRegex = null;
+                    String obfRegex = null;
                     for(Object key_value : annotation.values){
                         if(currentKey == null){
                             currentKey = (String) key_value;
                         }else{
-                            if(currentKey.equals("nameRegex")){
-                                nameRegex = (String) key_value;
-                            }else if(currentKey.equals("signatureRegex")){
-                                signatureRegex = (String) key_value;
+                            if (currentKey.equals("deobfRegexName")) {
+                                deobfRegex = (String) key_value;
+                            } else if (currentKey.equals("obfRegexName")) {
+                                obfRegex = (String) key_value;
                             }
                             currentKey = null;
                         }
                     }
-                    if(nameRegex == null && signatureRegex == null){
+                    String regexUsed = MixinConfigPlugin.isProductionEnvironment() ? obfRegex : deobfRegex;
+                    if (regexUsed == null) {
                         LOGGER.fatal("Invalid annotation found. (@DynamicMethodFinder.FindMethod)");
                         FMLCommonHandler.instance().exitJava(-1, true);
                     }else{
-                        findTarget(scheduledActions, method, nameRegex, signatureRegex);
+                        findTarget(scheduledActions, method, regexUsed);
                     }
                 }
             }
@@ -73,10 +59,16 @@ public class DynamicMethodFinder implements Transformer {
         }
     }
 
-    private void findTarget(LinkedList<ScheduledAction> scheduledActions, MethodNode instructor, String nameRegex, String signatureRegex){
+    private final ClassNode classNode;
+
+    public DynamicMethodFinder(ClassNode classNode) {
+        this.classNode = classNode;
+    }
+
+    private void findTarget(LinkedList<ScheduledAction> scheduledActions, MethodNode instructor, String nameRegex) {
         final AtomicBoolean found = new AtomicBoolean(false);
 
-        MethodHelper.findMethods(nameRegex, signatureRegex, classNode, new MethodHelper.Handler() {
+        MethodHelper.findMethods(nameRegex, null, classNode, new MethodHelper.Handler() {
             @Override
             public void onFoundMethod(MethodNode node) {
                 if (found.get()) {
@@ -93,6 +85,17 @@ public class DynamicMethodFinder implements Transformer {
         if (found.get() == false) {
             throw new IllegalStateException("Transformer did not find matches!");
         }
+    }
+
+    /**
+     * Redirects the method specified here to the found method
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @java.lang.annotation.Target(ElementType.METHOD)
+    public @interface FindMethod {
+        String deobfRegexName();
+
+        String obfRegexName();
     }
 
     public class ScheduledAction{

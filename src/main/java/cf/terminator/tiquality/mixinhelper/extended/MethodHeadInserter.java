@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper.extended;
 
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.spongepowered.asm.lib.tree.*;
 
@@ -19,23 +20,6 @@ import static cf.terminator.tiquality.mixinhelper.MixinConfigPlugin.LOGGER;
  */
 public class MethodHeadInserter implements Transformer {
 
-    /**
-     * Injects the instructor method at the head of the targeted method.
-     * No fancy stuff like CallbackReturnable here.
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @java.lang.annotation.Target(ElementType.METHOD)
-    public @interface InsertHead {
-        String nameRegex();
-        String signatureRegex() default "";
-    }
-
-    private final ClassNode classNode;
-
-    public MethodHeadInserter(ClassNode classNode){
-        this.classNode = classNode;
-    }
-
     @Override
     public void transform() {
         LinkedList<ScheduledAction> scheduledActions = new LinkedList<>();
@@ -46,24 +30,31 @@ public class MethodHeadInserter implements Transformer {
             for(AnnotationNode annotation : method.visibleAnnotations){
                 if(annotation.desc.equals("Lcf/terminator/tiquality/mixinhelper/extended/MethodHeadInserter$InsertHead;")){
                     String currentKey = null;
-                    String nameRegex = null;
+                    String deobfRegex = null;
+                    String obfRegex = null;
                     String signatureRegex = null;
                     for(Object key_value : annotation.values){
                         if(currentKey == null){
                             currentKey = (String) key_value;
                         }else{
-                            if(currentKey.equals("nameRegex")){
-                                nameRegex = (String) key_value;
+                            if (currentKey.equals("deobfRegexName")) {
+                                deobfRegex = (String) key_value;
+                            } else if (currentKey.equals("obfRegexName")) {
+                                obfRegex = (String) key_value;
                             }else if(currentKey.equals("signatureRegex")){
                                 signatureRegex = (String) key_value;
                             }
                             currentKey = null;
                         }
                     }
-                    if(nameRegex == null && signatureRegex == null){
+                    String nameRegex = MixinConfigPlugin.isProductionEnvironment() ? obfRegex : deobfRegex;
+                    if (nameRegex == null) {
                         LOGGER.fatal("Invalid annotation found. (@MethodHeadInserter.InsertHead)");
                         FMLCommonHandler.instance().exitJava(-1, true);
                     }else{
+                        if (signatureRegex == null) {
+                            signatureRegex = "";
+                        }
                         findTargets(scheduledActions, method, nameRegex, signatureRegex);
                     }
                 }
@@ -72,6 +63,26 @@ public class MethodHeadInserter implements Transformer {
         for(ScheduledAction action : scheduledActions){
             action.apply();
         }
+    }
+
+    private final ClassNode classNode;
+
+    public MethodHeadInserter(ClassNode classNode) {
+        this.classNode = classNode;
+    }
+
+    /**
+     * Injects the instructor method at the head of the targeted method.
+     * No fancy stuff like CallbackReturnable here.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @java.lang.annotation.Target(ElementType.METHOD)
+    public @interface InsertHead {
+        String deobfRegexName();
+
+        String obfRegexName();
+
+        String signatureRegex() default "";
     }
 
     private void findTargets(LinkedList<ScheduledAction> scheduledActions, MethodNode instructor, String nameRegex, String signatureRegex){

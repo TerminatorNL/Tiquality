@@ -1,7 +1,9 @@
 package cf.terminator.tiquality.mixin;
 
 import cf.terminator.tiquality.interfaces.TickExecutor;
+import cf.terminator.tiquality.mixinhelper.extended.DynamicExclusion;
 import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodFinder;
+import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodRedirector;
 import cf.terminator.tiquality.mixinhelper.extended.MethodHeadInserter;
 import cf.terminator.tiquality.tracking.TickHub;
 import net.minecraft.block.Block;
@@ -17,16 +19,14 @@ import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.common.bridge.world.ServerWorldBridge;
+import org.spongepowered.common.bridge.world.WorldServerBridge;
 import org.spongepowered.common.event.tracking.TrackingUtil;
 import org.spongepowered.common.mixin.core.world.WorldServerMixin;
 
 import java.util.Random;
 
 @SuppressWarnings({"ReferenceToMixin"})
-@Mixin(value = WorldServer.class, priority = 3000)
+@Mixin(value = WorldServer.class)
 public abstract class MixinWorldServerSponge extends World implements TickExecutor {
 
     private boolean IS_CONTROLLED_BY_TIQUALITY;
@@ -37,25 +37,18 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     }
 
     /*
-        ENTITY
-     */
-    @Dynamic(value = "onCallEntityUpdate is added by SpongeForge (redirect$onCallEntityUpdate$something)", mixin = WorldServerMixin.class)
-    @DynamicMethodFinder.FindMethod(nameRegex = "redirect\\$onCallEntityUpdate")
-    protected abstract void onCallEntityUpdate_Sponge(Entity entity);
+        RANDOM BLOCK
+    */
+    @Dynamic(value = "updateBlocks is modified by SpongeForge", mixin = WorldServerMixin.class)
+    @DynamicMethodRedirector.RedirectMethod(deobfRegexName = "randomTick", obfRegexName = "func_180645_a", deobfRegexOwner = "net/minecraft/block/Block", obfRegexOwner = "net/minecraft/block/Block")
+    private static void onRandomBlockTick_Minecraft(Block block, net.minecraft.world.World worldIn, BlockPos pos, IBlockState state, Random rand) {
+        TickHub.onRandomBlockTick(block, worldIn, pos, state, rand);
+    }
 
-
-    @MethodHeadInserter.InsertHead(nameRegex = "redirect\\$onCallEntityUpdate")
-    @Dynamic(value = "onCallEntityUpdate is modified by SpongeForge", mixin = WorldServerMixin.class)
-    private void onCallEntityUpdate(Entity entity){
-        if(IS_CONTROLLED_BY_TIQUALITY == false){
-            TickHub.onEntityTick(entity);
-            /*
-                THIS IS ACTUALLY VERY IMPORTANT.
-                We inject this piece of code at the top of another method!
-             */
-            //noinspection UnnecessaryReturnStatement
-            return;
-        }
+    @Dynamic(value = "updateBlocks is modified by SpongeForge", mixin = WorldServerMixin.class)
+    @DynamicMethodRedirector.RedirectMethod(deobfRegexName = "randomTickBlock", obfRegexName = "randomTickBlock", deobfRegexOwner = "org/spongepowered/common/event/tracking/TrackingUtil", obfRegexOwner = "org/spongepowered/common/event/tracking/TrackingUtil")
+    private static void onRandomBlockTick_TrackingUtil(final WorldServerBridge mixinWorld, final Block block, final BlockPos pos, final IBlockState state, final Random random) {
+        TickHub.onRandomBlockTick(block, (World) mixinWorld, pos, state, random);
     }
 
     @Override
@@ -66,17 +59,17 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     }
 
     /*
-        TILE ENTITY
+        ENTITY
      */
-    @Dynamic(value = "onUpdateTileEntities is added by SpongeForge (redirect$onUpdateTileEntities$something)", mixin = WorldServerMixin.class)
-    @DynamicMethodFinder.FindMethod(nameRegex = "redirect\\$onUpdateTileEntities")
-    protected abstract void onUpdateTileEntities_Sponge(ITickable tickable);
+    @Dynamic(value = "onCallEntityUpdate is added by SpongeForge (redirect$onCallEntityUpdate$something)", mixin = WorldServerMixin.class)
+    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$onCallEntityUpdate", obfRegexName = "redirect\\$onCallEntityUpdate")
+    protected abstract void onCallEntityUpdate_Sponge(Entity entity);
 
-    @MethodHeadInserter.InsertHead(nameRegex = "redirect\\$onUpdateTileEntities")
-    @Dynamic(value = "onUpdateTileEntities is modified by SpongeForge", mixin = WorldServerMixin.class)
-    private void onUpdateTileEntities(ITickable tickable){
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onCallEntityUpdate", obfRegexName = "redirect\\$onCallEntityUpdate")
+    @Dynamic(value = "onCallEntityUpdate is modified by SpongeForge", mixin = WorldServerMixin.class)
+    private void onCallEntityUpdate(Entity entity){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
-            TickHub.onTileEntityTick(tickable);
+            TickHub.onEntityTick(entity);
             /*
                 THIS IS ACTUALLY VERY IMPORTANT.
                 We inject this piece of code at the top of another method!
@@ -94,9 +87,30 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     }
 
     /*
+        TILE ENTITY
+     */
+    @Dynamic(value = "onUpdateTileEntities is added by SpongeForge (redirect$onUpdateTileEntities$something)", mixin = WorldServerMixin.class)
+    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$onUpdateTileEntities", obfRegexName = "redirect\\$onUpdateTileEntities")
+    protected abstract void onUpdateTileEntities_Sponge(ITickable tickable);
+
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onUpdateTileEntities", obfRegexName = "redirect\\$onUpdateTileEntities")
+    @Dynamic(value = "onUpdateTileEntities is modified by SpongeForge", mixin = WorldServerMixin.class)
+    private void onUpdateTileEntities(ITickable tickable){
+        if(IS_CONTROLLED_BY_TIQUALITY == false){
+            TickHub.onTileEntityTick(tickable);
+            /*
+                THIS IS ACTUALLY VERY IMPORTANT.
+                We inject this piece of code at the top of another method!
+             */
+            //noinspection UnnecessaryReturnStatement
+            return;
+        }
+    }
+
+    /*
         BLOCK
      */
-    @MethodHeadInserter.InsertHead(nameRegex = "redirect\\$onUpdateTick")
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onUpdateTick", obfRegexName = "redirect\\$onUpdateTick")
     @Dynamic(value = "onUpdateTick is redirected by SpongeForge", mixin = WorldServerMixin.class)
     private void onUpdateTick(Block block, net.minecraft.world.World worldIn, BlockPos pos, IBlockState state, Random rand){
         if(IS_CONTROLLED_BY_TIQUALITY == false){
@@ -113,32 +127,15 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     @Override
     public void onBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
         IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.updateTickBlock((ServerWorldBridge) world, block, pos, state, rand);
+        TrackingUtil.updateTickBlock((WorldServerBridge) world, block, pos, state, rand);
         IS_CONTROLLED_BY_TIQUALITY = false;
     }
 
-    /*
-        RANDOM BLOCK
-    */
-    @Redirect(method = "updateBlocks", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;randomTick(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"))
-    private void onRandomBlockTick_Minecraft(Block block, net.minecraft.world.World worldIn, BlockPos pos, IBlockState state, Random rand){
-        if(IS_CONTROLLED_BY_TIQUALITY == false){
-            TickHub.onRandomBlockTick(block, worldIn, pos, state, rand);
-        }
-    }
-
-    @Dynamic(value = "updateBlocks is modified by SpongeForge", mixin = WorldServerMixin.class)
-    @Redirect(method = "updateBlocks", at = @At(value = "INVOKE", target = "Lorg/spongepowered/common/event/tracking/TrackingUtil;randomTickBlock(Lorg/spongepowered/common/bridge/world/ServerWorldBridge;Lnet/minecraft/block/Block;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V"), require = 1)
-    private void onRandomBlockTick_TickHub(ServerWorldBridge mixinWorld, Block block, BlockPos pos, IBlockState state, Random rand){
-        if(IS_CONTROLLED_BY_TIQUALITY == false){
-            TickHub.onRandomBlockTick(block, (World) mixinWorld, pos, state, rand);
-        }
-    }
-
     @Override
+    @DynamicExclusion
     public void onRandomBlockTick(Block block, World world, BlockPos pos, IBlockState state, Random rand) {
         IS_CONTROLLED_BY_TIQUALITY = true;
-        TrackingUtil.randomTickBlock((ServerWorldBridge) world, block, pos, state, rand);
+        TrackingUtil.randomTickBlock((WorldServerBridge) world, block, pos, state, rand);
         IS_CONTROLLED_BY_TIQUALITY = false;
     }
 }

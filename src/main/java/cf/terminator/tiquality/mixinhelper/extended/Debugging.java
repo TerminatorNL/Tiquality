@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper.extended;
 
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import org.spongepowered.asm.lib.Opcodes;
 import org.spongepowered.asm.lib.tree.*;
 
@@ -10,6 +11,19 @@ import java.util.ListIterator;
  * The most basic and inefficient debugging tool I could come up with.
  */
 public class Debugging {
+
+    public static void dumpClassToFatalLog(ClassNode classNode) {
+        MixinConfigPlugin.LOGGER.fatal("Dumping class methods: " + classNode.name);
+        if (classNode.methods == null) {
+            MixinConfigPlugin.LOGGER.fatal("No methods inside class");
+            return;
+        }
+        for (MethodNode method : classNode.methods) {
+            MixinConfigPlugin.LOGGER.fatal("Method name: " + method.name);
+            MixinConfigPlugin.LOGGER.fatal("Method desc: " + method.desc);
+            MixinConfigPlugin.LOGGER.fatal("Nodes: " + getInstructions(method));
+        }
+    }
 
     public static String getInstructions(MethodNode method){
         StringBuilder builder = new StringBuilder();
@@ -58,8 +72,12 @@ public class Debugging {
             return "\tfield: " + ((FieldInsnNode) node).name + " " + translation;
         }else if(node instanceof VarInsnNode){
             return "\tvar: " + ((VarInsnNode) node).var + " " + translation;
-        }else if(node instanceof MethodInsnNode){
-            return "\tmethod: " + ((MethodInsnNode) node).name + ", " + ((MethodInsnNode) node).desc  + " " + translation;
+        } else if (node instanceof MethodInsnNode) {
+            return "\tmethod: " + ((MethodInsnNode) node).owner + "." + ((MethodInsnNode) node).name + ", " + ((MethodInsnNode) node).desc + " " + translation;
+        } else if (node instanceof IincInsnNode) {
+            return "\tinc: " + ((IincInsnNode) node).incr + " " + ((IincInsnNode) node).var;
+        } else if (node instanceof TypeInsnNode) {
+            return "\ttype: " + ((TypeInsnNode) node).desc;
         }else{
             return "\tUnknown: " + node.toString() + node.getClass().toGenericString();
         }

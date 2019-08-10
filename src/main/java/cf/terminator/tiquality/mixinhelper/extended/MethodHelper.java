@@ -1,5 +1,6 @@
 package cf.terminator.tiquality.mixinhelper.extended;
 
+import org.spongepowered.asm.lib.tree.AnnotationNode;
 import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.lib.tree.MethodNode;
 
@@ -7,6 +8,18 @@ import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class MethodHelper {
+
+    public static boolean isExcluded(MethodNode node) {
+        if (node.visibleAnnotations == null) {
+            return false;
+        }
+        for (AnnotationNode a : node.visibleAnnotations) {
+            if ("Lcf/terminator/tiquality/mixinhelper/extended/DynamicExclusion;".equals(a.desc)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static void findMethods(@Nullable String nameRegex, @Nullable String signatureRegex, ClassNode classNode, Handler handler){
         if(nameRegex != null && nameRegex.equals("")){
