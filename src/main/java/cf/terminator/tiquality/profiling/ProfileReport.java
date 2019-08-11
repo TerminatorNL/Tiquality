@@ -2,6 +2,7 @@ package cf.terminator.tiquality.profiling;
 
 import cf.terminator.tiquality.util.Constants;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
@@ -21,9 +22,10 @@ public class ProfileReport implements IMessage {
     private final long endTimeNanos;
     private final TreeSet<AnalyzedComponent> analyzedComponents = new TreeSet<>();
     private final TreeMap<String, TickTime> classTimes = new TreeMap<>();
+    private final ITextComponent identifier;
     private NavigableSet<Map.Entry<String, TickTime>> classTimesSorted = null;
 
-    public ProfileReport(long startTimeNanos, long endTimeNanos, double serverTPS, double trackerTPS, int serverTicks, int trackerTicks, long grantedNanos, Collection<AnalyzedComponent> analyzedComponents){
+    public ProfileReport(long startTimeNanos, long endTimeNanos, double serverTPS, double trackerTPS, int serverTicks, int trackerTicks, long grantedNanos, ITextComponent identifier, Collection<AnalyzedComponent> analyzedComponents) {
         this.startTimeNanos = startTimeNanos;
         this.endTimeNanos = endTimeNanos;
         this.serverTPS = serverTPS;
@@ -32,7 +34,7 @@ public class ProfileReport implements IMessage {
         this.trackerTicks = trackerTicks;
         this.grantedNanos = grantedNanos;
         this.analyzedComponents.addAll(analyzedComponents);
-
+        this.identifier = identifier;
         for(AnalyzedComponent component : this.analyzedComponents){
             /*
                 Total nanoseconds used
@@ -49,6 +51,10 @@ public class ProfileReport implements IMessage {
                 time.add(component.getTimes());
             }
         }
+    }
+
+    public ITextComponent getIdentifier() {
+        return identifier;
     }
 
     public double getServerTPS(){

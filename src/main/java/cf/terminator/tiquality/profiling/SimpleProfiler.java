@@ -29,7 +29,7 @@ public class SimpleProfiler implements Runnable {
     }
 
     public void start() throws TiqualityException{
-        key = tracker.startProfiler();
+        key = tracker.startProfiler(System.currentTimeMillis() + durationInMs);
         startTimeNanos = System.nanoTime();
         new Thread(this, "Tiquality profiler").start();
     }
@@ -115,7 +115,7 @@ public class SimpleProfiler implements Runnable {
 
 
         printer.progressUpdate(new TextComponentString(PREFIX + "Generating report..."));
-        ProfileReport report = new ProfileReport(startTimeNanos, endTimeNanos, serverTPS, trackerTPS, logger.getWorldServerTicks(), logger.getTrackerTicks(), logger.getGrantedNanos(), finishedAnalyzers);
+        ProfileReport report = new ProfileReport(startTimeNanos, endTimeNanos, serverTPS, trackerTPS, logger.getWorldServerTicks(), logger.getTrackerTicks(), logger.getGrantedNanos(), tracker.getInfo(), finishedAnalyzers);
         printer.progressUpdate(new TextComponentString(PREFIX + "Done!"));
         printer.report(report);
     }

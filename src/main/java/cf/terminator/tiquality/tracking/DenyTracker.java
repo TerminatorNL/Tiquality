@@ -62,7 +62,7 @@ public class DenyTracker implements Tracker {
 
     @Nonnull
     @Override
-    public ProfilingKey startProfiler() throws TiqualityException.TrackerCannotProfileException{
+    public ProfilingKey startProfiler(long endTime) throws TiqualityException.TrackerCannotProfileException {
         throw new TiqualityException.TrackerCannotProfileException(this);
     }
 
@@ -106,6 +106,11 @@ public class DenyTracker implements Tracker {
     @Override
     public boolean isProfiling() {
         return false;
+    }
+
+    @Override
+    public long getProfileEndTime() {
+        return 0;
     }
 
     @Override

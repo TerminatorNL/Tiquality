@@ -51,11 +51,11 @@ public class ForcedTracker implements Tracker {
 
     @Nonnull
     @Override
-    public ProfilingKey startProfiler() throws TiqualityException.TrackerAlreadyProfilingException{
+    public ProfilingKey startProfiler(long profileEndTime) throws TiqualityException.TrackerAlreadyProfilingException {
         if(isProfiling){
             throw new TiqualityException.TrackerAlreadyProfilingException(this);
         }
-        key = new ProfilingKey();
+        key = new ProfilingKey(profileEndTime);
         Tiquality.SCHEDULER.schedule(new Runnable() {
             @Override
             public void run() {
@@ -93,6 +93,12 @@ public class ForcedTracker implements Tracker {
     public boolean isProfiling() {
         return isProfiling;
     }
+
+    @Override
+    public long getProfileEndTime() {
+        return key == null ? 0 : key.getProfileEndTime();
+    }
+
 
     @Override
     public void setNextTickTime(long granted_ns) {

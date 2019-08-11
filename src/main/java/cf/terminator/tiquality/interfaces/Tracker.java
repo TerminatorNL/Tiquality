@@ -52,7 +52,7 @@ public interface Tracker {
      * @throws TiqualityException.TrackerAlreadyProfilingException if the tracker already is profiling
      */
     @Nonnull
-    ProfilingKey startProfiler() throws TiqualityException.TrackerCannotProfileException, TiqualityException.TrackerAlreadyProfilingException;
+    ProfilingKey startProfiler(long profileEndTime) throws TiqualityException.TrackerCannotProfileException, TiqualityException.TrackerAlreadyProfilingException;
 
     /**
      * Stops the profiler, using the key to stop. This ensures no collisions go undetected
@@ -74,6 +74,8 @@ public interface Tracker {
     boolean canProfile();
 
     boolean isProfiling();
+
+    long getProfileEndTime();
 
     void setNextTickTime(long granted_ns);
 

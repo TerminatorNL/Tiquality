@@ -88,13 +88,18 @@ public abstract class TrackerBase implements Tracker {
         return isProfiling;
     }
 
+    @Override
+    public long getProfileEndTime() {
+        return key == null ? 0 : key.getProfileEndTime();
+    }
+
     @Nonnull
     @Override
-    public ProfilingKey startProfiler() throws TiqualityException.TrackerAlreadyProfilingException{
+    public ProfilingKey startProfiler(long profileEndTime) throws TiqualityException.TrackerAlreadyProfilingException {
         if(isProfiling){
             throw new TiqualityException.TrackerAlreadyProfilingException(this);
         }
-        this.key = new ProfilingKey();
+        this.key = new ProfilingKey(profileEndTime);
         Tiquality.SCHEDULER.schedule(new Runnable() {
             @Override
             public void run() {
