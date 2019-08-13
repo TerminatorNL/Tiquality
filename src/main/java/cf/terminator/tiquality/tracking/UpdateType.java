@@ -38,6 +38,11 @@ public enum UpdateType {
      */
     ALWAYS_TICK;
 
+    /**
+     * Used to check if we're currently a client on a dedicated server
+     */
+    public static boolean WORLD_IS_REMOTE = false;
+
     public enum Type{
         ENTITY,
         BLOCK
@@ -49,17 +54,21 @@ public enum UpdateType {
      * @return true if the block MUST tick instantly. false if it's not required.
      */
     public boolean mustTick(@Nullable Tracker tracker){
-        switch (this){
-            case DEFAULT:
-            case PRIORITY:
-            case TICK_DENIED:
-                return false;
-            case NATURAL:
-                return tracker == null;
-            case ALWAYS_TICK:
-                return true;
-            default:
-                throw new ForgetFulProgrammerException();
+        if (WORLD_IS_REMOTE) {
+            return true;
+        } else {
+            switch (this) {
+                case DEFAULT:
+                case PRIORITY:
+                case TICK_DENIED:
+                    return false;
+                case NATURAL:
+                    return tracker == null;
+                case ALWAYS_TICK:
+                    return true;
+                default:
+                    throw new ForgetFulProgrammerException();
+            }
         }
     }
 

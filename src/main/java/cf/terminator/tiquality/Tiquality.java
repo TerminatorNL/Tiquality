@@ -8,6 +8,7 @@ import cf.terminator.tiquality.mixinhelper.MixinValidator;
 import cf.terminator.tiquality.monitor.*;
 import cf.terminator.tiquality.tracking.ForcedTracker;
 import cf.terminator.tiquality.tracking.PlayerTracker;
+import cf.terminator.tiquality.tracking.UpdateType;
 import cf.terminator.tiquality.tracking.event.EntitySetTrackerEventHandler;
 import cf.terminator.tiquality.tracking.tickexecutors.ForgeTickExecutor;
 import cf.terminator.tiquality.tracking.tickexecutors.SpongeTickExecutor;
@@ -24,6 +25,8 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +45,6 @@ public class Tiquality {
     public static final String URL = "https://minecraft.curseforge.com/projects/tiquality";
     public static final String[] AUTHORS = {"Terminator_NL"};
     public static final String PREFIX = TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "] " + TextFormatting.GRAY;
-    public static boolean SPONGE_IS_PRESENT = false;
     public static TickExecutor TICK_EXECUTOR;
     public static final SplittableRandom RANDOM = new SplittableRandom();
 
@@ -50,7 +52,6 @@ public class Tiquality {
      * Is also the sponge container.
      */
     public static Tiquality INSTANCE;
-
     public static Logger LOGGER;
 
     /*
@@ -60,9 +61,13 @@ public class Tiquality {
     public static final Scheduler SCHEDULER = Scheduler.INSTANCE;
     private TickMaster TICK_MASTER;
 
+    public Tiquality() {
+        INSTANCE = this;
+        MinecraftForge.EVENT_BUS.register(this);
+    }
+
     @EventHandler
     public void preinit(FMLPreInitializationEvent e){
-        INSTANCE = this;
         LOGGER = e.getModLog();
 
         if(MIXIN_CONFIG_PLUGIN_WAS_LOADED == false){
@@ -95,6 +100,20 @@ public class Tiquality {
     }
 
     @EventHandler
+    public void preinit(FMLInitializationEvent e) {
+        if (Loader.isModLoaded("sponge")) {
+            TICK_EXECUTOR = new SpongeTickExecutor();
+        } else {
+            TICK_EXECUTOR = new ForgeTickExecutor();
+        }
+    }
+
+    @SubscribeEvent
+    public void onClientConnectedToServerEvent(FMLNetworkEvent.ClientConnectedToServerEvent e) {
+        UpdateType.WORLD_IS_REMOTE = e.isLocal() == false;
+    }
+
+    @EventHandler
     public void onPost(FMLInitializationEvent e){
         ExternalHooker.init();
         MixinValidator.validate();
@@ -103,12 +122,9 @@ public class Tiquality {
     @EventHandler
     public void onPreServerStart(FMLServerAboutToStartEvent e){
         if (Loader.isModLoaded("sponge")) {
-            SPONGE_IS_PRESENT = true;
             CommandHub.INSTANCE.initSponge();
-            TICK_EXECUTOR = new SpongeTickExecutor();
         } else {
             CommandHub.INSTANCE.initForge();
-            TICK_EXECUTOR = new ForgeTickExecutor();
         }
         TICK_MASTER = new TickMaster(e.getServer());
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);

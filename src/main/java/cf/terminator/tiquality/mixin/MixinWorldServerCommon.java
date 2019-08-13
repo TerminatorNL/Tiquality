@@ -1,7 +1,7 @@
 package cf.terminator.tiquality.mixin;
 
-import cf.terminator.tiquality.Tiquality;
 import cf.terminator.tiquality.interfaces.*;
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import cf.terminator.tiquality.world.SpongeChunkLoader;
 import cf.terminator.tiquality.world.WorldHelper;
 import net.minecraft.profiler.Profiler;
@@ -38,7 +38,7 @@ public abstract class MixinWorldServerCommon extends World implements TiqualityW
      * @return the chunk
      */
     public @Nonnull TiqualityChunk getTiqualityChunk(BlockPos pos){
-        if(Tiquality.SPONGE_IS_PRESENT){
+        if (MixinConfigPlugin.spongePresent) {
             return SpongeChunkLoader.getChunkForced(this, pos);
         }else {
             return (TiqualityChunk) this.getChunk(pos);

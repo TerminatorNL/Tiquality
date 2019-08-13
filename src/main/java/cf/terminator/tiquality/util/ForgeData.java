@@ -1,6 +1,7 @@
 package cf.terminator.tiquality.util;
 
 import cf.terminator.tiquality.Tiquality;
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.util.FakePlayer;
@@ -47,7 +48,7 @@ public class ForgeData {
         /*
          *  We try to let sponge get it for us.
          */
-        if(Tiquality.SPONGE_IS_PRESENT){
+        if (MixinConfigPlugin.spongePresent) {
             profile = SpongeData.getProfileByUUID(uuid);
         }
 

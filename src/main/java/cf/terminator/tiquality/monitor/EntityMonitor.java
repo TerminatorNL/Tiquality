@@ -23,11 +23,14 @@ public class EntityMonitor {
 
     @SubscribeEvent
     public void onSpawn(EntityJoinWorldEvent e){
-        ResourceLocation location = ((TiqualityEntity) e.getEntity()).tiquality_getResourceLocation();
-        UpdateType type = TiqualityConfig.QuickConfig.ENTITY_UPDATE_TYPES.get(location);
-        ((TiqualityEntity) e.getEntity()).setUpdateType((type == null) ? UpdateType.DEFAULT : type);
-        if(e.getEntity() instanceof EntityPlayer){
+        if (e.getWorld().isRemote) {
             ((TiqualityEntity) e.getEntity()).setUpdateType(UpdateType.ALWAYS_TICK);
+        } else {
+            ResourceLocation location = ((TiqualityEntity) e.getEntity()).tiquality_getResourceLocation();
+            ((TiqualityEntity) e.getEntity()).setUpdateType(TiqualityConfig.QuickConfig.getEntityUpdateType(location));
+            if (e.getEntity() instanceof EntityPlayer) {
+                ((TiqualityEntity) e.getEntity()).setUpdateType(UpdateType.ALWAYS_TICK);
+            }
         }
     }
 

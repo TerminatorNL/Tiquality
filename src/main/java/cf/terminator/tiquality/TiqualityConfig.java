@@ -20,6 +20,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -209,8 +210,14 @@ public class TiqualityConfig {
     @SuppressWarnings("NoTranslation")
     public static class QuickConfig{
 
-        private static HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
-        public static final HashMap<ResourceLocation, UpdateType> ENTITY_UPDATE_TYPES = new HashMap<>();
+        private static final HashSet<Block> MODIFIED_BLOCKS = new HashSet<>();
+        private static final HashMap<ResourceLocation, UpdateType> ENTITY_UPDATE_TYPES = new HashMap<>();
+
+        @Nonnull
+        public static UpdateType getEntityUpdateType(ResourceLocation location) {
+            UpdateType type = ENTITY_UPDATE_TYPES.get(location);
+            return type != null ? type : UpdateType.DEFAULT;
+        }
 
         public static void setEntityUpdateType(UpdateType type, ResourceLocation... resources){
             removeEntityFromConfig(resources);
@@ -323,13 +330,17 @@ public class TiqualityConfig {
             }
         }
 
-        public static void update(){
-            TickMaster.TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
+        public static void clearBlockUpdateTypes() {
             for(Block b : MODIFIED_BLOCKS){
                 Tiquality.LOGGER.info("Unlinking: " + Block.REGISTRY.getNameForObject(b).toString());
                 ((UpdateTyped) b).setUpdateType(UpdateType.DEFAULT);
             }
             MODIFIED_BLOCKS.clear();
+        }
+
+        public static void update() {
+            TickMaster.TICK_DURATION = Constants.NS_IN_TICK_LONG - TIME_BETWEEN_TICKS_IN_NS;
+            clearBlockUpdateTypes();
             HashSet<Block> TMP_BLOCKS = new HashSet<>();
 
             /*

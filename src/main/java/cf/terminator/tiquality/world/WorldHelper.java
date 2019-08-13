@@ -6,6 +6,7 @@ import cf.terminator.tiquality.interfaces.TiqualityChunk;
 import cf.terminator.tiquality.interfaces.TiqualityWorld;
 import cf.terminator.tiquality.interfaces.Tracker;
 import cf.terminator.tiquality.memory.WeakReferencedChunk;
+import cf.terminator.tiquality.mixinhelper.MixinConfigPlugin;
 import cf.terminator.tiquality.util.FiFoQueue;
 import cf.terminator.tiquality.util.Utils;
 import net.minecraft.util.math.BlockPos;
@@ -313,7 +314,7 @@ public class WorldHelper {
 
         @Override
         public WeakReferencedChunk loadChunk() {
-            if(Tiquality.SPONGE_IS_PRESENT){
+            if (MixinConfigPlugin.spongePresent) {
                 chunk = SpongeChunkLoader.getChunkForced(world, chunkBlockPos);
             }else {
                 chunk = world.getTiqualityChunk(chunkBlockPos);
