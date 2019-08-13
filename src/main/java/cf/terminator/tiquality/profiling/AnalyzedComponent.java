@@ -122,13 +122,12 @@ public class AnalyzedComponent implements Comparable<AnalyzedComponent>, IMessag
     }
 
 
-
-    public static class Pre implements Runnable{
+    public static class Analyzer implements Runnable {
         private final ReferencedTickable.Reference reference;
         private final TickTime times;
         private final Set<AnalyzedComponent> set;
 
-        public Pre(ReferencedTickable.Reference reference, TickTime times, Set<AnalyzedComponent> set){
+        public Analyzer(ReferencedTickable.Reference reference, TickTime times, Set<AnalyzedComponent> set) {
             this.reference = reference;
             this.times = times;
             this.set = set;

@@ -564,7 +564,8 @@ public class CommandExecutor {
                 SimpleProfiler profiler = new SimpleProfiler(tracker, time * 1000, new SimpleProfiler.ProfilePrinter() {
                     @Override
                     public void progressUpdate(ITextComponent message) {
-                        sender.sendMessage(message);
+                        message.getStyle().setColor(TextFormatting.GRAY);
+                        sender.sendMessage(new TextComponentString(PREFIX).appendSibling(message));
                     }
 
                     @Override
