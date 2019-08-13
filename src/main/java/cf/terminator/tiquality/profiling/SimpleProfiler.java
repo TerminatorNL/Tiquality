@@ -32,7 +32,7 @@ public class SimpleProfiler implements Runnable {
         new Thread(this, "Tiquality profiler").start();
     }
 
-    public static SortedSet<AnalyzedComponent> analyzeComponents(ProfilePrinter printer, TickLogger logger) throws InterruptedException {
+    public static SortedSet<AnalyzedComponent> analyzeComponents(ProfileMonitor monitor, TickLogger logger) throws InterruptedException {
         TreeMap<ReferencedTickable.ReferenceId, TickTime> times = logger.getTimes();
         Iterator<Map.Entry<ReferencedTickable.ReferenceId, TickTime>> referenceIterator = times.entrySet().iterator();
         SortedSet<AnalyzedComponent> finishedAnalyzers = Collections.synchronizedSortedSet(new TreeSet<>());
@@ -42,7 +42,7 @@ public class SimpleProfiler implements Runnable {
         Tiquality.SCHEDULER.scheduleWait(new Runnable() {
             @Override
             public void run() {
-                printer.progressUpdate(new TextComponentString("Retrieving results in main thread..."));
+                monitor.progressUpdate(new TextComponentString("Retrieving results in main thread..."));
                 while (referenceIterator.hasNext()) {
                     Map.Entry<ReferencedTickable.ReferenceId, TickTime> entry = referenceIterator.next();
                     referenceIterator.remove(); /* Lots of data can be in here, Free up some sweet sweet RAM. */
@@ -59,7 +59,7 @@ public class SimpleProfiler implements Runnable {
             long total = threadPool.getTaskCount();
 
             String percentage = Math.round((double) completed / (double) total * 100) + "%";
-            printer.progressUpdate(new TextComponentString("Working: "
+            monitor.progressUpdate(new TextComponentString("Working: "
                     + TextFormatting.WHITE + completed + TextFormatting.GRAY + "/" + TextFormatting.WHITE + total
                     + TextFormatting.GRAY + " (" + TextFormatting.WHITE + percentage + TextFormatting.GRAY + ")"));
         }
@@ -112,21 +112,21 @@ public class SimpleProfiler implements Runnable {
         }
         printer.progressUpdate(new TextComponentString("Generating report asynchronously..."));
 
-        double serverTPS = Tiquality.TPS_MONITOR.getAverageTPS();
-        double factor = (double) logger.getTrackerTicks() / (double) logger.getWorldServerTicks();
-        double trackerTPS = serverTPS * factor;
 
-        ProfileReport report = new ProfileReport(startTimeNanos, endTimeNanos, serverTPS, trackerTPS, logger.getWorldServerTicks(), logger.getTrackerTicks(), logger.getGrantedNanos(), tracker.getInfo(), components);
+        ProfileReport report = new ProfileReport(startTimeNanos, endTimeNanos, logger, tracker.getInfo(), components);
         printer.progressUpdate(new TextComponentString("Done!"));
         printer.report(report);
     }
 
-    public interface ProfilePrinter{
+
+    public interface ProfileMonitor {
         /**
          * Progress prompt (Activated once every 5 seconds)
          */
         void progressUpdate(ITextComponent message);
+    }
 
+    public interface ProfilePrinter extends ProfileMonitor {
         /**
          * Returned report
          * @param report the report

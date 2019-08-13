@@ -25,14 +25,19 @@ public class ProfileReport implements IMessage {
     private final ITextComponent identifier;
     private NavigableSet<Map.Entry<String, TickTime>> classTimesSorted = null;
 
-    public ProfileReport(long startTimeNanos, long endTimeNanos, double serverTPS, double trackerTPS, int serverTicks, int trackerTicks, long grantedNanos, ITextComponent identifier, Collection<AnalyzedComponent> analyzedComponents) {
+    public ProfileReport(long startTimeNanos, long endTimeNanos, TickLogger logger, ITextComponent identifier, Collection<AnalyzedComponent> analyzedComponents) {
+        long totalTimeNanos = endTimeNanos - startTimeNanos;
         this.startTimeNanos = startTimeNanos;
         this.endTimeNanos = endTimeNanos;
-        this.serverTPS = serverTPS;
-        this.trackerTPS = trackerTPS;
-        this.serverTicks = serverTicks;
-        this.trackerTicks = trackerTicks;
-        this.grantedNanos = grantedNanos;
+        this.serverTicks = logger.getServerTicks();
+        this.trackerTicks = logger.getTrackerTicks();
+
+        double idealTicks = totalTimeNanos / Constants.NS_IN_TICK_DOUBLE;
+        this.serverTPS = this.serverTicks / idealTicks * 20D;
+        this.trackerTPS = this.trackerTicks / idealTicks * 20D;
+
+
+        this.grantedNanos = logger.getGrantedNanos();
         this.analyzedComponents.addAll(analyzedComponents);
         this.identifier = identifier;
         for(AnalyzedComponent component : this.analyzedComponents){

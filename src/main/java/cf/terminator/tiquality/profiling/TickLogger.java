@@ -45,7 +45,7 @@ public class TickLogger implements IMessage {
         return TIMES;
     }
 
-    public int getWorldServerTicks() {
+    public int getServerTicks() {
         return serverTickCount;
     }
 

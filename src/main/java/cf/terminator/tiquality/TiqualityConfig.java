@@ -153,7 +153,8 @@ public class TiqualityConfig {
                 "If you put 'minecraft:item' here, it will be easier for players to pick them up etc. Recommended."
         })
         public String[] PRIORITY_ENTITIES = new String[]{
-                "minecraft:item"
+                "minecraft:item",
+                "minecraft:falling_block"
         };
 
         @Config.Comment({
