@@ -20,6 +20,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashSet;
 import java.util.Random;
@@ -38,6 +39,7 @@ public abstract class TrackerBase implements Tracker {
     protected final HashSet<WeakReferencedTracker> DELEGATING_TRACKERS = new HashSet<>();
     protected TickLogger tickLogger = new TickLogger();
     private TrackerHolder holder;
+    @Nullable
     private ProfilingKey key;
 
     public void setHolder(TrackerHolder holder) {
@@ -120,6 +122,7 @@ public abstract class TrackerBase implements Tracker {
             public void run(SynchronizedAction.DynamicVar<TickLogger> variable) {
                 if(isProfiling == true) {
                     isProfiling = false;
+                    TrackerBase.this.key = null;
                     MinecraftForge.EVENT_BUS.post(new TiqualityEvent.ProfileCompletedEvent(TrackerBase.this, tickLogger));
                     variable.set(tickLogger);
                     tickLogger = new TickLogger();

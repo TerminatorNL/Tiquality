@@ -58,7 +58,7 @@ public class Tiquality {
      */
     public static final TPSMonitor TPS_MONITOR = TPSMonitor.INSTANCE;
     public static final Scheduler SCHEDULER = Scheduler.INSTANCE;
-    public static TickMaster TICK_MASTER;
+    private TickMaster TICK_MASTER;
 
     @EventHandler
     public void preinit(FMLPreInitializationEvent e){
@@ -87,19 +87,11 @@ public class Tiquality {
             }
             FMLCommonHandler.instance().exitJava(1, true);
         }
-        MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
         MinecraftForge.EVENT_BUS.register(SCHEDULER);
-        MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(EntityMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
-        MinecraftForge.EVENT_BUS.register(TiqualityConfig.Listener.INSTANCE);
 
 
         /* Used to monitor TPS while testing. */
         //TPSBroadCaster.start();
-
     }
 
     @EventHandler
@@ -120,6 +112,12 @@ public class Tiquality {
         }
         TICK_MASTER = new TickMaster(e.getServer());
         MinecraftForge.EVENT_BUS.register(TICK_MASTER);
+        MinecraftForge.EVENT_BUS.register(TPS_MONITOR);
+        MinecraftForge.EVENT_BUS.register(BlockPlaceMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(ChunkLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(EntityMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(WorldHelper.SmearedAction.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(TiqualityConfig.Listener.INSTANCE);
         MinecraftForge.EVENT_BUS.register(EntitySetTrackerEventHandler.INSTANCE);
         MinecraftForge.EVENT_BUS.register(ServerWorldLoadMonitor.INSTANCE);
         TiqualityConfig.QuickConfig.update();
@@ -128,12 +126,20 @@ public class Tiquality {
     }
 
     @EventHandler
-    public void onStop(FMLServerStoppedEvent e){
+    public void onServerStopped(FMLServerStoppedEvent e) {
         CommandHub.INSTANCE.reset();
         PersistentData.deactivate();
         if(TICK_MASTER != null){
             MinecraftForge.EVENT_BUS.unregister(TICK_MASTER);
         }
+        MinecraftForge.EVENT_BUS.unregister(TPS_MONITOR);
+        MinecraftForge.EVENT_BUS.unregister(BlockPlaceMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(ChunkLoadMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(EntityMonitor.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(WorldHelper.SmearedAction.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(TiqualityConfig.Listener.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(EntitySetTrackerEventHandler.INSTANCE);
+        MinecraftForge.EVENT_BUS.unregister(ServerWorldLoadMonitor.INSTANCE);
     }
 
     public static void log_sync(String str){
