@@ -6,6 +6,7 @@ import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodFinder;
 import cf.terminator.tiquality.mixinhelper.extended.DynamicMethodRedirector;
 import cf.terminator.tiquality.mixinhelper.extended.MethodHeadInserter;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.CoreModManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.lib.tree.ClassNode;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.jar.Attributes;
@@ -110,6 +112,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
                 LOGGER.info("We're running in a deobfuscated environment.");
             }
         }
+        forceLoadTiqualityAsMod();
     }
 
     private boolean shouldApplyMixin(String mixin){
@@ -204,5 +207,28 @@ public class MixinConfigPlugin implements IMixinConfigPlugin{
 
         LOGGER.info("Applied mixin: " + mixin);
         MIXINS_TO_LOAD.remove(mixin);
+    }
+
+    /**
+     * Ensure Tiquality works in development environments as both a Mixin mod and Forge mod.
+     */
+    public void forceLoadTiqualityAsMod() {
+        if (isProductionEnvironment()) {
+            return;
+        }
+        try {
+            Field field = CoreModManager.class.getDeclaredField("candidateModFiles");
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked") List<String> candidates = (List<String>) field.get(null);
+            String tiqualityFile = null;
+            for (String candidate : candidates) {
+                if (candidate.toLowerCase().contains(Tiquality.MODID)) {
+                    tiqualityFile = candidate;
+                }
+            }
+            candidates.remove(tiqualityFile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

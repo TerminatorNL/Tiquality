@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Export all" type="CompoundRunConfigurationType">
+    <toRun name="Export obf thin &amp; fat" type="GradleRunConfiguration" />
+    <toRun name="Export deobf jar thin &amp; fat" type="GradleRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>

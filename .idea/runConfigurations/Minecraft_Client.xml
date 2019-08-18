@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Minecraft Client" type="Application" factoryName="Application" singleton="true">
+    <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
+    <option name="MAIN_CLASS_NAME" value="GradleStart" />
+    <module name="Tiquality_main" />
+    <option name="PROGRAM_PARAMETERS" value="--mixin mixins.tiquality.json --tweakClass org.spongepowered.asm.launch.MixinTweaker" />
+    <option name="VM_PARAMETERS" value="-Dbstats.relocatecheck=&quot;false&quot;" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run_deobf" />
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

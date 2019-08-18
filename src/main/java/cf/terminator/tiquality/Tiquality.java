@@ -45,7 +45,7 @@ public class Tiquality {
     public static final String URL = "https://minecraft.curseforge.com/projects/tiquality";
     public static final String[] AUTHORS = {"Terminator_NL"};
     public static final String PREFIX = TextFormatting.DARK_GRAY + "[" + TextFormatting.GREEN + Tiquality.NAME + TextFormatting.DARK_GRAY + "] " + TextFormatting.GRAY;
-    public static TickExecutor TICK_EXECUTOR;
+    public static TickExecutor TICK_EXECUTOR = new ForgeTickExecutor();
     public static final SplittableRandom RANDOM = new SplittableRandom();
 
     /**
@@ -103,8 +103,6 @@ public class Tiquality {
     public void preinit(FMLInitializationEvent e) {
         if (Loader.isModLoaded("sponge")) {
             TICK_EXECUTOR = new SpongeTickExecutor();
-        } else {
-            TICK_EXECUTOR = new ForgeTickExecutor();
         }
     }
 

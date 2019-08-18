@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Minecraft Server (No plugins)" type="Application" factoryName="Application" singleton="true">
+    <option name="MAIN_CLASS_NAME" value="GradleStartServer" />
+    <module name="Tiquality_main" />
+    <option name="PROGRAM_PARAMETERS" value="nogui --mixin mixins.tiquality.json --tweakClass org.spongepowered.asm.launch.MixinTweaker" />
+    <option name="VM_PARAMETERS" value="-Dbstats.relocatecheck=&quot;false&quot; -Dfml.queryResult=confirm" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run_deobf_server" />
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
