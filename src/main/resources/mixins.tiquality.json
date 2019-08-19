@@ -1,9 +1,9 @@
 {
-  "package": "cf.terminator.tiquality.mixin",
+  "package": "com.github.terminatornl.tiquality.mixin",
   "refmap": "mixins.tiquality.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "minVersion": "0.6.0",
-  "plugin": "cf.terminator.tiquality.mixinhelper.MixinConfigPlugin",
+  "plugin": "com.github.terminatornl.tiquality.mixinhelper.MixinConfigPlugin",
   "mixins": [
     "MixinBlock",
     "MixinChunk",

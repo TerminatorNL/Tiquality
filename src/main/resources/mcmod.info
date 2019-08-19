@@ -7,7 +7,9 @@
     "mcversion": "${mcversion}",
     "url": "https://minecraft.curseforge.com/projects/tiquality",
     "updateUrl": "",
-    "authorList": ["Terminator_NL"],
+    "authorList": [
+      "Terminator_NL"
+    ],
     "credits": "",
     "logoFile": "",
     "screenshots": [],

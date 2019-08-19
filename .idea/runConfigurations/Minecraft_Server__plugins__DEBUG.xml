@@ -3,7 +3,7 @@
     <option name="ALTERNATIVE_JRE_PATH" value="1.8" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <option name="MAIN_CLASS_NAME" value="GradleStartServer" />
-    <module name="Tiquality_main" />
+    <module name="Tiquality.main" />
     <option name="PROGRAM_PARAMETERS" value="nogui --mixin mixins.tiquality.json --tweakClass org.spongepowered.asm.launch.MixinTweaker" />
     <option name="VM_PARAMETERS" value="-Dbstats.relocatecheck=&quot;false&quot; -Dmixin.debug=true -Dmixin.debug.export=true" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run_deobf_server" />

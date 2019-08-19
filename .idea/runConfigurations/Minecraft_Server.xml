@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Minecraft Server" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="GradleStartServer" />
-    <module name="Tiquality_main" />
+    <module name="Tiquality.main" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
     <RunnerSettings RunnerId="Run" />
     <ConfigurationWrapper RunnerId="Run" />
