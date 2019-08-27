@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.UUID;
 
 /**
@@ -20,6 +21,8 @@ import java.util.UUID;
 public class ForgeData {
 
     public static final GameProfile GAME_PROFILE_NOBODY = new GameProfile(new UUID(9223372036854775800L, Long.MAX_VALUE), "[Unknown]");
+
+    public static final TreeSet<UUID> WEIRD_GAME_PROFILES = new TreeSet<>();
 
     public static final MinecraftServer SERVER = FMLCommonHandler.instance().getMinecraftServerInstance();
 
@@ -40,6 +43,14 @@ public class ForgeData {
         if (profile != null) {
             return profile;
         }
+
+        /*
+         * Our own cache, for funky game profiles.
+         */
+        if (WEIRD_GAME_PROFILES.contains(uuid)) {
+            return GAME_PROFILE_NOBODY;
+        }
+
         Tiquality.LOGGER.warn("Player profile was not found in cache!");
         Tiquality.LOGGER.warn("I will add it, but it can cause some lag, as I may or may not contact the Mojang servers to get go and get it.");
         Tiquality.LOGGER.warn("UUID: " + uuid.toString());
@@ -99,9 +110,13 @@ public class ForgeData {
 
         /*
                 If it still did not, we give up, and return a dummy GameProfile.
+                We also save the UUID to our own cache, to make sure this weird thing doesn't contaminate the forge cache.
          */
         if (profile.getName() == null) {
-            profile = GAME_PROFILE_NOBODY;
+            Tiquality.LOGGER.warn("This UUID cannot be resolved no matter what I do. (Fake player?)");
+            Tiquality.LOGGER.warn("Temporarily storing this UUID for quick lookup. During this run, we're returning the following profile: " + GAME_PROFILE_NOBODY.toString());
+            WEIRD_GAME_PROFILES.add(uuid);
+            return GAME_PROFILE_NOBODY;
         }
 
         /*
