@@ -55,6 +55,11 @@ public class TiqualityConfig {
     @Config.RangeDouble(min = 0, max = 1)
     public static double OFFLINE_PLAYER_TICK_TIME_MULTIPLIER = 0.5;
 
+    @Config.Comment({
+            "The alias for the /tiquality command.",
+            "Bear in mind that when this alias is already in use by another mod, we skip command registration entirely. (Even /tiquality)"
+    })
+    public static String TIQUALITY_COMMAND_ALIAS = "tq";
 
     @Config.Comment({
             "A block will tick if at least one of the following statements is true:",
