@@ -1,5 +1,6 @@
 package com.github.terminatornl.tiquality.command;
 
+import com.github.terminatornl.tiquality.TiqualityConfig;
 import net.minecraft.command.CommandHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.server.permission.DefaultPermissionLevel;
@@ -8,7 +9,7 @@ import net.minecraftforge.server.permission.PermissionAPI;
 public class CommandHub {
 
     public static final CommandHub INSTANCE = new CommandHub();
-    public static final String[] ALIASES = {"tiquality", "tq"};
+    public static final String[] ALIASES = {"tiquality", TiqualityConfig.TIQUALITY_COMMAND_ALIAS};
     public static final String DESCRIPTION_USE = "Allows use of Tiquality commands.";
     public static final String DESCRIPTION_CLAIM = "Allows claiming areas using commands.";
     public static final String DESCRIPTION_ADMIN = "Allows use of Tiquality admin commands.";
