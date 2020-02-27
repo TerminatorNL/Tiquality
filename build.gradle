@@ -46,7 +46,7 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-String spongeForgeVersion = '1.12.2-2838-7.1.7-RC3886'
+String spongeForgeVersion = '1.12.2-2838-7.1.10-RC4000'
 String forgeVersion = '1.12.2-14.23.5.2838'
 
 version = "1.12.2-GAMMA-1.7.2"
@@ -109,13 +109,13 @@ dependencies {
     compileOnly 'ftblib:FTBLib:5.3.0.56'
 
     if(isFat) {
-        embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+        embed('org.spongepowered:mixin:0.8-SNAPSHOT') {
             ['gson','guava','commons-io','launchwrapper'].each {
                 exclude module: it
             }
         }
     }else{
-        compile ('org.spongepowered:mixin:0.7.11-SNAPSHOT'){
+        compile ('org.spongepowered:mixin:0.8-SNAPSHOT'){
             ['gson','guava','commons-io'].each {
                 exclude module: it
             }
