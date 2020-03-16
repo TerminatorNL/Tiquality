@@ -34,7 +34,7 @@ repositories {
     maven {
         name = 'bStats'
         //Updated to new repo for bStats
-        url = 'https://repo.codemc.org/repository/maven-public/'
+        url = 'https://repo.codemc.org/repository/maven-public'
     }
     maven {
         name = "CurseForge"
