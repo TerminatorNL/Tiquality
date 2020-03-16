@@ -97,7 +97,7 @@ dependencies {
         Caused by module: bstats-sponge
      */
     //TODO: Wait for GriefPrevention to update to the latest Sponge API
-    compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.692:original'
+    compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.662:original'
 
     /*
         FTB Utilities
