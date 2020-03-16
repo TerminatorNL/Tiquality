@@ -3,7 +3,7 @@ package com.github.terminatornl.tiquality.mixinhelper.extended;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.AnnotationVisitor;
+import org.objectweb.asm.AnnotationVisitor;
 
 import javax.annotation.Nullable;
 import java.util.regex.Pattern;
