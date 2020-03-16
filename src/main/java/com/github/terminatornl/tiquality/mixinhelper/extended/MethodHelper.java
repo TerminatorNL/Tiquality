@@ -15,7 +15,7 @@ public class MethodHelper {
             return false;
         }
         for (AnnotationNode a : node.visibleAnnotations) {
-            if ("Lcom/github/terminatornl/tiquality/mixinhelper/extended/DynamicExclusion;".equals(a.desc)) {
+            if (a.desc.equals("Lcom/github/terminatornl/tiquality/mixinhelper/extended/DynamicExclusion;")) {
                 return true;
             }
         }
