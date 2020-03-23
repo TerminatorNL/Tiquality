@@ -45,7 +45,9 @@ When entities spawn or move between chunks, their tracker is updated to match th
 * [SpongeForge](https://github.com/SpongePowered/SpongeForge)
    * Permissions, commands, customized ticking logic
 * [GriefPrevention](https://github.com/MinecraftPortCentral/GriefPrevention)
-   * Claims automagically set the tracker in the claimed area, and lock it to that owner for as long as that claim is present (Useful for basemates)
+   * Claims automagically set the tracker in the claimed area, and lock it to that owner for as long as that claim is present
+* [GriefDefender](https://github.com/bloodmc/GriefDefender)
+   * Claims automagically set the tracker in the claimed area, and lock it to that owner for as long as that claim is present 
 * [FTB Utilities](https://github.com/FTBTeam/FTB-Utilities)
    * Claims automagically set the tracker in the claimed area, and lock it to that owner for as long as that claim is present (Useful for basemates)
 * [LagGoggles](https://github.com/TerminatorNL/LagGoggles) **(Work in progress...)**
