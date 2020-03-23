@@ -5,6 +5,7 @@ import com.github.terminatornl.tiquality.TiqualityConfig;
 import com.github.terminatornl.tiquality.api.Location;
 import com.github.terminatornl.tiquality.api.TiqualityException;
 import com.github.terminatornl.tiquality.integration.ExternalHooker;
+import com.github.terminatornl.tiquality.integration.griefdefender.GriefDefenderHook;
 import com.github.terminatornl.tiquality.integration.griefprevention.GriefPreventionHook;
 import com.github.terminatornl.tiquality.interfaces.*;
 import com.github.terminatornl.tiquality.monitor.InfoMonitor;
@@ -815,6 +816,31 @@ public class CommandExecutor {
                 GriefPreventionHook.importSingleClaim((EntityPlayer) sender);
             } else {
                 sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefPrevention not detected."));
+            }
+         /*
+                GRIEFDEFENDER IMPORT
+         */
+        } else if (args[0].equalsIgnoreCase("import_griefdefender")) {
+            holder.checkPermission(PermissionHolder.Permission.ADMIN);
+            if (ExternalHooker.LOADED_HOOKS.contains("griefdefender")) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        GriefDefenderHook.loadClaimsForcibly(sender);
+                    }
+                }, "Tiquality GP import thread").start();
+            } else {
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefDefender not detected."));
+            }
+        } else if (args[0].equalsIgnoreCase("import_griefdefender_claim")) {
+            holder.checkPermission(PermissionHolder.Permission.USE);
+            if (sender instanceof EntityPlayer == false) {
+                throw new CommandException("Only players can use this command.");
+            }
+            if (ExternalHooker.LOADED_HOOKS.contains("griefdefender")) {
+                GriefDefenderHook.importSingleClaim((EntityPlayer) sender);
+            } else {
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + "GriefDefender not detected."));
             }
         /*
 
