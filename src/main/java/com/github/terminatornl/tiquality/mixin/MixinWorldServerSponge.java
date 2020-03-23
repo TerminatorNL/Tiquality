@@ -61,13 +61,13 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     /*
         ENTITY
      */
-    @Dynamic(value = "onCallEntityUpdate is added by SpongeForge (redirect$onCallEntityUpdate$something)", mixin = WorldServerMixin.class)
-    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$onCallEntityUpdate", obfRegexName = "redirect\\$onCallEntityUpdate")
-    protected abstract void onCallEntityUpdate_Sponge(Entity entity);
+    @Dynamic(value = "onCallEntityUpdate is added by SpongeForge (redirect$something$onCallEntityUpdate)", mixin = WorldServerMixin.class)
+    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$.*onCallEntityUpdate$", obfRegexName = "redirect\\$.*onCallEntityUpdate$")
+    protected abstract void onCallEntityUpdate_Sponge(final Entity entity);
 
-    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onCallEntityUpdate", obfRegexName = "redirect\\$onCallEntityUpdate")
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$.*onCallEntityUpdate$", obfRegexName = "redirect\\$.*onCallEntityUpdate$")
     @Dynamic(value = "onCallEntityUpdate is modified by SpongeForge", mixin = WorldServerMixin.class)
-    private void onCallEntityUpdate(Entity entity) {
+    private void onCallEntityUpdate(final Entity entity) {
         if (IS_CONTROLLED_BY_TIQUALITY == false) {
             TickHub.onEntityTick(entity);
             /*
@@ -89,11 +89,11 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     /*
         TILE ENTITY
      */
-    @Dynamic(value = "onUpdateTileEntities is added by SpongeForge (redirect$onUpdateTileEntities$something)", mixin = WorldServerMixin.class)
-    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$onUpdateTileEntities", obfRegexName = "redirect\\$onUpdateTileEntities")
+    @Dynamic(value = "onUpdateTileEntities is added by SpongeForge (redirect$something$onUpdateTileEntities)", mixin = WorldServerMixin.class)
+    @DynamicMethodFinder.FindMethod(deobfRegexName = "redirect\\$.*onUpdateTileEntities$", obfRegexName = "redirect\\$.*onUpdateTileEntities$")
     protected abstract void onUpdateTileEntities_Sponge(ITickable tickable);
 
-    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onUpdateTileEntities", obfRegexName = "redirect\\$onUpdateTileEntities")
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$.*onUpdateTileEntities$", obfRegexName = "redirect\\$.*onUpdateTileEntities$")
     @Dynamic(value = "onUpdateTileEntities is modified by SpongeForge", mixin = WorldServerMixin.class)
     private void onUpdateTileEntities(ITickable tickable) {
         if (IS_CONTROLLED_BY_TIQUALITY == false) {
@@ -110,7 +110,7 @@ public abstract class MixinWorldServerSponge extends World implements TickExecut
     /*
         BLOCK
      */
-    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$onUpdateTick", obfRegexName = "redirect\\$onUpdateTick")
+    @MethodHeadInserter.InsertHead(deobfRegexName = "redirect\\$.*onUpdateTick$", obfRegexName = "redirect\\$.*onUpdateTick$")
     @Dynamic(value = "onUpdateTick is redirected by SpongeForge", mixin = WorldServerMixin.class)
     private void onUpdateTick(Block block, net.minecraft.world.World worldIn, BlockPos pos, IBlockState state, Random rand) {
         if (IS_CONTROLLED_BY_TIQUALITY == false) {

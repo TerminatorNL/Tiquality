@@ -1,8 +1,9 @@
 package com.github.terminatornl.tiquality.mixinhelper.extended;
 
-import org.spongepowered.asm.lib.tree.AnnotationNode;
-import org.spongepowered.asm.lib.tree.ClassNode;
-import org.spongepowered.asm.lib.tree.MethodNode;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.AnnotationNode;
 
 import javax.annotation.Nullable;
 import java.util.regex.Pattern;

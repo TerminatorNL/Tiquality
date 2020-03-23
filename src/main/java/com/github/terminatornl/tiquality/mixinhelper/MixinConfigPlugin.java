@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.CoreModManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.spongepowered.asm.lib.tree.ClassNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -198,7 +198,8 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             }
         } catch (Throwable t) {
             LOGGER.fatal("Unable to transform class: " + target);
-            t.printStackTrace();
+            System.out.println(t);//Print the error message
+            t.printStackTrace();//This is sometimes blank
             Debugging.dumpClassToFatalLog(classNode);
             FMLCommonHandler.instance().exitJava(-1, true);
         }

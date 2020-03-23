@@ -33,11 +33,15 @@ repositories {
     }
     maven {
         name = 'bStats'
-        url = 'https://repo.bstats.org/content/repositories/releases/'
+        //Updated to new repo for bStats
+        url = 'https://repo.codemc.org/repository/maven-public'
     }
     maven {
         name = "CurseForge"
         url = "https://minecraft.curseforge.com/api/maven"
+    }
+    maven {
+        url 'https://jitpack.io'
     }
 }
 
@@ -46,7 +50,7 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-String spongeForgeVersion = '1.12.2-2838-7.1.7-RC3886'
+String spongeForgeVersion = '1.12.2-2838-7.1.11-RC4007'
 String forgeVersion = '1.12.2-14.23.5.2838'
 
 version = "1.12.2-GAMMA-1.7.2"
@@ -96,7 +100,10 @@ dependencies {
         Caused by module: bstats-sponge
      */
     //TODO: Wait for GriefPrevention to update to the latest Sponge API
-    compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.654:original'
+    compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.662:original'
+
+    compileOnly 'com.github.bloodmc:GriefDefenderAPI:-SNAPSHOT'
+
 
     /*
         FTB Utilities
@@ -109,13 +116,13 @@ dependencies {
     compileOnly 'ftblib:FTBLib:5.3.0.56'
 
     if(isFat) {
-        embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+        embed('org.spongepowered:mixin:0.8-SNAPSHOT') {
             ['gson','guava','commons-io','launchwrapper'].each {
                 exclude module: it
             }
         }
     }else{
-        compile ('org.spongepowered:mixin:0.7.11-SNAPSHOT'){
+        compile ('org.spongepowered:mixin:0.8-SNAPSHOT'){
             ['gson','guava','commons-io'].each {
                 exclude module: it
             }

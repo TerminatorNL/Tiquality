@@ -2,7 +2,7 @@ package com.github.terminatornl.tiquality.mixinhelper.extended;
 
 import com.github.terminatornl.tiquality.mixinhelper.MixinConfigPlugin;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import org.spongepowered.asm.lib.tree.*;
+import org.objectweb.asm.tree.*;
 
 import javax.annotation.Nullable;
 import java.lang.annotation.ElementType;
@@ -93,7 +93,7 @@ public class MethodHeadInserter implements Transformer {
             }
         });
         if (found.get() == false) {
-            throw new IllegalStateException("Transformer did not find matches!");
+            throw new IllegalStateException("Transformer did not find matches! "+nameRegex+" "+signatureRegex);
         }
     }
 

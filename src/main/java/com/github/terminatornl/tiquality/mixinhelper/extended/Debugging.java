@@ -1,8 +1,8 @@
 package com.github.terminatornl.tiquality.mixinhelper.extended;
 
 import com.github.terminatornl.tiquality.mixinhelper.MixinConfigPlugin;
-import org.spongepowered.asm.lib.Opcodes;
-import org.spongepowered.asm.lib.tree.*;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Field;
 import java.util.ListIterator;

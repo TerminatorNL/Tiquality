@@ -2,8 +2,8 @@ package com.github.terminatornl.tiquality.mixinhelper.extended;
 
 import com.github.terminatornl.tiquality.mixinhelper.MixinConfigPlugin;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import org.spongepowered.asm.lib.Opcodes;
-import org.spongepowered.asm.lib.tree.*;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
