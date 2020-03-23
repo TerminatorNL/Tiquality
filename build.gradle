@@ -40,6 +40,9 @@ repositories {
         name = "CurseForge"
         url = "https://minecraft.curseforge.com/api/maven"
     }
+    maven {
+        url 'https://jitpack.io'
+    }
 }
 
 boolean isFat = hasProperty("isFat")
@@ -47,7 +50,7 @@ boolean isClient = hasProperty("isClient")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
 String buildType = (isFat ? "FAT" : "THIN")
 
-String spongeForgeVersion = '1.12.2-2838-7.1.10-RC4000'
+String spongeForgeVersion = '1.12.2-2838-7.1.11-RC4007'
 String forgeVersion = '1.12.2-14.23.5.2838'
 
 version = "1.12.2-GAMMA-1.7.2"
@@ -98,6 +101,9 @@ dependencies {
      */
     //TODO: Wait for GriefPrevention to update to the latest Sponge API
     compileOnly 'me.ryanhamshire:griefprevention:1.12.2-4.3.0.662:original'
+
+    compileOnly 'com.github.bloodmc:GriefDefenderAPI:-SNAPSHOT'
+
 
     /*
         FTB Utilities

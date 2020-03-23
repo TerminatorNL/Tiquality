@@ -93,7 +93,7 @@ public class MethodHeadInserter implements Transformer {
             }
         });
         if (found.get() == false) {
-            throw new IllegalStateException("Transformer did not find matches!");
+            throw new IllegalStateException("Transformer did not find matches! "+nameRegex+" "+signatureRegex);
         }
     }
 
