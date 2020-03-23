@@ -1,0 +1,105 @@
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: Build and publish
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Needs all commits in order to correctly use versioning within gradle.
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Verify gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Setup workspace
+        uses: eskatos/gradle-command-action@v1
+        with:
+          arguments: setupDecompWorkspace
+
+      - name: Build FAT jar
+        uses: eskatos/gradle-command-action@v1
+        with:
+          arguments: build -PisFat
+
+      - name: Read current version
+        uses: pCYSl5EDgo/cat@master
+        id: read_version_data
+        with:
+          path: ./build/last_version.txt
+
+      - name: Get FAT jar path
+        uses: pCYSl5EDgo/cat@master
+        id: read_fat_path
+        with:
+          path: ./build/last_file_path.txt
+
+      - name: Get FAT jar name
+        uses: pCYSl5EDgo/cat@master
+        id: read_fat_name
+        with:
+          path: ./build/last_file_name.txt
+
+      - name: Build THIN jar
+        uses: eskatos/gradle-command-action@v1
+        with:
+          arguments: build
+
+      - name: Get THIN jar path
+        uses: pCYSl5EDgo/cat@master
+        id: read_thin_path
+        with:
+          path: ./build/last_file_path.txt
+
+      - name: Get THIN jar name
+        uses: pCYSl5EDgo/cat@master
+        id: read_thin_name
+        with:
+          path: ./build/last_file_name.txt
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.read_version_data.outputs.text }}
+          release_name: ${{ steps.read_version_data.outputs.text }}
+          draft: false
+          prerelease: true
+
+      - name: Attach FAT to release
+        id: upload-fat
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.read_fat_path.outputs.text }}
+          asset_name: ${{ steps.read_fat_name.outputs.text }}
+          asset_content_type: application/zip
+
+      - name: Attach THIN to release
+        id: upload-thin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.read_thin_path.outputs.text }}
+          asset_name: ${{ steps.read_thin_name.outputs.text }}
+          asset_content_type: application/zip

@@ -27,11 +27,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.event.EventListener;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import javax.annotation.Nonnull;
@@ -62,7 +58,7 @@ public class GriefDefenderHook {
         }
         final Optional<World> worldOpt = Sponge.getServer().getWorld(claim.getWorldUniqueId());
         //noinspection OptionalIsPresent
-        if(!worldOpt.isPresent()) {
+        if (worldOpt.isPresent() == false) {
             return;
         }
         TiqualityWorld world = (TiqualityWorld) worldOpt.get();
@@ -74,7 +70,7 @@ public class GriefDefenderHook {
     public static void loadClaimsForcibly(ICommandSender sender) {
         final AtomicInteger counter = new AtomicInteger(0);
         Tiquality.LOGGER.info("Importing griefdefender claims...");
-        sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import started."));
+        sender.sendMessage(new TextComponentString(Tiquality.PREFIX + "Import started."));
 
         List<Claim> list = new ArrayList<>();
         for (World world : Sponge.getServer().getWorlds()) {
@@ -105,7 +101,7 @@ public class GriefDefenderHook {
             setClaimTrackers(claim, PlayerTracker.getOrCreatePlayerTrackerByProfile((TiqualityWorld) world, ForgeData.getGameProfileByUUID(claim.getOwnerUniqueId())), new Runnable() {
                 @Override
                 public void run() {
-                    String message = "[Tiquality] Remaining claims: " + (counter.getAndDecrement() - 1);
+                    String message = Tiquality.PREFIX + "Remaining claims: " + (counter.getAndDecrement() - 1);
                     Tiquality.LOGGER.info(message);
                     sender.sendMessage(new TextComponentString(TextFormatting.GREEN + message));
                     synchronized (counter) {
@@ -129,9 +125,9 @@ public class GriefDefenderHook {
                             counter.wait(5000);
                         }
                         int tasks = WorldHelper.getQueuedTasks();
-                        sender.sendMessage(new TextComponentString(TextFormatting.DARK_GRAY + "[Tiquality] " + tasks + " tasks to process left."));
+                        sender.sendMessage(new TextComponentString(Tiquality.PREFIX + tasks + " tasks to process left."));
                     }
-                    sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "[Tiquality] Import finished."));
+                    sender.sendMessage(new TextComponentString(Tiquality.PREFIX + "Import finished."));
                     Tiquality.LOGGER.info("Import finished.");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -269,7 +265,7 @@ public class GriefDefenderHook {
                                 public void run() {
                                     final Optional<World> worldOpt = Sponge.getServer().getWorld(claim.getWorldUniqueId());
                                     //noinspection OptionalIsPresent
-                                    if(!worldOpt.isPresent()) {
+                                    if (worldOpt.isPresent() == false) {
                                         return;
                                     }
 

@@ -95,7 +95,7 @@ public class AdminClaimTracker extends ForcedTracker {
      */
     @Nonnull
     public String getIdentifier() {
-        return "GPAdmin";
+        return "GDAdmin";
     }
 
     /**

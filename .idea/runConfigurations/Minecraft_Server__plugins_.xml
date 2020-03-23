@@ -2,6 +2,7 @@
   <configuration default="false" name="Minecraft Server (plugins)" type="Application" factoryName="Application" singleton="true">
     <option name="ALTERNATIVE_JRE_PATH" value="1.8" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
     <option name="MAIN_CLASS_NAME" value="GradleStartServer" />
     <module name="Tiquality.main" />
     <option name="PROGRAM_PARAMETERS" value="nogui --mixin mixins.tiquality.json --tweakClass org.spongepowered.asm.launch.MixinTweaker" />

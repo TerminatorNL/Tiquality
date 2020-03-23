@@ -117,18 +117,20 @@ public abstract class MixinChunk implements TiqualityChunk {
      * @return tracker ID
      */
     private byte getIDbyTracker(Tracker tracker, boolean create) {
-        Byte owner_id = tiquality_trackerLookup.inverse().get(tracker);
-        if (owner_id == null) {
-            if (create == true) {
-                owner_id = getFirstFreeIndex();
-                tiquality_trackerLookup.put(owner_id, tracker);
-                tiquality_modcount++;
-                return owner_id;
+        synchronized (tiquality_trackerLookup) {
+            Byte owner_id = tiquality_trackerLookup.inverse().get(tracker);
+            if (owner_id == null) {
+                if (create == true) {
+                    owner_id = getFirstFreeIndex();
+                    tiquality_trackerLookup.put(owner_id, tracker);
+                    tiquality_modcount++;
+                    return owner_id;
+                } else {
+                    return 1;
+                }
             } else {
-                return 1;
+                return owner_id;
             }
-        } else {
-            return owner_id;
         }
     }
 

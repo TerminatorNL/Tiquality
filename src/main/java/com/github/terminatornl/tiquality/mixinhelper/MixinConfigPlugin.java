@@ -198,7 +198,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             }
         } catch (Throwable t) {
             LOGGER.fatal("Unable to transform class: " + target);
-            System.out.println(t);//Print the error message
+            System.err.println(t);//Print the error message
             t.printStackTrace();//This is sometimes blank
             Debugging.dumpClassToFatalLog(classNode);
             FMLCommonHandler.instance().exitJava(-1, true);

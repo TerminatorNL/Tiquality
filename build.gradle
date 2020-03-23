@@ -41,22 +41,42 @@ repositories {
         url = "https://minecraft.curseforge.com/api/maven"
     }
     maven {
-        url 'https://jitpack.io'
+        name = 'Jitpack.io'
+        url = 'https://jitpack.io'
     }
 }
 
+ext.GetCommitCount = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-list', '--all', '--count'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
 boolean isFat = hasProperty("isFat")
-boolean isClient = hasProperty("isClient")
+boolean installIntoServer = hasProperty("installIntoServer")
 boolean isObfuscated = project.gradle.startParameter.taskNames.contains("build")
+
 String buildType = (isFat ? "FAT" : "THIN")
+String version_file = "./build/last_version.txt"
+String last_file_name = "./build/last_file_name.txt"
+String last_file_path = "./build/last_file_path.txt"
+
+if(project.gradle.startParameter.taskNames.contains("build")) {
+    println("Building: " + buildType)
+    delete version_file
+    delete last_file_name
+    delete last_file_path
+}
 
 String spongeForgeVersion = '1.12.2-2838-7.1.11-RC4007'
-String forgeVersion = '1.12.2-14.23.5.2838'
+String forgeVersion = '1.12.2-14.23.5.2847'
 
-version = "1.12.2-GAMMA-1.7.2"
+version = "1.12.2-GAMMA-1.8.0" + "-" + GetCommitCount()
 group = "com.github.terminatornl"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
-println("Compiling: " + archivesBaseName + "-" + version)
 
 sourceCompatibility = targetCompatibility = '1.8'
 compileJava {
@@ -176,16 +196,11 @@ jar {
 /* Convienience script to quickly install Tiquality in an obfuscated environment. */
 
 build.doLast {
-    if(isClient) {
-        delete fileTree('run_client/mods') {
-            include 'Tiquality*'
-        }
-        copy {
-            from jar.archivePath
-            into "run_client/mods"
-        }
-        println("Replaced Tiquality in 'run_client/mods'")
-    }else{
+    new File(projectDir, version_file).text = version
+    new File(projectDir, last_file_name).text = jar.archiveName
+    new File(projectDir, last_file_path).text = jar.archivePath
+
+    if(installIntoServer) {
         delete fileTree('run_server/mods') {
             include 'Tiquality*'
         }
