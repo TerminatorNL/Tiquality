@@ -6,7 +6,7 @@ At this moment, Tiquality is a server side only mod, but supports clients too (L
 The core functionality is limiting a player's tick time in the world to evenly distribute time.
 
 ## Support
-If you have an issue, I'd rather have you submit a new issue report on GitHub. If you think it's not worthy of an issue report on GitHub, there's a [discord channel](https://discord.gg/DEmXSvR) where you can contact me in a more informal way. Please note, issues discussed on GitHub are better because other people can find the same problem, and tune in without digging through hundreds of text messages (More organized) 
+If you have an issue, I'd rather have you submit a new issue report on GitHub. If you think it's not worthy of an issue report on GitHub, there's a [discord channel](https://discord.gg/pM4vwEU) where you can contact me in a more informal way. Please note, issues discussed on GitHub are better because other people can find the same problem, and tune in without digging through hundreds of text messages (More organized) 
 
 ## Download
 You can download the latest release [here](https://www.curseforge.com/minecraft/mc-mods/tiquality/files/all). The _ONLY_ difference between **THIN** and **FAT** is that **FAT** ships [Mixin](https://github.com/SpongePowered/Mixin), which is a library that Tiquality needs in order to function. It's possible that another mod already ships Mixin or has another version. Generally speaking, Tiquality can handle most Mixin versions well.
