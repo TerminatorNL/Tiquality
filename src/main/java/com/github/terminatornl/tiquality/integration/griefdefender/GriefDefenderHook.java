@@ -292,7 +292,7 @@ public class GriefDefenderHook {
                 Tiquality.SCHEDULER.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        resizeClaimTrackers(claim, claimEvent.getStartCorner(), claimEvent.getEndCorner(), tracker, null, null);//TODO verify this acts as expected
+                        resizeClaimTrackers(claim, claim.getLesserBoundaryCorner(), claim.getGreaterBoundaryCorner(), tracker, null, null);//TODO verify this acts as expected
                     }
                 });
             }

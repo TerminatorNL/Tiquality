@@ -74,7 +74,7 @@ if(project.gradle.startParameter.taskNames.contains("build")) {
 String spongeForgeVersion = '1.12.2-2838-7.1.11-RC4007'
 String forgeVersion = '1.12.2-14.23.5.2847'
 
-version = "1.12.2-GAMMA-1.8.0" + "-" + GetCommitCount()
+version = "1.12.2-GAMMA-1.8.1" + "-" + GetCommitCount()
 group = "com.github.terminatornl"
 archivesBaseName = "Tiquality-"+ (isObfuscated ? "" : "DEOBF-") + buildType
 
