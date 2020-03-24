@@ -126,8 +126,8 @@ You can share tick time with other players using [/tq share](#commands-and-permi
        * Always ticks, never throttled. If a tracker has been assigned, it will still affect the granted time for a tracker.
    * tiquality.admin
    
- * /tq setentity &lt;`feet`|`below`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
-   * Sets all the blocks of the specified type to change tick behavior.<br>
+ * /tq setentity &lt;`entity_name`&gt; &lt;`DEFAULT`|`NATURAL`|`PRIORITY`|`ALWAYS_TICK`|`TICK_DENIED`&gt;
+   * Sets all the entities of the specified type to change tick behavior.<br>
     Valid types are:<br>
       * `DEFAULT`: 
         * Ticks when no tracker is assigned. When a tracker has been assigned, it can be throttled if no time is left.
