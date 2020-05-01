@@ -128,6 +128,7 @@ public class TiqualityConfig {
                 "Keep in mind, if there is an owner set on this block, the block can be throttled. See: ALWAYS_TICKED_BLOCKS",
         })
         public String[] NATURAL_BLOCKS = new String[]{
+                "minecraft:dragon_egg",
                 "minecraft:mob_spawner",
                 "minecraft:chest",
                 "minecraft:ender_chest",
